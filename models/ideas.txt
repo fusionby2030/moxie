@@ -1,0 +1,16 @@
+FNO 
+
+Compare input spaces, like including time vs not including time
+
+Model types 
+- FNO 
+- RNN 
+- CNN-RNN
+- FNO + RNN 
+
+Mayur Bakrania and Sankalp Tipnis from UCL 
+M7, M9 campaigns 
+
+Work presented at 4th IAEA Technical Meeting on Fusion Data
+
+

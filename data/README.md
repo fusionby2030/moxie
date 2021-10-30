@@ -1,6 +1,54 @@
 # Data Storage
 
-After downloading the data, we store it in the following format: 
+This subdirectory contains the various forms of datasets used in the analysis. 
+
+```
+|---data
+|    |---raw_datasets < original immutable data dump from HEIMDALL
+|    |---processed  < final, canonical datasets for modeling
+```
+---
+
+
+## Raw Datasets
+
+We grab the inputs and outputs from JET PPFs and store them pickled python dictionary, that is compressed with gzip. 
+
+To take out the raw file, use gzip to uncompress, then pickle load the dictionary which has the following format: 
+
+**Total HRTS validated shot count: 4942 Shots.**
+- Maybe start looking at unvalidated?
+
+
+
+```
+{'pulse_1': {'inputs': {'BT': {'values': np.array, 'time': np.array},
+                        'IP': {'values': np.array, 'time': np.array}, ...}
+            'outputs': {'time': {'R': np.array, 'neped'}}
+            },
+'pulse_2': {'inputs': {'BT': {'values': np.array, 'time': np.array},
+                        'IP': {'values': np.array, 'time': np.array}, ...}
+            'outputs': {'time': {'R': np.array, 'neped'}}
+            },
+            }
+```
+
+---
+**Input Columns**
+`'Q95', 'RGEO', 'RCO', 'VOLM', 'TRIU', 'TRIL', 'XIP', 'ELON', 'BTAX', 'POHM', 'P_NBI', 'P_ICRH', 'ELER'`
+
+---
+**Output Profiles** 
+
+The Error (DNE) and Value (NE) are stored in a 3D array, of dim time, spataial, and value. 
+
+---
+
+
+## Processed
+
+We can convert the HDF5 file into these abstract classes for easy ML feeding. 
+ 
 
 ##### The Dataset class
 - Shall hold all of the pulses 
