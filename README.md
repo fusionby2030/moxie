@@ -56,14 +56,16 @@ List of DDA's DataType associated with them.
 - EFIT: 989 points per shot. (Could also be called EFTP) 
 	- Q95
 	- RGEO (Major R)
-	- RCO (Minor radius = (Rmax-Rmin)/2 )
+	- CRO (Minor radius = (Rmax-Rmin)/2 )
 	- VOLM (plasma volume) 
 	- TRIU and TRIL (Upper and lower triangularity) 
 	- XPFL (limiter and divertor flag)
 	- XIP (Plasma current measured) 
 	- ELON (Elongation) 
-	- BTAX (Toroidal mag field profile on Z= ZMAG (BT(R))) - this is 989 points per 989 time steps! 
-	- POHM (Ohmic Power)
+	- POHM
+
+- SCAL: 1024 Points
+	- BT  
 
 - GASH: 8101 points per shot
 	- ELER (electron flow rate)
