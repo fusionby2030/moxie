@@ -46,7 +46,7 @@ For gathering the density:
 - Datatype: NE (density) DNE (error in density) 
 - T window range: (40-75s)
 - **FLAGHRTS??**
-
+- 63 X size, 701 T size
 
 --- 
 
