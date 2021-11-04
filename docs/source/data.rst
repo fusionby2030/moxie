@@ -14,21 +14,11 @@ This subdirectory contains the various forms of datasets used in the analysis.
 Raw Datasets
 ----------
 
-We grab the inputs and outputs from JET PPFs and store them pickled python dictionary, `all_shots.pickle`.
-Relevant JETDSP info:
-
-- DDA: HRTS
-- PPFUID: JETPPF
-- Sequence \# 0 (**?**)
-- Datatype: NE (density) DNE (error in density)
-- T window range: (40-75s)
-- **FLAGHRTS??**
-- 63 X size, 701 T size
-
 **Total HRTS validated shot count: 4942 Shots.**
 
 - Maybe start looking at unvalidated?
 
+Stored in the following raw format: 
 
 .. code-block:: python
 
