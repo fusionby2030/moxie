@@ -5,9 +5,9 @@ This subdirectory contains the various forms of datasets used in the analysis.
 
 
 | data
-| ├──raw_datasets < original immutable data dump from HEIMDALL
-| |  ├──all_shots.pickle
-| ├──processed  < final, canonical datasets for modeling
+| ├── raw_datasets < original immutable data dump from HEIMDALL
+| |  ├── all_shots.pickle
+| ├── processed  < final, canonical datasets for modeling
 
 
 
@@ -32,13 +32,13 @@ Relevant JETDSP info:
 
 .. code-block:: python
 
-  {'pulse_1': {'inputs': {'BT': {'values': np.array, 'time': np.array},
+  {'79100': {'inputs': {'BT': {'values': np.array, 'time': np.array},
                           'IP': {'values': np.array, 'time': np.array}, ...}
-              'outputs': {'time': {'R': np.array, 'neped'}}
+              'outputs': {'time': np.array, 'radius': np.array, 'NE': 2D np.array, 'DNE': 2D np.array }
               },
-  'pulse_2': {'inputs': {'BT': {'values': np.array, 'time': np.array},
+  '79103': {'inputs': {'BT': {'values': np.array, 'time': np.array},
                           'IP': {'values': np.array, 'time': np.array}, ...}
-              'outputs': {'time': np.array, 'NE': 2D np.array, 'DNE': 2d np.array}
+              'outputs': {'time': np.array, 'radius': np.array, 'NE': 2D np.array, 'DNE': 2d np.array}
               },
               }
 

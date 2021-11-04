@@ -27,4 +27,5 @@ class Feature:
 @dataclass
 class Profile:
     values: List
+    errors: List
     time: float # The time value for the given profile

@@ -17,6 +17,7 @@ To do this, for each pulse, we need:
 The strohman problem would be:
 
 Train on a pulse by pulse basis:
+
 #. Starting from boundrary condition and feature window, predict t=1
 #. Use prediction and next feature window to predict t=2
 #. Use prediction from t=1, next feature window to predict t=3

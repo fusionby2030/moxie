@@ -48,6 +48,7 @@ def get_shots_with_hrts_data(pulses):
 def window_col(ne_time, input_values, input_time, tau=0.07):
     windowed_co = np.zeros_like(ne_time)
 
+
     for t in range(len(ne_time)):
 
         pass
