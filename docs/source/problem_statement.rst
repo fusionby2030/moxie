@@ -22,14 +22,16 @@ Power Balance Method extended
 
 To do this, for each pulse, we need: 
 
-*. nesep at the 701 time steps
-        *. HRTS fit of temperature and density 
-        *. Find Te = 100eV of temperature, that is position of separatrix 
-        *. get ne at that position
+*. nesep at the 701 time steps 
+        *. Find datapoints around Te = 100eV
+        *. The mean radius of those points is then the position of separatrix 
+        *. get ne at that position by averaging the points around the separatrix 
         *. ????? 
         *. Profit 
 *. For each time step, window the inputs to feed to an RNN. 
 
+
+To check that we get the correct nesep values, we can check with the JET pedestal database for time windows given. 
 
 
 Density Profile Prediction
