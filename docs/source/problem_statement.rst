@@ -1,41 +1,43 @@
 Problem Statements
 ===================================
 
+There are various problems we can solve using the large number of pulses contained. 
+The first is the density at the separatrix, then general profile predictions. 
 
 Separatrix Density Prediction
-========
+------
 
 JET pedestal DB Method (Power Balance)
----------
+~~~~~
 
 Simply fit a regressor using the JET pedestal database to predict nesep from main eng. params. 
 
 
 Power Balance Method extended
-----
+~~~~~
 
-*. We have pulses 
-*. Pulses consist of radial density and temperature profiles for 701 time steps
-*. Also consist of feature profiles along the given time steps 
-*. We want to feed previous feature profiles to predict the nesep in a time evolving maner 
+* We have pulses 
+* Pulses consist of radial density and temperature profiles for 701 time steps
+* Also consist of feature profiles along the given time steps 
+* We want to feed previous feature profiles to predict the nesep in a time evolving maner 
 
 
 To do this, for each pulse, we need: 
 
-*. nesep at the 701 time steps 
-        *. Find datapoints around Te = 100eV
-        *. The mean radius of those points is then the position of separatrix 
-        *. get ne at that position by averaging the points around the separatrix 
-        *. ????? 
-        *. Profit 
-*. For each time step, window the inputs to feed to an RNN. 
+* nesep at the 701 time steps 
+        * Find datapoints around Te = 100eV
+        * The mean radius of those points is then the position of separatrix 
+        * get ne at that position by averaging the points around the separatrix 
+        * ????? 
+        * Profit 
+* For each time step, window the inputs to feed to an RNN. 
 
 
 To check that we get the correct nesep values, we can check with the JET pedestal database for time windows given. 
 
 
 Density Profile Prediction
-========
+-----
 
 #. We have pulses.
 #. Pulses consist of radial density profiles for 701 time steps
@@ -50,7 +52,8 @@ To do this, for each pulse, we need:
 
 **Boundrary (or initial) condition**: Profile at t=0 is the initial density profile that has feature points contained in the temporal window behind it
 
-The strohman problem would be:
+Srohman Method 
+~~~~~
 
 Train on a pulse by pulse basis:
 
@@ -58,6 +61,10 @@ Train on a pulse by pulse basis:
 #. Use prediction and next feature window to predict t=2
 #. Use prediction from t=1, next feature window to predict t=3
 #. Repeat,
+
+
+Extended Strohman method 
+~~~~~
 
 A variation would be to either vary:
 
