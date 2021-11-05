@@ -1,5 +1,39 @@
-Problem Statement
+Problem Statements
 ===================================
+
+
+Separatrix Density Prediction
+========
+
+JET pedestal DB Method (Power Balance)
+---------
+
+Simply fit a regressor using the JET pedestal database to predict nesep from main eng. params. 
+
+
+Power Balance Method extended
+----
+
+*. We have pulses 
+*. Pulses consist of radial density and temperature profiles for 701 time steps
+*. Also consist of feature profiles along the given time steps 
+*. We want to feed previous feature profiles to predict the nesep in a time evolving maner 
+
+
+To do this, for each pulse, we need: 
+
+*. nesep at the 701 time steps
+        *. HRTS fit of temperature and density 
+        *. Find Te = 100eV of temperature, that is position of separatrix 
+        *. get ne at that position
+        *. ????? 
+        *. Profit 
+*. For each time step, window the inputs to feed to an RNN. 
+
+
+
+Density Profile Prediction
+========
 
 #. We have pulses.
 #. Pulses consist of radial density profiles for 701 time steps
