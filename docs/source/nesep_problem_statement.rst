@@ -1,29 +1,30 @@
-Problem Statements
+Nesep Problem Statement (OLD)
 ===================================
 
-There are various problems we can solve using the large number of pulses contained. 
-The first is the density at the separatrix, then general profile predictions. 
+There are various problems we can solve using the large number of pulses contained.
+The first is the density at the separatrix, then general profile predictions.
+
 
 Separatrix Density Prediction
 ------
 
-JET pedestal database method (PSI Abstract)
+JET pedestal database method
 ~~~~~
 
-The JET ped database contains time averaged (between t1 and t2) pulses with corresponding values for nesep. 
-The values are calculated using 2-point method, where T(Rsep) = 100eV is assumed and the profiles are shifted to have nesep at the corresponding Rsep. Using these pulses, we can extract the profiles that were averaged (between t1 and t2) and assign the value of nesep to them, building a supervised learning dataset, with input -> ne profile, output -> nesep. To ensure not complete overfitting in the 300 values of nesep. Some variations can be done to make the experiment more robust. 
+The JET ped database contains time averaged (between t1 and t2) pulses with corresponding values for nesep.
+The values are calculated using 2-point method, where T(Rsep) = 100eV is assumed and the profiles are shifted to have nesep at the corresponding Rsep. Using these pulses, we can extract the profiles that were averaged (between t1 and t2) and assign the value of nesep to them, building a supervised learning dataset, with input -> ne profile, output -> nesep. To ensure not complete overfitting in the 300 values of nesep. Some variations can be done to make the experiment more robust.
 
-#. The profiles that range for t1 to t2 can be assigned different values of nesep, which could be sampled from a gaussian distribution with mean of the time averaged (database value) of nesep, and width of standard deviation of time averaged value of nesep (database value of error). 
+#. The profiles that range for t1 to t2 can be assigned different values of nesep, which could be sampled from a gaussian distribution with mean of the time averaged (database value) of nesep, and width of standard deviation of time averaged value of nesep (database value of error).
 #. We can feed both the ne and te profiles to determine nesep
 
 
-To do this, we will need to construct the supervised learning dataset. 
+To do this, we will need to construct the supervised learning dataset.
 
-* |check| Gather pulses from JET pedestal database (ne, te profiles for each pulse) 
+* |check| Gather pulses from JET pedestal database (ne, te profiles for each pulse)
 * |check| Cut pulse profiles between the t1, t2 for corresponding entry in JET PDB
-* |check| Make list of X, y, with X list of neped profiles, y list of corresponding neseps 
+* |check| Make list of X, y, with X list of neped profiles, y list of corresponding neseps
 
-This is stored in the raw folder! 
+This is stored in the raw folder!
 
 Now we will feed this into a model, to be determined later...
 
@@ -31,24 +32,24 @@ Using the inputs Method
 ~~~~~
 
 
-* We have pulses 
+* We have pulses
 * Pulses consist of radial density and temperature profiles for 701 time steps
-* Also consist of feature profiles along the given time steps 
-* We want to feed previous feature profiles to predict the nesep in a time evolving maner 
+* Also consist of feature profiles along the given time steps
+* We want to feed previous feature profiles to predict the nesep in a time evolving maner
 
 
-To do this, for each pulse, we need: 
+To do this, for each pulse, we need:
 
-* nesep at the 701 time steps 
+* nesep at the 701 time steps
         * Find datapoints around Te = 100eV
-        * The mean radius of those points is then the position of separatrix 
-        * get ne at that position by averaging the points around the separatrix 
-        * ????? 
-        * Profit 
-* For each time step, window the inputs to feed to an RNN. 
+        * The mean radius of those points is then the position of separatrix
+        * get ne at that position by averaging the points around the separatrix
+        * ?????
+        * Profit
+* For each time step, window the inputs to feed to an RNN.
 
 
-To check that we get the correct nesep values, we can check with the JET pedestal database for time windows given. 
+To check that we get the correct nesep values, we can check with the JET pedestal database for time windows given.
 
 
 Density Profile Prediction
@@ -67,7 +68,7 @@ To do this, for each pulse, we need:
 
 **Boundrary (or initial) condition**: Profile at t=0 is the initial density profile that has feature points contained in the temporal window behind it
 
-Srohman Method 
+Srohman Method
 ~~~~~
 
 Train on a pulse by pulse basis:
@@ -78,7 +79,7 @@ Train on a pulse by pulse basis:
 #. Repeat,
 
 
-Extended Strohman method 
+Extended Strohman method
 ~~~~~
 
 A variation would be to either vary:
