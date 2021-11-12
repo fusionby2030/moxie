@@ -13,6 +13,6 @@ Contents
 
 .. toctree::
 
+   predicting_profiles
    data
-   profile_problem_statment
    nesep_problem_statement
