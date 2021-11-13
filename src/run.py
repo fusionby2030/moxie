@@ -12,17 +12,18 @@ from pytorch_lightning.loggers import TensorBoardLogger
 generator=torch.Generator().manual_seed(42)
 
 logger = TensorBoardLogger("tb_logs", name="my_model")
-params = {'LR': 0.0005, 'weight_decay': 0.00001, 'batch_size': 512, 'hidden_dims': [128, 256, 512, 1024]}
+params = {'LR': 0.0002, 'weight_decay': 0.000, 'batch_size': 512}
 
-from models.VAE import VanillaVAE
-model = VanillaVAE(in_dim=63, latent_dim=5)
+# from models.VAE import VanillaVAE
+from models.ConVae import CNNVAE
+model = CNNVAE(in_dim=63, latent_dim=12, hidden_dims = [2, 4, 8, 16])
 
 experiment = VAExperiment(model, params)
 
-trainer_params = {'max_epochs': 15}
+trainer_params = {'max_epochs': 50}
 runner = pl.Trainer(logger=logger, **trainer_params)
 
-datacls = DataModuleClass(**params)
+datacls = DataModuleClass(**params, conv=True)
 runner.fit(experiment, datacls)
 
 datacls.setup(stage="test")

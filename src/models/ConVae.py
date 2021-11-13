@@ -7,6 +7,23 @@ from .base import BaseVAE
 Tensor = TypeVar('torch.tensor')
 
 
+class Flatten(nn.Module):
+    def forward(self, input):
+        return input.view(input.size(0), -1)
+
+
+class UnFlatten(nn.Module):
+    def __init__(self, size):
+        super(UnFlatten, self).__init__()
+        self.size = size
+
+    def forward(self, input):
+
+        out = input.view(input.size(0), self.size, 63)
+        return out
+
+
+
 class CNNVAE(BaseVAE):
     """ Will be a vanilla feed forward VAE """
     def __init__(self, in_dim: int, latent_dim: int, hidden_dims: List=None, **kwargs) -> None:
@@ -20,40 +37,49 @@ class CNNVAE(BaseVAE):
 
         if hidden_dims is None:
             hidden_dims = [4, 8, 16]
-
         # Encoder
 
         for h_dim in hidden_dims:
             modules.append(nn.Sequential(
-                nn.Conv1d(in_channels=start_k, out_channels=h_dim, kernel_size=1),
+                nn.Conv1d(in_channels=start_k, out_channels=h_dim, kernel_size=3, stride=1, padding='same'),
                 nn.BatchNorm1d(h_dim),
                 nn.LeakyReLU()
             ))
             start_k = h_dim
 
+        modules.append(Flatten())
+
         self.encoder = nn.Sequential(*modules)
-        self.fc_mu = nn.Linear(hidden_dims[-1], latent_dim)
-        self.fc_var = nn.Linear(hidden_dims[-1], latent_dim)
+        self.fc_mu = nn.Linear(hidden_dims[-1] * in_dim, latent_dim)
+        self.fc_var = nn.Linear(hidden_dims[-1] * in_dim, latent_dim)
 
         # Decoder
 
         modules = []
 
-        self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1])
+        self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1]*in_dim)
+
+        modules.append(UnFlatten(size=hidden_dims[-1]))
 
         hidden_dims.reverse()
-        # Encoder
+
+        hidden_dims.append(1)
+
         for i in range(len(hidden_dims) - 1):
             modules.append(nn.Sequential(
-                nn.ConvTranspose1d(in_channels=hidden_dims[i], out_channels=hidden_dims[i+1], kernel_size=3),
-                nn.BatchNorm1d(hidden_dims[i]),
+                nn.ConvTranspose1d(in_channels=hidden_dims[i], out_channels=hidden_dims[i+1], kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm1d(hidden_dims[i+1]),
                 nn.LeakyReLU()
             ))
 
         self.decoder = nn.Sequential(*modules)
 
-        self.final_layer = nn.Linear(hidden_dims[-1], out_dim)
-
+        self.final_layer = nn.Sequential(
+                            nn.Linear(in_dim, in_dim),
+                            nn.ReLU(),
+                            nn.Dropout(0.15),
+                            nn.Linear(63, 63),
+                            nn.Sigmoid())
 
     def encode(self, input: Tensor) -> List[Tensor]:
         """Encodes the input and returns latent codes"""
@@ -65,7 +91,6 @@ class CNNVAE(BaseVAE):
 
     def decode(self, z: Tensor) -> Tensor:
         """ Maps latent codes into profile space """
-
         result = self.decoder_input(z)
         result = self.decoder(result)
         result = self.final_layer(result)

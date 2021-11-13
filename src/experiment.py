@@ -33,7 +33,6 @@ class VAExperiment(pl.LightningModule):
         train_loss = self.model.loss_function(*results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.train_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx)
 
         self.logger.log_metrics({key: val.item() for key, val in train_loss.items()})
-        # self.sample_profiles()
         return train_loss
 
     def validation_step(self, batch, batch_idx, optimizer_idx=0):
@@ -75,6 +74,7 @@ class VAExperiment(pl.LightningModule):
 
     def sample_profiles(self):
         test_input, test_label = next(iter(self.trainer.datamodule.test_dataloader()))
+
         data = self.model.forward(test_input)
         avg_loss = self.model.loss_function(*data, M_N = self.params['batch_size']/ len(self.trainer.datamodule.test_dataloader()))
         recons, input, mu, logvar = data
@@ -85,9 +85,13 @@ class VAExperiment(pl.LightningModule):
             ax = fig.add_subplot(gs[i], sharey=ax)
             data = [recons[i], input[i], mu, logvar]
             avg_loss = self.model.loss_function(*data, M_N = self.params['batch_size']/ len(self.trainer.datamodule.test_dataloader()))
+            if len(test_input.shape) == 3:
+                input = input.squeeze()
+                recons= recons.squeeze()
+            # print(recons.shape)
             ax.set_title('Recon: {:.4}'.format(avg_loss['Reconstruction_Loss']))
-            ax.plot(recons[i], label='Generated')
-            ax.plot(test_input[i], label='Real')
+            ax.plot(recons[i]*self.trainer.datamodule.max_X, label='Generated')
+            ax.plot(input[i]*self.trainer.datamodule.max_X, label='Real')
 
         plt.legend()
         plt.show()

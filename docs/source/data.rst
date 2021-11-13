@@ -8,7 +8,23 @@ This subdirectory contains the various forms of datasets used in the analysis.
 | ├── raw_datasets < original immutable data dump from HEIMDALL
 | |  ├── all_shots.pickle
 | ├── processed  < final, canonical datasets for modeling
+| |  ├── pedestal_profile_dataset_v1.pickle
 
+
+Processed
+----------
+We can convert the massive dictionary to ML readable formats.
+
+* An HD5Y File, which currently has one group, `strohman`, with two datasets
+
+  * `X`: has the 82557 density profiles
+  * `y`: Has the mean machine parameter value across time window (same for each pulse profile)
+    * Order of the parameters: `['Q95', 'RGEO', 'CRO', 'VOLM', 'TRIU', 'TRIL', 'XIP', 'ELON', 'POHM', 'BT', 'ELER', 'P_NBI', 'P_ICRH']`
+
+
+TBD: Add temperature to the mix
+There is a problem in that the temporal resolution of neped does not exactly align with that of the other input parameters.
+So we need to do some windowing technique.
 
 
 Raw Datasets
@@ -18,7 +34,7 @@ Raw Datasets
 
 - Maybe start looking at unvalidated?
 
-Stored in the following raw format: 
+Stored in the following raw format:
 
 .. code-block:: python
 
@@ -79,12 +95,3 @@ Output Profiles
   - This changes depending on the pulse
 
 Shape is (701, 63) for each pulse, where 701 and 63 are the temporal and spatial resolution respectively.
-
-
-
-Processed
-----------
-We can convert the massive dictionary to ML readable formats.
-
-There is a problem in that the temporal resolution of neped does not exactly align with that of the other input parameters.
-So we need to do some windowing technique.

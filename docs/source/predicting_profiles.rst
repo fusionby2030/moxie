@@ -22,6 +22,25 @@ Accomplished
 ~~~~~
 
 * Vanilla VAE's that can generate profiles.
+* Vanilla Convoluitonal VAE's
+
+TODO's
+~~~~~
+
+#. Splitting of the dataset in the HD5Y file, such that each group has a subgroup of train-val-test.
+
+  #. Rework Dataclass, since splitting is already done
+
+#. Rework ConvVAE to be able to take both Te and Ne profiles
+
+  #. Rework Experiment class to be able to plot Te from given Ne
+
+#. Add Model Documentation
+  #. Vanilla FF VAE
+  #. ConvVAE
+
+#. Add General Documentation, which will require going through pytorch lightning
+  #. Logger?
 
 Dataset(s)
 ---------
@@ -36,6 +55,7 @@ The code for this section is found in :file:`/src/data/`
 
   * Use time windows outside of those found in the JET DSP
   * Still use the same pulses found in the DB, but this will include L-mode, as well as L-H mode transition profiles
+
 #. All HRTS validated shots >= 79000
 
   * Yeah. Big data energy.
@@ -53,6 +73,7 @@ We will take temperature and density profiles from HRTS scans, as well as the ma
     * Each control parameters is a dictionary, with keys `'values', 'time'`
   * Outputs is a dictionary with keys `'NE', 'DNE', 'DTE', 'TE', 'radius', 'time'`
   * If you know you know
+  
 #. 82557 total profiles from 2176 HRTS validated pulses found in JPDB (see :file:`/src/data/create_psi_database.ipynb`)
 
   * These are then stored in an HD5Y file
