@@ -47,16 +47,17 @@ Dataset(s)
 
 The code for this section is found in :file:`/src/data/`
 
-#. JET Pedestal Database (JPDB)
+1. JET Pedestal Database (JPDB)
 
   * We use the entries found in the established DB between the time averaged windows given.
   * These are all flat top H-mode entries
-#. Extension of JPDB
+
+2. Extension of JPDB
 
   * Use time windows outside of those found in the JET DSP
   * Still use the same pulses found in the DB, but this will include L-mode, as well as L-H mode transition profiles
 
-#. All HRTS validated shots >= 79000
+3. All HRTS validated shots >= 79000
 
   * Yeah. Big data energy.
 
@@ -65,7 +66,7 @@ Description of Datasets
 
 We will take temperature and density profiles from HRTS scans, as well as the machine control parameters for the entire duration of the pulse. Additionally, we can grab any and all diagnostic equipment we may like.
 
-#. We initially grabbed all HRTS validated shots with shot number >= 79000.
+1. We initially grabbed all HRTS validated shots with shot number >= 79000.
 
   * These are stored in dictionary format in a pickle file. If you have the file, then each key in the dictionary is a pulse number
   * Each pulse is another dicitonary with keys: `'inputs', 'outputs'`
@@ -73,10 +74,22 @@ We will take temperature and density profiles from HRTS scans, as well as the ma
     * Each control parameters is a dictionary, with keys `'values', 'time'`
   * Outputs is a dictionary with keys `'NE', 'DNE', 'DTE', 'TE', 'radius', 'time'`
   * If you know you know
-  
-#. 82557 total profiles from 2176 HRTS validated pulses found in JPDB (see :file:`/src/data/create_psi_database.ipynb`)
+
+2. 82557 total profiles from 2176 HRTS validated pulses found in JPDB (see :file:`/src/data/create_psi_database.ipynb`)
 
   * These are then stored in an HD5Y file
+  * The (current, V3) HD5Y file is organized into two data groups: `'strohman' and 'density_and_temperature'`
+  * There is additionally the `'meta'` group, which has `'pulse_list', 'y_column_names'` which store arrays regarding which pulses and what the columns of the y vector relate to.
+  * These two groups are structured with three subgroups: `'train', 'valid', 'test'`
+  * Each subgroup has 2 datasets:   `'X', 'y'`, where `'X'` has the inputs (profiles) and `'y'` has the machine parameters and nesep
+
+Example of accessing the 2 channel density and temperature profile looks like this:
+
+::
+  with h5py.File('../processed/pedestal_profile_dataset_v3.hdf5', 'r') as file:
+  group = file['density_and_temperature']
+  X_train, y_train = group['train']['X'][:], group['train']['y'][:]
+  X_test, y_test = ...
 
 
 Data-splitting
@@ -84,8 +97,7 @@ Data-splitting
 
 For each pulse, we should take 70% of the profiles for training, 10% for validation, and 20% for testing. This will ensure that each pulse is represented in each dataset.
 
-* TBD: To be included in the HD5Y File, s.t., there are three groups: train, val and test.
-
+See above
 
 Preprocessing and DataClasses
 ~~~~~
