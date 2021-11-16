@@ -6,8 +6,13 @@ from torch.utils.data import random_split, DataLoader, Dataset
 import pytorch_lightning as pl
 
 import h5py
+
+
+
+
+
 class DS(Dataset):
-    def __init__(self, X, y, conv=True):
+    def __init__(self, X, y, problem='strohman'):
         if not torch.is_tensor(X):
             self.X = torch.from_numpy(X)
         else:
@@ -17,8 +22,7 @@ class DS(Dataset):
         else:
             self.y = y
 
-        # print(self.X.unsqueeze(1).shape)
-        if conv and len(self.X.shape) != 3:
+        if problem == 'strohman':
             self.X = self.X.unsqueeze(1)
 
     def __len__(self):
@@ -28,42 +32,58 @@ class DS(Dataset):
         return self.X[idx], self.y[idx]
 
 class DataModuleClass(pl.LightningDataModule):
-  def __init__(self, **params):
-      super().__init__()
-      self.batch_size = params['batch_size']
+    """
+    The Data Module Class, which will help with our data loading needs
 
-  def prepare_data(self):
-      with h5py.File('/home/kitadam/ENR_Sven/moxie/data/processed/pedestal_profile_dataset_v2.hdf5', 'r') as file:
-          X, y = file['strohman']['X'][:], file['strohman']['y'][:]
+    Necessary Params to pass within the params dictionary:
+        batch_size: (int), what the batch size of the dataloaders is
+        num_workers: (int), if doing MP for dataloading, specify how many cpus will be used
+        data_dir: (string) where is the file with the train-val-test data
+        problem: (string), depends on data, but can be either 'strohman' or 'density_and_temperature'
+    """
+
+    def __init__(self, data_dir: str = '../processed/pedestal_profile_dataset_v3.hdf5', num_workers: int =1, batch_size: int = 512, **params):
+        super().__init__()
+        self.batch_size = batch_size
+        self.file_loc = data_dir
+        self.num_workers = num_workers
+        if 'problem' in params.keys():
+            self.problem = params['problem']
+        else:
+            self.problem = 'strohman'
+
+    def prepare_data(self):
+        with h5py.File(self.file_loc, 'r') as file:
+            group = file[self.problem]
+            X_train, y_train = group['train']['X'][:], group['train']['y'][:]
+            X_val, y_val = group['valid']['X'][:], group['valid']['y'][:]
+            X_test, y_test = group['test']['X'][:], group['test']['y'][:]
 
 
-      self.X, self.y = torch.from_numpy(X), torch.from_numpy(y)
-      # self.val_set =  DS(X_val, y_val, custom_scale=train_set.max_X)
+        self.X_train, self.y_train = torch.from_numpy(X_train), torch.from_numpy(y_train)
+        self.X_val, self.y_val = torch.from_numpy(X_val), torch.from_numpy(y_val)
+        self.X_test, self.y_test = torch.from_numpy(X_test), torch.from_numpy(y_test)
 
-  def setup(self,stage=None):
-      data = (self.X, self.y)
-      # train_size = int(0.75*len(self.X))
-      # val_size = len(self.X) - train_size
-      X_train, X_test, y_train, y_test = train_test_split(self.X, self.y, random_state=30)
-      X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, random_state=30)
-      self.max_X = torch.max(X_train)
-      if len(self.X.shape) == 3:
-          X_train[:, 0] = (X_train[:, 0] / self.max_X)
-          X_val[:, 0] = (X_val[:, 0] / self.max_X)
-          X_test[:, 0] = (X_test[:, 0] / self.max_X)
-      else:
-          X_train, y_train = (X_train / self.max_X), y_train
-          X_val, y_val = (X_val / self.max_X), y_val
-          X_test, y_test = (X_test / self.max_X), y_test
-      self.train_set = DS(X_train, y_train,)
-      self.val_set = DS(X_val, y_val)
-      self.test_set = DS(X_test, y_test)
+    def setup(self,stage=None):
 
-  def train_dataloader(self):
-      return DataLoader(self.train_set, batch_size=self.batch_size, num_workers=4, shuffle=True)
+        self.max_X = torch.max(self.X_train)
+        if len(self.X_train.shape) == 3:
+            self.X_train[:, 0] = (X_train[:, 0] / self.max_X)
+            self.X_val[:, 0] = (X_val[:, 0] / self.max_X)
+            self.X_test[:, 0] = (X_test[:, 0] / self.max_X)
+        else:
+            self.X_train, self.y_train = (self.X_train / self.max_X), self.y_train
+            self.X_val, self.y_val = (self.X_val / self.max_X), self.y_val
+            self.X_test, self.y_test = (self.X_test / self.max_X), self.y_test
+        self.train_set = DS(self.X_train, self.y_train, self.problem)
+        self.val_set = DS(self.X_val, self.y_val, self.problem)
+        self.test_set = DS(self.X_test, self.y_test, self.problem)
 
-  def val_dataloader(self):
-      return DataLoader(self.val_set, batch_size=self.batch_size, num_workers=4)
+    def train_dataloader(self):
+        return DataLoader(self.train_set, batch_size=self.batch_size, num_workers=4, shuffle=True)
 
-  def test_dataloader(self):
-      return DataLoader(self.test_set, batch_size=self.batch_size, num_workers=4)
+    def val_dataloader(self):
+        return DataLoader(self.val_set, batch_size=self.batch_size, num_workers=4)
+
+    def test_dataloader(self):
+        return DataLoader(self.test_set, batch_size=self.batch_size, num_workers=4)

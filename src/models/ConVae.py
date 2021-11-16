@@ -26,17 +26,17 @@ class UnFlatten(nn.Module):
 
 class CNNVAE(BaseVAE):
     """ Will be a vanilla feed forward VAE """
-    def __init__(self, in_dim: int, latent_dim: int, hidden_dims: List=None, **kwargs) -> None:
+    def __init__(self, in_ch: int, latent_dim: int, hidden_dims: List=None, out_dim: int = 63, **kwargs) -> None:
         super(CNNVAE, self).__init__()
 
         self.latent_dim = latent_dim
 
-        out_dim = in_dim
+        in_dim = out_dim
         start_k = 1
         modules = []
 
         if hidden_dims is None:
-            hidden_dims = [4, 8, 16]
+            hidden_dims = [4, 8, 16, 32]
         # Encoder
 
         for h_dim in hidden_dims:
@@ -63,23 +63,21 @@ class CNNVAE(BaseVAE):
 
         hidden_dims.reverse()
 
-        hidden_dims.append(1)
+        hidden_dims.append(in_ch)
 
         for i in range(len(hidden_dims) - 1):
             modules.append(nn.Sequential(
                 nn.ConvTranspose1d(in_channels=hidden_dims[i], out_channels=hidden_dims[i+1], kernel_size=3, stride=1, padding=1),
                 nn.BatchNorm1d(hidden_dims[i+1]),
-                nn.LeakyReLU()
+                nn.Sigmoid()
             ))
 
         self.decoder = nn.Sequential(*modules)
 
         self.final_layer = nn.Sequential(
-                            nn.Linear(in_dim, in_dim),
-                            nn.ReLU(),
-                            nn.Dropout(0.15),
-                            nn.Linear(63, 63),
-                            nn.Sigmoid())
+
+                            nn.Linear(out_dim, out_dim),
+                            )
 
     def encode(self, input: Tensor) -> List[Tensor]:
         """Encodes the input and returns latent codes"""

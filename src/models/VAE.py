@@ -13,6 +13,7 @@ class VanillaVAE(BaseVAE):
     def __init__(self, in_dim: int, latent_dim: int, hidden_dims: List=None, **kwargs) -> None:
         super(VanillaVAE, self).__init__()
 
+        self.kld_weight = 0.0001
         self.latent_dim = latent_dim
 
         out_dim = in_dim
@@ -98,13 +99,13 @@ class VanillaVAE(BaseVAE):
         mu = args[2]
         log_var = args[3]
 
-        kld_weight = 0.001 # kwargs['M_N'] # Account for the minibatch samples from the dataset
+        # kld_weight = 0.001 # kwargs['M_N'] # Account for the minibatch samples from the dataset
         recons_loss =F.mse_loss(recons, input)
 
 
         kld_loss = torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim = 1), dim = 0)
 
-        loss = recons_loss * kwargs['M_N'] + kld_weight * kwargs['M_N'] * kld_loss
+        loss = recons_loss * kwargs['M_N'] + self.kld_weight * kwargs['M_N'] * kld_loss
         return {'loss': loss, 'Reconstruction_Loss':recons_loss, 'KLD':-kld_loss}
 
     def sample(self,

@@ -21,26 +21,22 @@ Goals
 Accomplished
 ~~~~~
 
-* Vanilla VAE's that can generate profiles.
+* Vanilla VAE's
 * Vanilla Convoluitonal VAE's
 
 TODO's
 ~~~~~
 
-#. Splitting of the dataset in the HD5Y file, such that each group has a subgroup of train-val-test.
+1. Rework ConvVAE to be able to take both Te and Ne profiles
 
-  #. Rework Dataclass, since splitting is already done
+  * Rework Experiment class to be able to plot Te from given Ne for test set
 
-#. Rework ConvVAE to be able to take both Te and Ne profiles
+2. Add Model Documentation
+  * Vanilla FF VAE
+  * ConvVAE
 
-  #. Rework Experiment class to be able to plot Te from given Ne
-
-#. Add Model Documentation
-  #. Vanilla FF VAE
-  #. ConvVAE
-
-#. Add General Documentation, which will require going through pytorch lightning
-  #. Logger?
+3. Add General Documentation, which will require going through pytorch lightning
+  * Logger?
 
 
 Models
@@ -48,14 +44,15 @@ Models
 
 All models are found in the :file:`src/models/` and are written with pytorch.
 
-#. Vanilla VAE
+1. Vanilla VAE
 
   * Simple fully connected linear layer model
   * TBD: Activation function
   * TBD: KL-Div weighting hyperparam for loss function, as it needs to be quite small or else the recon loss dominates and the model just spits out the (literal) average profile found in the training set
-#. Convolutional VAE
 
-  * TBD: Everything!
+2. Convolutional VAE
+
+  * TBD: Variable stride
 
 
 Experiments
