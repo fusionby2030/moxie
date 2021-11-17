@@ -58,7 +58,8 @@ We will take temperature and density profiles from HRTS scans, as well as the ma
 
 Example of accessing the 2 channel density and temperature profile looks like this:
 
-::
+.. code-block:: python
+
   with h5py.File('../processed/pedestal_profile_dataset_v3.hdf5', 'r') as file:
   group = file['density_and_temperature']
   X_train, y_train = group['train']['X'][:], group['train']['y'][:]

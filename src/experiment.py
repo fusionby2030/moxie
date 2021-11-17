@@ -11,6 +11,13 @@ from matplotlib.gridspec import GridSpec
 
 from models.VAE import BaseVAE
 
+
+activation = {}
+def get_activation(name):
+    def hook(model, input, output):
+        activation[name] = output.detach()
+    return hook
+
 class VAExperiment(pl.LightningModule):
 
     def __init__(self, vae_model: BaseVAE, params: dict) -> None:
@@ -73,7 +80,7 @@ class VAExperiment(pl.LightningModule):
 
         return val_loss
 
-    def validation_end(self, outputs):
+    def validation_epoch_end(self, outputs):
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
         avg_recon_loss = torch.stack([x['Reconstruction_Loss'] for x in outputs]).mean()
         avg_KLD_loss = torch.stack([x['KLD'] for x in outputs]).mean()
@@ -83,7 +90,10 @@ class VAExperiment(pl.LightningModule):
         self.logger.experiment.add_scalar('ReconLoss/Valid', avg_recon_loss, self.current_epoch)
         self.logger.experiment.add_scalar('KLDLoss/Valid', avg_KLD_loss, self.current_epoch)
 
-        return {'val_loss': avg_loss, 'log': tensorboard_logs}
+        self.log("hp/final_loss", avg_loss, on_epoch=True)
+        self.log("hp_metric", avg_loss, on_epoch=True)
+        self.log("hp/recon", avg_recon_loss, on_epoch=True)
+        # return {'val_loss': avg_loss, 'log': tensorboard_logs}
 
     def test_step(self, batch, batch_idx, optimizer_idx=0):
 
@@ -91,7 +101,7 @@ class VAExperiment(pl.LightningModule):
         self.current_device = real_profile.device
 
         # Log the computational Graph!
-        self.logger.experiment.add_graph(self.model, real_profile)
+        # self.logger.experiment.add_graph(self.model, real_profile)
 
         results = self.forward(real_profile, labels=labels)
         test_loss = self.model.loss_function(*results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.test_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx)
@@ -99,15 +109,12 @@ class VAExperiment(pl.LightningModule):
         return test_loss
 
     def test_epoch_end(self, outputs):
+        self.custom_visualize()
         self.sample_profiles()
 
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
         avg_recon_loss = torch.stack([x['Reconstruction_Loss'] for x in outputs]).mean()
         tensorboard_logs = {'avg_val_loss': avg_loss}
-
-        self.log("hp/final_loss", avg_loss)
-        self.log("hp_metric", avg_loss)
-        self.log("hp/recon", avg_recon_loss)
 
 
     def configure_optimizers(self):
@@ -119,6 +126,18 @@ class VAExperiment(pl.LightningModule):
                                lr=self.params['LR'],
                                weight_decay=self.params['weight_decay'])
         return optimizer
+
+    def custom_visualize(self):
+        self.model.conv1.register_forward_hook(get_activation('conv1'))
+        test_input, test_label = next(iter(self.trainer.datamodule.test_dataloader()))
+
+        data = self.model.forward(test_input)
+        act = activation['conv1'].squeeze()
+        fig, axarr = plt.subplots(4)
+        for idx in range(4):
+            axarr[idx].plot(act[idx])
+        plt.show()
+
 
     def custom_histogram(self):
         for name, params in self.named_parameters():
