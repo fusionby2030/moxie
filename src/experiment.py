@@ -93,7 +93,7 @@ class VAExperiment(pl.LightningModule):
         self.log("hp/final_loss", avg_loss, on_epoch=True)
         self.log("hp_metric", avg_loss, on_epoch=True)
         self.log("hp/recon", avg_recon_loss, on_epoch=True)
-        # return {'val_loss': avg_loss, 'log': tensorboard_logs}
+        self.logger.experiment.add_scalar("weighting_factor", self.model.beta * self.model.num_iter / (self.model.gamma), self.current_epoch)
 
     def test_step(self, batch, batch_idx, optimizer_idx=0):
 
@@ -109,7 +109,6 @@ class VAExperiment(pl.LightningModule):
         return test_loss
 
     def test_epoch_end(self, outputs):
-        self.custom_visualize()
         self.sample_profiles()
 
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
@@ -126,17 +125,6 @@ class VAExperiment(pl.LightningModule):
                                lr=self.params['LR'],
                                weight_decay=self.params['weight_decay'])
         return optimizer
-
-    def custom_visualize(self):
-        self.model.conv1.register_forward_hook(get_activation('conv1'))
-        test_input, test_label = next(iter(self.trainer.datamodule.test_dataloader()))
-
-        data = self.model.forward(test_input)
-        act = activation['conv1'].squeeze()
-        fig, axarr = plt.subplots(4)
-        for idx in range(4):
-            axarr[idx].plot(act[idx])
-        plt.show()
 
 
     def custom_histogram(self):

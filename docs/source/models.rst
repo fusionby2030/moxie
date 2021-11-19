@@ -48,6 +48,6 @@ If we crank up :math:`\beta`, the latent vector changes in the following way:
 
 **THERE IS A PROBLEM**
 
-My implementation only likes small betas....
+My implementation only likes small betas, so we will try to give a small beta to start, then slowly increase it overtime. 
 
 .. [betavae] Beta-vae citation
