@@ -8,15 +8,17 @@ This is a semi-unsupervised learning approach, where we use the profiles to then
 Goals
 ~~~~~
 
-#. Generate density (and tempearture) profiles using VAEs
-#. Encode machine control parameters into the inputs and or latent space (dreaming)
+1. Generate density (and tempearture) profiles using VAEs
+2. Encode machine control parameters into the inputs and or latent space (dreaming)
 
   * Dual headed VAE, with one highway taking inputs, the other taking profiles, then concat before latent space.
   * Entanglement of latent space with inputs? Not sure how this works but sounds fancy
   * Two separate VAEs with entangled latent space, then modular switch encoding components to get input -> profile
-#. Extent machine control parameters + profile inputs into a time evolving predictor
+3. Extent machine control parameters + profile inputs into a time evolving predictor
   * Take previous time step params + profiles to predict next time step profile
-#. Diagnostics as inputs???
+4. Diagnostics as inputs???
+5. Establish physics informed neural networks (PINN)
+   * Requiring plasma edge to have 0 temperature and density (in the loss?) 
 
 Accomplished
 ~~~~~

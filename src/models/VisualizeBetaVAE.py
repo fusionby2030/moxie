@@ -9,8 +9,6 @@ Tensor = TypeVar('torch.tensor')
 
 class Flatten(nn.Module):
     def forward(self, input):
-
-        # print('Flattened Shape', input.view(input.size(0), -1).shape)
         return input.view(input.size(0), -1)
 
 
@@ -21,9 +19,7 @@ class UnFlatten(nn.Module):
         self.length = length
 
     def forward(self, input):
-
         out = input.view(input.size(0), self.size, self.length)
-        # print('UnFlattened Shape', out.shape)
         return out
 
 
@@ -33,6 +29,11 @@ class ConvBlock(nn.Module):
         A convoution block, with form:
         input [BS, in_channel, len] -> [CONV(*N) -> Max Pool] -> output [BS, out_channel, length / max_pool_kernel_size]
 
+
+        The output of a single convolution layer will have the output length of size given by:
+        [((in_length) + 2*padding - (kernel_size - 1)) / stride ]+ 1
+
+        The max pool layer effectlivey halves the size of the input length
         :params:
             :in_channels: input channel size
             :out_channels: output channel size
@@ -53,17 +54,18 @@ class ConvBlock(nn.Module):
 
     def forward(self, x):
         for blc in self.block:
-        #     print('Encoding', blc)
             x = blc(x)
-        # print('Block Done with shape: ', x.shape)
         return x
 
 class TranspConvBlock(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, conv_kernel_size: int, max_pool_kernel_size: int, num_conv_blocks: int = 1):
+    def __init__(self, in_channels: int, out_channels: int, conv_kernel_size: int, num_conv_blocks: int = 1, stride: int = 2, padding: int=1):
         """
         A transpose convoution block, with form:
         input [BS, in_channel, len] -> [TransConv(*N) -> Max Pool] -> output [BS, out_channel, length / max_pool_kernel_size]
 
+        The output of a single tranpose conv layer has the folowing size:
+
+        [(input_size - 1)*stride - 2*padding + (kernel_size -1 ) + 1]
         :params:
             :in_channels: input channel size
             :out_channels: output channel size
@@ -77,33 +79,60 @@ class TranspConvBlock(nn.Module):
 
         self.block = nn.ModuleList()
         for i in range(num_conv_blocks):
-            self.block.append(nn.ConvTranspose1d(in_channels, out_channels, kernel_size=conv_kernel_size, stride=2, padding=1))
+            self.block.append(nn.ConvTranspose1d(in_channels, out_channels, kernel_size=conv_kernel_size, stride=stride, padding=padding))
             self.block.append(nn.ReLU())
             in_channels = out_channels
-        # self.block.append(nn.MaxUnpool1d(max_pool_kernel_size))
 
     def forward(self, x):
         for blc in self.block:
-        #     print('Decoding', blc)
             x = blc(x)
-        # print('Block Done with shape: ', x.shape)
         return x
 
 
+def get_conv_output_size(initial_input_size, number_blocks):
+    out_size = initial_input_size
+    for i in range(number_blocks):
+        out_size = int(out_size / 2)
+    return out_size
+
+def get_trans_output_size(input_size, stride, padding, kernel_size):
+    return (input_size -1)*stride - 2*padding + (kernel_size - 1) +1
+
+def get_final_output(initial_input_size, number_blocks, number_trans_per_block, stride, padding, kernel_size):
+    out_size = initial_input_size
+    for i in range(number_blocks):
+        for k in range(number_trans_per_block):
+            out_size = get_trans_output_size(out_size, stride, padding, kernel_size)
+
+    return out_size
+
 class VisualizeBetaVAE(BaseVAE):
     num_iter = 0
-    def __init__(self, in_ch: int, latent_dim: int, hidden_dims: List=None, out_dim: int = 63, beta: float = 4.0, **kwargs) -> None:
+    def __init__(self, in_ch: int, latent_dim: int, hidden_dims: List=None, out_dim: int = 63, beta: float = 4.0, gamma: float = 0.0001,  loss_type: str = 'B', **kwargs) -> None:
         super(VisualizeBetaVAE, self).__init__()
 
         self.latent_dim = latent_dim
         self.beta = beta
+        # Convolution Layer Params
         num_conv_blocks = 2
+        conv_kernel_size = 3
+        conv_stride = 2
+        conv_padding = 'same'
+
+        # Transpose convolution layer params
         num_trans_conv_blocks = 2
+        trans_kernel_size = 3
         trans_stride = 2
+        trans_padding = 1
+
+
         in_dim = out_dim
         start_k = in_ch
-        self.loss_type = 'B'
-        self.gamma = 1
+        self.loss_type = loss_type
+        self.gamma = gamma
+
+        end_conv_size = get_conv_output_size(63, len(hidden_dims))
+        final_size = get_final_output(end_conv_size, len(hidden_dims), num_trans_conv_blocks, trans_stride, trans_padding, trans_kernel_size)
 
         # Encoder
         modules = nn.ModuleList()
@@ -111,40 +140,34 @@ class VisualizeBetaVAE(BaseVAE):
             hidden_dims = [4, 8]
 
         for h_dim in hidden_dims:
-            modules.append(ConvBlock(in_ch, h_dim, 3, 2, num_conv_blocks))
+            modules.append(ConvBlock(in_ch, h_dim, conv_kernel_size, conv_stride, num_conv_blocks))
             in_ch = h_dim
         modules.append(Flatten())
 
         self.encoder = nn.Sequential(*modules)
 
 
-
         # Latent Space
-        self.fc_mu = nn.Linear(hidden_dims[-1] * int(in_dim /  (len(hidden_dims) * 2) ), latent_dim)
-        self.fc_var = nn.Linear(hidden_dims[-1] * int(in_dim /  (len(hidden_dims) * 2) ), latent_dim)
+        self.fc_mu = nn.Linear(hidden_dims[-1] * end_conv_size, latent_dim)
+        self.fc_var = nn.Linear(hidden_dims[-1] * end_conv_size, latent_dim)
 
-        self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1]* int(in_dim /  (len(hidden_dims) * 2) ))
+        self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1]* end_conv_size)
 
         # Decoder
         hidden_dims.reverse()
 
-
         modules = nn.ModuleList()
 
-        modules.append(UnFlatten(size=hidden_dims[0], length= int(in_dim /  (len(hidden_dims) * 2))))
+        modules.append(UnFlatten(size=hidden_dims[0], length= end_conv_size))
         hidden_dims.append(start_k)
 
         for i in range(len(hidden_dims) - 1):
-            modules.append(TranspConvBlock(hidden_dims[i], hidden_dims[i+1], 3, 2, num_trans_conv_blocks))
-
+            modules.append(TranspConvBlock(hidden_dims[i], hidden_dims[i+1], trans_kernel_size, num_trans_conv_blocks, trans_stride, trans_padding))
 
         self.decoder = nn.Sequential(*modules)
 
-        # Decoder
-        final_layer_size = int(in_dim /  (2*(len(hidden_dims) -1))) * (len(hidden_dims) -1) * num_trans_conv_blocks*trans_stride
-        print(final_layer_size, int(in_dim /  ((len(hidden_dims) -1) * 2)), (len(hidden_dims) -1)*num_trans_conv_blocks*trans_stride)
 
-        self.final_layer = nn.Linear(int(in_dim /  (2*(len(hidden_dims) -1)))**2, out_dim)
+        self.final_layer = nn.Linear(final_size, out_dim)
 
     def encode(self, input: Tensor) -> List[Tensor]:
         """Encodes the input and returns latent codes"""
@@ -161,7 +184,7 @@ class VisualizeBetaVAE(BaseVAE):
     def decode(self, z: Tensor) -> Tensor:
         """ Maps latent codes into profile space """
         result = self.decoder_input(z)
-        #print('ready for decoder', result.shape)
+        # print('ready for decoder', result.shape)
         result = self.decoder(result)
         # print('Decoding Shape', result.shape)
         result = self.final_layer(result)

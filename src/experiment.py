@@ -110,6 +110,7 @@ class VAExperiment(pl.LightningModule):
 
     def test_epoch_end(self, outputs):
         self.sample_profiles()
+        self.plot_latent_space()
 
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
         avg_recon_loss = torch.stack([x['Reconstruction_Loss'] for x in outputs]).mean()
@@ -140,35 +141,42 @@ class VAExperiment(pl.LightningModule):
 
 
     def sample_profiles(self):
-        test_input, test_label = next(iter(self.trainer.datamodule.test_dataloader()))
-
-        data = self.model.forward(test_input)
-        avg_loss = self.model.loss_function(*data, M_N = self.params['batch_size']/ len(self.trainer.datamodule.test_dataloader()))
-        recons, input, mu, logvar = data
-        fig = plt.figure(figsize=(18, 10), constrained_layout=True)
-        gs = GridSpec(1, 5, figure=fig)
-        ax = None
-        for i in range(5):
-            ax = fig.add_subplot(gs[i], sharey=ax)
-            data = [recons[-i], input[-i], mu, logvar]
+        test_data_iter = iter(self.trainer.datamodule.test_dataloader())
+        for k in range(2):
+            test_input, test_label = next(test_data_iter)
+            data = self.model.forward(test_input)
             avg_loss = self.model.loss_function(*data, M_N = self.params['batch_size']/ len(self.trainer.datamodule.test_dataloader()))
-            if len(test_input.shape) == 3:
-                input = input.squeeze()
-                recons= recons.squeeze()
-            # print(recons.shape)
-            ax.set_title('Recon: {:.4}'.format(avg_loss['Reconstruction_Loss']))
-            ax.plot(recons[-i]*self.trainer.datamodule.max_X, label='Generated')
-            ax.plot(input[-i]*self.trainer.datamodule.max_X, label='Real')
+            recons, input, mu, logvar = data
+            fig = plt.figure(figsize=(18, 10), constrained_layout=True)
+            gs = GridSpec(1, 5, figure=fig)
 
-        plt.legend()
-        plt.show()
+            ax = None
+            for i in range(5):
+                ax = fig.add_subplot(gs[i], sharey=ax)
+                data = [recons[-i], input[-i], mu, logvar]
+                avg_loss = self.model.loss_function(*data, M_N = self.params['batch_size']/ len(self.trainer.datamodule.test_dataloader()))
+                if len(test_input.shape) == 3:
+                    input = input.squeeze()
+                    recons= recons.squeeze()
+                ax.set(title='Recon: {:.4}'.format(avg_loss['Reconstruction_Loss']), ylabel='$n_e$', xlabel='$R$')
+                ax.plot(recons[-i]*self.trainer.datamodule.max_X, label='Generated')
+                ax.plot(input[-i]*self.trainer.datamodule.max_X, label='Real')
+
+            plt.legend()
+            plt.show()
 
     def plot_latent_space(self):
-        test_input, test_label = next(iter(self.trainer.datamodule.test_dataloader()))
-        mu, logvar = self.model.encode(test_input)
-        z = self.model.reparameterize(mu, logvar)
-        for i in range(len(z[0]) -1):
-            fig = plt.figure()
-            plt.scatter(z[:, i], z[:, i+1], c=test_label)
+        test_data_iter = iter(self.trainer.datamodule.test_dataloader())
+        fig, axs = plt.subplots(1, self.model.latent_dim -1, figsize=(18, 8), constrained_layout=True)
+        # gs = GridSpec(1, self.model.latent_dim - 1, figure=fig)
+        for k in range(len(test_data_iter)):
+            test_input, test_label = next(test_data_iter)
+            mu, logvar = self.model.encode(test_input)
+            z = self.model.reparameterize(mu, logvar)
+            # print(z)
+            for i in range(len(z[0]) -1):
+                axs[i].scatter(z[:, i], z[:, i+1], c=test_label[:, -1])
+                axs[i].set(ylabel='Z {}'.format(i +1), xlabel='Z {}'.format(i))
+        fig.suptitle('Latent Space vs Nesep - Dim = {}'.format(len(z[0])))
         plt.show()
-        return z
+        # return z

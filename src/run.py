@@ -20,12 +20,12 @@ HYPERPARAMS = {'LR': 0.0001, 'weight_decay': 0.0, 'batch_size': 512}
 # from models.VAE import VanillaVAE
 from models import BetaGammaVAE, VisualizeBetaVAE
 
-# model_hyperparams = {'in_ch': 1, 'out_dim':63, 'latent_dim':4, 'hidden_dims': [4, 8, 16, 32, 64], 'beta': 5, 'gamma': 70000000000.0, 'loss_type': 'G'}
-model_hyperparams = {'in_ch': 1, 'out_dim':63, 'latent_dim':4, 'hidden_dims': [4, 8], 'beta': 0.00001, 'loss_type': 'B'}
+model_hyperparams = {'in_ch': 1, 'out_dim':63, 'latent_dim':5, 'hidden_dims': [4, 8], 'beta': 5, 'gamma': 700000000.0, 'loss_type': 'G'}
+# model_hyperparams = {'in_ch': 1, 'out_dim':63, 'latent_dim':5, 'hidden_dims': [2, 4, 8], 'beta':  50, 'loss_type': 'G', 'gamma': 7000000000.0}
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
 model = VisualizeBetaVAE(**model_hyperparams)
-trainer_params = {'max_epochs': 800}
+trainer_params = {'max_epochs': 1000}
 
 experiment = VAExperiment(model, params)
 """
