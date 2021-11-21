@@ -14,5 +14,7 @@ Contents
 .. toctree::
 
    predicting_profiles
+   models
+   literature_review
    data
    nesep_problem_statement
