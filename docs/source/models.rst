@@ -6,7 +6,7 @@ From the generated profiles, we could downstream use supervised learning to dete
 
 
 .. autoclass:: moxie.models.VisualizeBetaVAE
-  :members:
+  :members: VisualizeBetaVAE
   :inherited-members:
   :exclude-members:
 

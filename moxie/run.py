@@ -37,7 +37,6 @@ experiment = VAExperiment(model, params)
 
 runner = pl.Trainer(logger=logger, **trainer_params)
 
-runner.logger._log_graph = True
 
 datacls = DataModuleClass(**params)
 

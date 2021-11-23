@@ -10,19 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
 from models.VAE import BaseVAE
-
-SMALL_SIZE = 40
-MEDIUM_SIZE = 45
-BIGGER_SIZE = 50
-
-plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
-plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
-plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
-plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
-plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
-
+from visualizations import plot_sample_profiles_from_batch
 
 
 class VAExperiment(pl.LightningModule):
@@ -35,6 +23,7 @@ class VAExperiment(pl.LightningModule):
         self.current_device = None
         self.learning_rate = params['LR']
         self.make_plots = False
+        self.plotting_stay = False
         self.save_hyperparameters(params)
 
 
@@ -47,6 +36,7 @@ class VAExperiment(pl.LightningModule):
         self.current_device = real_profile.device
 
         results = self.forward(real_profile, labels=labels)
+
 
         train_loss = self.model.loss_function(*results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.train_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx)
 
@@ -107,11 +97,19 @@ class VAExperiment(pl.LightningModule):
         real_profile, labels = batch
         self.current_device = real_profile.device
 
-        # Log the computational Graph!
-        # self.logger.experiment.add_graph(self.model, real_profile)
-
         results = self.forward(real_profile, labels=labels)
+        # generated_profiles = results[0]
         test_loss = self.model.loss_function(*results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.test_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx)
+
+
+        while self.plotting_stay:
+            profile_plot_params = {'title': 'Reconstruction: {}-Hidden Layers {}-D Latent Space'.format(len(self.model.hidden_dims), self.model.latent_dim), 'ylabel': '$n_e (m^{-3})$', 'xlabel': 'R (m)', 'ylim': (-0.1, self.trainer.datamodule.max_X)}
+            self.plotting_stay = plot_sample_profiles_from_batch(results, plot_params=profile_plot_params)
+
+        # Log the computational Graph!
+        if self.logger._log_graph:
+            self.logger.experiment.add_graph(self.model, real_profile)
+
 
         return test_loss
 
@@ -137,6 +135,18 @@ class VAExperiment(pl.LightningModule):
                                weight_decay=self.params['weight_decay'])
         return optimizer
 
+
+    def custom_histogram(self):
+        for name, params in self.named_parameters():
+            name_list = name.split('.')[1:]
+            if len(name_list) >= 3:
+                if name_list[2] == '0':
+                    name_list[2] = 'Conv'
+                else:
+                    name_list[2] = 'BN'
+            logger_name = '/'.join(name_list)
+            self.logger.experiment.add_histogram(logger_name, params, self.current_epoch)
+
     def sample_single_profile(self):
         test_data_iter = iter(self.trainer.datamodule.test_dataloader())
         for k in range(2):
@@ -151,20 +161,9 @@ class VAExperiment(pl.LightningModule):
             plt.plot(recons[0]*self.trainer.datamodule.max_X, label='Generated', lw=4)
             plt.plot(input[0]*self.trainer.datamodule.max_X, label='Real', lw=4)
             plt.xticks([])
-            plt.title('Reconstruction: {}-Hidden Layers {}-D Latent Space'.format(len(self.model.hidden_dims), self.model.latent_dim))
+            # plt.title()
             plt.legend()
             plt.show()
-    def custom_histogram(self):
-        for name, params in self.named_parameters():
-            name_list = name.split('.')[1:]
-            if len(name_list) >= 3:
-                if name_list[2] == '0':
-                    name_list[2] = 'Conv'
-                else:
-                    name_list[2] = 'BN'
-            logger_name = '/'.join(name_list)
-            self.logger.experiment.add_histogram(logger_name, params, self.current_epoch)
-
 
     def sample_profiles(self):
         test_data_iter = iter(self.trainer.datamodule.test_dataloader())
