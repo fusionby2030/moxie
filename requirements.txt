@@ -1,7 +1,7 @@
 numpy
 h5py
-pytorch
+torch
 torchvision
-pytorch_lightning
+pytorch-lightning
 matplotlib
 scikit-learn
