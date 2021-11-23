@@ -8,6 +8,8 @@ from sklearn.model_selection import train_test_split
 from pytorch_lightning.loggers import TensorBoardLogger
 
 
+device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+
 generator=torch.Generator().manual_seed(42)
 torch.manual_seed(42)
 logger = TensorBoardLogger("tb_logs", name="my_model")
@@ -23,7 +25,7 @@ model_hyperparams = {'in_ch': 1, 'out_dim':63, 'latent_dim':5, 'hidden_dims': [4
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
 model = VisualizeBetaVAE(**model_hyperparams)
-trainer_params = {'max_epochs': 1000}
+trainer_params = {'max_epochs': 1000, 'gpus': 1 if str(device).startswith('cuda') else 0}
 
 PATH = '/home/kitadam/ENR_Sven/moxie/tb_logs/my_model/version_225/checkpoints/epoch=999-step=116999.ckpt'
 experiment = VAExperiment(model, params).load_from_checkpoint(PATH, vae_model=model)

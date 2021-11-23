@@ -65,7 +65,6 @@ class DataModuleClass(pl.LightningDataModule):
             X_val, y_val = group['valid']['X'][:], group['valid']['y'][:]
             X_test, y_test = group['test']['X'][:], group['test']['y'][:]
 
-
         self.X_train, self.y_train = torch.from_numpy(X_train), torch.from_numpy(y_train)
         self.X_val, self.y_val = torch.from_numpy(X_val), torch.from_numpy(y_val)
         self.X_test, self.y_test = torch.from_numpy(X_test), torch.from_numpy(y_test)
@@ -86,10 +85,10 @@ class DataModuleClass(pl.LightningDataModule):
         self.test_set = DS(self.X_test, self.y_test, self.problem)
 
     def train_dataloader(self):
-        return DataLoader(self.train_set, batch_size=self.batch_size, num_workers=4, shuffle=True)
+        return DataLoader(self.train_set, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True)
 
     def val_dataloader(self):
-        return DataLoader(self.val_set, batch_size=self.batch_size, num_workers=4)
+        return DataLoader(self.val_set, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self):
-        return DataLoader(self.test_set, batch_size=self.batch_size, num_workers=4, shuffle=True)
+        return DataLoader(self.test_set, batch_size=self.batch_size, num_workers=self.num_workers)

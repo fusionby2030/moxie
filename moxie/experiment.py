@@ -23,29 +23,6 @@ plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
 plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
-activation = {}
-def get_activation(name):
-    def hook(model, input, output):
-        activation[name] = output.detach()
-    return hook
-
-
-class GenerateCallback(pl.Callback):
-    def __init__(self, input_profiles, every_n_epochs=1):
-        super().__init__()
-        self.input_profiles = input_profiles
-        self.every_n_epochs = every_n_epochs
-
-    def on_epoch_end(self, trainer, pl_module):
-        if trainer.current_epoch % self.every_n_epochs == 0:
-            input_profiles = self.input_profiles.to(pl_module.device)
-            with torch.no_grad():
-                pl_module.eval()
-                recons = pl_module(input_profiles)
-                recons = recons[0]
-                pl_module.train()
-            imgs = torch.stack([input_profiles, recons], dim=1).flatten(0, 1)
-
 
 
 class VAExperiment(pl.LightningModule):
@@ -57,7 +34,7 @@ class VAExperiment(pl.LightningModule):
         self.params = params
         self.current_device = None
         self.learning_rate = params['LR']
-
+        self.make_plots = False
         self.save_hyperparameters(params)
 
 
@@ -139,12 +116,12 @@ class VAExperiment(pl.LightningModule):
         return test_loss
 
     def test_epoch_end(self, outputs):
+        if self.make_plots:
+            self.plot_per_latent_dim()
+            self.sample_single_profile()
 
-        self.plot_per_latent_dim()
-        self.sample_single_profile()
-
-        self.plot_latent_space()
-        self.sample_profiles()
+            self.plot_latent_space()
+            self.sample_profiles()
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
         avg_recon_loss = torch.stack([x['Reconstruction_Loss'] for x in outputs]).mean()
         tensorboard_logs = {'avg_val_loss': avg_loss}
