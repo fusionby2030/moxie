@@ -18,16 +18,16 @@ Goals
   * Take previous time step params + profiles to predict next time step profile
 4. Diagnostics as inputs???
 5. Establish physics informed neural networks (PINN)
-   * Requiring plasma edge to have 0 temperature and density (in the loss?) 
+   * Requiring plasma edge to have 0 temperature and density (in the loss?)
 
 Accomplished
-~~~~~
+~~~~~~~~~~~~~~~
 
 * Vanilla VAE's
 * Vanilla Convoluitonal VAE's
 
 TODO's
-~~~~~
+~~~~~~~~~~
 
 1. Rework ConvVAE to be able to take both Te and Ne profiles
 
@@ -58,7 +58,7 @@ All models are found in the :file:`src/models/` and are written with pytorch.
 
 
 Experiments
--------
+--------------
 
 We use pytorch lightning, but this is subject to change.
 See :file:`src/experiment.py` and :file:`src/run.py`

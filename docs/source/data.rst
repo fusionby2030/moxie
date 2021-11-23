@@ -35,7 +35,7 @@ The code for this section is found in :file:`/src/data/`
   * Yeah. Big data energy.
 
 Description of Datasets
-""""""""""""""
+""""""""""""""""""""""""""""
 
 We will take temperature and density profiles from HRTS scans, as well as the machine control parameters for the entire duration of the pulse. Additionally, we can grab any and all diagnostic equipment we may like.
 

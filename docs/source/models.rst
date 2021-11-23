@@ -1,14 +1,14 @@
 Model(s)
-===================================
+========
 
 We want to use unsupervised representation learning to reproduce and generate profiles.
 From the generated profiles, we could downstream use supervised learning to determine nesep for example.
 
 
-.. autoclass:: moxie.models.VisualizeBetaVAE
+.. autoclass:: models.VisualizeBetaVAE
   :members:
   :inherited-members:
-  :exclude-members: 
+  :exclude-members:
 
 VAE(s)
 --------------
@@ -26,7 +26,7 @@ There are a few parameters important to vary in the VAE:
    Loss = Exp_{q(z|x)}[\log (recon) - D_{KL}]
 
 Disentaglement
-~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 **Independent(!!) features of your input are ideally encoded into the latent space of the model.**
 
