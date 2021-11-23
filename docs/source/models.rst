@@ -5,8 +5,10 @@ We want to use unsupervised representation learning to reproduce and generate pr
 From the generated profiles, we could downstream use supervised learning to determine nesep for example.
 
 
-.. automodule:: moxie.models
+.. autoclass:: moxie.models.VisualizeBetaVAE
   :members:
+  :inherited-members:
+  :exclude-members: 
 
 VAE(s)
 --------------
