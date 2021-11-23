@@ -74,14 +74,14 @@ For each pulse, we should take 70% of the profiles for training, 10% for validat
 See above
 
 Preprocessing and DataClasses
-""""""""""""""
+""""""""""""""""""""""""""""""""""""""""""
 
 Currently, we just take the max density value for the training set and divide all ne points by that value. This constrains the input profiles to be between 0 and 1. This is subject to change.
 The dataclasses are stored in :file:`src/data/profile_dataset.py`
 
 
 Raw Datasets
-----------
+-------------
 
 **Total HRTS validated shot count: 4942 Shots.**
 
@@ -101,7 +101,7 @@ Stored in the following raw format:
 
 
 Input Columns
-~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 All are numpy arrays with shape given. The keys in the raw inputs dictionary are written below.
 
@@ -132,7 +132,7 @@ Each of the next columns have both the value and time stored in it as a dicition
 
 
 Output Profiles
-~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Density (NE)
   * 2D array: shape (701, 63)

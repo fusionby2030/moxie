@@ -1,18 +1,18 @@
 Review of Literature
-===================
+=====================
 
 Fusion
-----
+------
 
-* SOL Physics 
-  * Stangby 
+* SOL Physics
+  * Stangby
 
 
 
-Machine Learning 
--------
+Machine Learning
+---------------------
 
-* General ML and ANNs 
+* General ML and ANNs
   * CNNs
 * VAEs
-  * Disentanglment 
+  * Disentanglment

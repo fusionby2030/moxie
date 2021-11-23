@@ -35,11 +35,17 @@ class DataModuleClass(pl.LightningDataModule):
     """
     The Data Module Class, which will help with our data loading needs
 
-    Necessary Params to pass within the params dictionary:
-        batch_size: (int), what the batch size of the dataloaders is
-        num_workers: (int), if doing MP for dataloading, specify how many cpus will be used
-        data_dir: (string) where is the file with the train-val-test data
-        problem: (string), depends on data, but can be either 'strohman' or 'density_and_temperature'
+    Parameters
+    ----------
+
+    batch_size: int
+        Batch size of data loaders
+    num_workers: int
+        if doing MP for dataloading, specify how many cpus will be used
+    data_dir: str
+        where is the file with the train-val-test data is located
+    problem: str
+        Depends on data, but can be either 'strohman' or 'density_and_temperature'
     """
 
     def __init__(self, data_dir: str = '../processed/pedestal_profile_dataset_v3.hdf5', num_workers: int =1, batch_size: int = 512, **params):
