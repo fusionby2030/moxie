@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
 from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -33,9 +34,9 @@ trainer_params = {'max_epochs': 10, 'gpus': 1 if str(device).startswith('cuda') 
 experiment = VAExperiment(model, params)
 
 
+early_stop_callback = EarlyStopping(monitor="hp/final_loss", min_delta=0.001, patience=15, verbose=True, mode="min")
 
-
-runner = pl.Trainer(logger=logger, **trainer_params)
+runner = pl.Trainer(logger=logger, callbacks=[early_stop_callback], **trainer_params)
 
 
 datacls = DataModuleClass(**params)

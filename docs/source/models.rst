@@ -5,11 +5,6 @@ We want to use unsupervised representation learning to reproduce and generate pr
 From the generated profiles, we could downstream use supervised learning to determine nesep for example.
 
 
-.. autoclass:: moxie.models.VisualizeBetaVAE
-  :members: VisualizeBetaVAE
-  :inherited-members:
-  :exclude-members:
-
 VAE(s)
 --------------
 
@@ -53,6 +48,14 @@ If we crank up :math:`\beta`, the latent vector changes in the following way:
 **THERE IS A PROBLEM**
 
 My implementation only likes small betas, so we will try to give a small beta to start, then slowly increase it overtime.
+
+Current Models
+--------------
+
+.. autoclass:: moxie.models.VisualizeBetaVAE
+  :members: VisualizeBetaVAE
+  :inherited-members:
+  :exclude-members:
 
 
 
