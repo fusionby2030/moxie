@@ -4,6 +4,7 @@ from torch import nn
 from torch.nn import functional as F
 from abc import abstractmethod
 from .base import BaseVAE
+from .utils import get_conv_output_size, get_trans_output_size, get_final_output
 Tensor = TypeVar('torch.tensor')
 
 
@@ -24,7 +25,7 @@ class UnFlatten(nn.Module):
 
 
 class ConvBlock(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, conv_kernel_size: int, max_pool_kernel_size: int, num_conv_blocks: int = 1, padding='same'):
+    def __init__(self, in_channels: int, out_channels: int, conv_kernel_size: int, max_pool_kernel_size: int, stride: int = 1, num_conv_blocks: int = 1,  padding='same'):
         """
         A convoution block, with form:
         input [BS, in_channel, len] -> [CONV(*N) -> Max Pool] -> output [BS, out_channel, length / max_pool_kernel_size]
@@ -34,20 +35,32 @@ class ConvBlock(nn.Module):
         [((in_length) + 2*padding - (kernel_size - 1)) / stride ]+ 1
 
         The max pool layer effectlivey halves the size of the input length
-        :params:
-            :in_channels: input channel size
-            :out_channels: output channel size
-            :conv_kernel_size: size of the convolution kernel
-            :max_pool_kernel_size: (int) size of kernel in max pooling, which has the end effect of dividing the length of the sequence by its value, i.e., 2 -> halves sequence
-            :num_conv_blocks: (int) number of convolution blocks
-        :returns:
-            :block: nn.ModuleList
+
+        Parameters
+        ----------
+
+        in_channels: int
+            input channel size
+        out_channels: int
+            output channel size
+        conv_kernel_size: int
+            size of the Conv kernel
+        num_conv_blocks: int
+            number of convolution blocks
+        stride: int
+            stride of  conv. blocks
+        padding: int
+            padding of conv. blocks
+
+        Returns
+        -------
+            block: nn.ModuleList
         """
         super(ConvBlock, self).__init__()
 
         self.block = nn.ModuleList()
         for i in range(num_conv_blocks):
-            self.block.append(nn.Conv1d(in_channels, out_channels, kernel_size=conv_kernel_size, stride=1, padding=padding))
+            self.block.append(nn.Conv1d(in_channels, out_channels, kernel_size=conv_kernel_size, stride=stride, padding=padding))
             self.block.append(nn.ReLU())
             in_channels = out_channels
         self.block.append(nn.MaxPool1d(max_pool_kernel_size))
@@ -66,14 +79,26 @@ class TranspConvBlock(nn.Module):
         The output of a single tranpose conv layer has the folowing size:
 
         [(input_size - 1)*stride - 2*padding + (kernel_size -1 ) + 1]
-        :params:
-            :in_channels: input channel size
-            :out_channels: output channel size
-            :conv_kernel_size: size of the TransConv kernel
-            :max_pool_kernel_size: (int) size of kernel in max pooling, which has the end effect of dividing the length of the sequence by its value, i.e., 2 -> halves sequence
-            :num_conv_blocks: (int) number of tranposed convolution blocks
-        :returns:
-            :block: nn.ModuleList
+
+        Parameters
+        ----------
+
+        in_channels: int
+            input channel size
+        out_channels: int
+            output channel size
+        conv_kernel_size: int
+            size of the TransConv kernel
+        num_conv_blocks: int
+            number of tranposed convolution blocks
+        stride: int
+            stride of trans. conv. blocks
+        padding: int
+            padding of trans. conv. blocks
+
+        Returns
+        -------
+            block: nn.ModuleList
         """
         super(TranspConvBlock, self).__init__()
 
@@ -89,27 +114,10 @@ class TranspConvBlock(nn.Module):
         return x
 
 
-def get_conv_output_size(initial_input_size, number_blocks):
-    """ The conv blocks we use keep the same size but use max pooling, so the output of all convolution blocks will be of length input_size / 2"""
-    out_size = initial_input_size
-    for i in range(number_blocks):
-        out_size = int(out_size / 2)
-    return out_size
-
-def get_trans_output_size(input_size, stride, padding, kernel_size):
-    """ A function to get the output length of a vector of length input_size after a tranposed convolution layer"""
-    return (input_size -1)*stride - 2*padding + (kernel_size - 1) +1
-
-def get_final_output(initial_input_size, number_blocks, number_trans_per_block, stride, padding, kernel_size):
-    """A function to get the final output size after tranposed convolution blocks"""
-    out_size = initial_input_size
-    for i in range(number_blocks):
-        for k in range(number_trans_per_block):
-            out_size = get_trans_output_size(out_size, stride, padding, kernel_size)
-    return out_size
 
 class VisualizeBetaVAE(BaseVAE):
     """ A BetaGammaVAE for 1D Signal Processing (Work in Progress)
+    You have a Encoder -> Latent Space -> Decoder
 
     Parameters
     ----------
@@ -138,7 +146,7 @@ class VisualizeBetaVAE(BaseVAE):
         Number of convolution layers to use in each convolution block.
         This will not change the output size at the moment, as the padding is set to 'same'
     conv_kernel_size: int
-        Size of convolution kernel to use in encoder convolution layers
+        Size of convolution kernel to use in encoder convolution layers. This should be 1, since we are using padding='same'!
     conv_stride: int
         Stride of convolution layer in encoders
     conv_padding: str or int
@@ -146,9 +154,12 @@ class VisualizeBetaVAE(BaseVAE):
     num_trans_conv_blocks: int
         Number of transposed convolution layers to use in each trans block in decoder.
         This does change the output length, but we have it covered with utility functions!
-    trans_kernel_size
+    trans_kernel_size: int
+        see conv_kernel_size, but for trans.
     trans_stride
+        Tranpsosed conv. stride
     trans_padding
+        Tranposed conv. padding
     Returns
     -------
 
@@ -157,7 +168,7 @@ class VisualizeBetaVAE(BaseVAE):
     num_iter = 0
     def __init__(self, in_ch: int, latent_dim: int, hidden_dims: List=None, out_length: int = 63,
                 beta: float = 4.0, gamma: float = 3000000.,  loss_type: str = 'B',
-                num_conv_blocks: int = 2, conv_kernel_size: int = 3, conv_stride: int = 2, conv_padding = 'same',
+                num_conv_blocks: int = 2, conv_kernel_size: int = 3, conv_stride: int = 1, conv_padding = 'same',
                 num_trans_conv_blocks: int = 2, trans_kernel_size: int = 3, trans_stride: int = 2, trans_padding: int = 1,
                 **kwargs) -> None:
         super(VisualizeBetaVAE, self).__init__()
@@ -175,6 +186,7 @@ class VisualizeBetaVAE(BaseVAE):
         self.conv_kernel_size = conv_kernel_size
         self.conv_stride = conv_stride
         self.conv_padding = conv_padding
+        self.max_pool_stride = 2
 
         # Transpose convolution layer params
         self.num_trans_conv_blocks = num_trans_conv_blocks
@@ -201,8 +213,7 @@ class VisualizeBetaVAE(BaseVAE):
             hidden_dims = [4, 8]
 
         for h_dim in hidden_dims:
-            # h_dim is the output channel of the ConvBlock
-            modules.append(ConvBlock(in_ch, h_dim, self.conv_kernel_size, self.conv_stride, self.num_conv_blocks, self.conv_padding))
+            modules.append(ConvBlock(in_ch, h_dim, self.conv_kernel_size, self.max_pool_stride, self.conv_stride, self.num_conv_blocks, self.conv_padding))
             in_ch = h_dim
         modules.append(Flatten())
 
@@ -228,8 +239,7 @@ class VisualizeBetaVAE(BaseVAE):
 
         self.decoder = nn.Sequential(*modules)
 
-
-        self.final_layer = nn.Linear(final_size, out_dim)
+        self.final_layer = nn.Linear(final_size, out_length)
 
     def encode(self, input: Tensor) -> List[Tensor]:
         """Encodes the input and returns latent codes"""
@@ -289,22 +299,34 @@ class VisualizeBetaVAE(BaseVAE):
 
         # loss = recons_loss * kwargs['M_N'] + self.beta * kwargs['M_N'] * kld_loss
         if self.loss_type == 'B':
-            loss = recons_loss  + self.beta  * kld_loss
+            loss =  kwargs['M_N']*recons_loss  + self.beta  *  kwargs['M_N']* kld_loss
         elif self.loss_type == 'G':
-            loss = recons_loss + self.beta * self.num_iter / (self.gamma) * kld_loss
+            loss = recons_loss * kwargs['M_N'] +  kwargs['M_N']*self.beta * self.num_iter / (self.gamma) * kld_loss
         else:
             raise ValueError('Undefined Loss type, choose between B or G (beta or gamma)')
         return {'loss': loss, 'Reconstruction_Loss':recons_loss, 'KLD':-kld_loss}
 
     def sample(self,
                num_samples:int,
-               current_device: int, **kwargs) -> Tensor:
+               current_device, **kwargs) -> Tensor:
         """
         Samples from the latent space and return the corresponding
         profilie space map.
-        :param num_samples: (Int) Number of samples
-        :param current_device: (Int) Device to run the model
-        :return: (Tensor)
+
+        Parameters
+        ----------
+
+        num_samples: int
+            Number of samples
+        current_device: something, I am not sure yet
+            Device to run the model
+
+
+        Returns
+        -------
+
+        samples: torch.Tensor
+            The corresponding profile space mapping of num_samples
         """
         z = torch.randn(num_samples,
                         self.latent_dim)
