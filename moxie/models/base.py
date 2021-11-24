@@ -6,6 +6,9 @@ from abc import abstractmethod
 
 Tensor = TypeVar('torch.tensor')
 class BaseVAE(nn.Module):
+    """
+    A base VAE class. All VAEs will have the following methods implemented. 
+    """
 
     def __init__(self) -> None:
         super(BaseVAE, self).__init__()

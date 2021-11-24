@@ -26,6 +26,7 @@ for ls in [4,5,8, 10, 12]:
     logger = TensorBoardLogger("tb_logs", name="{}-search".format(ls))
 
     model_hyperparams['latent_dim'] = ls
+    model_hyperparams['gamma'] /= 10
     # model_hyperparams = {'in_ch': 1, 'out_dim':63, 'latent_dim':10, 'hidden_dims': [2, 4], 'beta': 5, 'gamma': 300000000000.0, 'loss_type': 'G'}
 
     params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}

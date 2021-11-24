@@ -52,8 +52,14 @@ My implementation only likes small betas, so we will try to give a small beta to
 Current Models
 --------------
 
+.. autoclass:: moxie.models.BaseVAE
+  :members: __init__, encode, decode, sample, generate, forward, loss_function
+  :inherited-members:
+  :exclude-members:
+
+
 .. autoclass:: moxie.models.VisualizeBetaVAE
-  :members: VisualizeBetaVAE
+  :members: __init__, encode, decode, sample, generate, forward, loss_function
   :inherited-members:
   :exclude-members:
 
