@@ -8,6 +8,17 @@ Welcome to Moxie's documentation!
 
    This project is under active development.
 
+Long Term Plan
+---------------
+
+* Live pedestal/SOL predictions for EUROfusion devices using machine control parameters (C) and available diagnostics (D)
+
+.. image:: ./images/end_goal.svg.png
+  :width: 200
+  :alt: Version 1 of Long term model
+
+
+
 Contents
 --------
 
