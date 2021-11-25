@@ -114,7 +114,6 @@ class TranspConvBlock(nn.Module):
         return x
 
 
-
 class VisualizeBetaVAE(BaseVAE):
     """ A BetaGammaVAE for 1D Signal Processing (Work in Progress)
     You have a Encoder -> Latent Space -> Decoder
@@ -156,9 +155,9 @@ class VisualizeBetaVAE(BaseVAE):
         This does change the output length, but we have it covered with utility functions!
     trans_kernel_size: int
         see conv_kernel_size, but for trans.
-    trans_stride
+    trans_stride: int
         Tranpsosed conv. stride
-    trans_padding
+    trans_padding: intink
         Tranposed conv. padding
     Returns
     -------

@@ -37,7 +37,7 @@ epub_show_urls = 'footnote'
 
 napoleon_google_docstring = False
 napoleon_numpy_docstring = True
-autodoc_inherit_docstrings = False
+autodoc_inherit_docstrings = False # This disables the pytorch and other documentation from appearing! 
 
 autodoc_mock_imports = ['torch', 'pytorch-lightning', 'numpy', 'matplotlib', 'sklearn']
 import os

@@ -53,7 +53,7 @@ Current Models
 --------------
 
 .. autoclass:: moxie.models.BaseVAE
-  :members: __init__, encode, decode, sample, generate, forward, loss_function
+  :members:
   :inherited-members:
   :exclude-members:
 

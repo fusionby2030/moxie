@@ -23,38 +23,45 @@ Goals
 Accomplished
 ~~~~~~~~~~~~~~~
 
-* Vanilla VAE's
-* Vanilla Convoluitonal VAE's
+* A simple 1D Convolutional VAE that can represent profiles given the previous profiles.
+* Initial Latent space discovery shows that even 4 dim can recreate the profile
+* Beta + Gamma VAEs coded, but not optimized
 
 TODO's
 ~~~~~~~~~~
 
-1. Rework ConvVAE to be able to take both Te and Ne profiles
+1. Model development
+
+  * Allow input of Te and Ne profiles into model
+  * Layers and how to stack them
+
+2. Documentation
+
+  * Methods for VisualizeBetaVAE
+  * Rename VisualizeBetaVAE
+
+3. Visualizations
+
+  * Output Plots
+    * Latent Space
+    * Profiles
+  * Clustering of predictions from latent space (see how the model is actually grouping profiles)
+  * Layer by layer output of conv. and tranposed. blocks to see what features the model is deeming important
+
+4. Experiments
 
   * Rework Experiment class to be able to plot Te from given Ne for test set
+  * Achieve a successful Beta run 
 
-2. Add Model Documentation
-  * Vanilla FF VAE
-  * ConvVAE
+5. Data
 
-3. Add General Documentation, which will require going through pytorch lightning
-  * Logger?
-
+  * Make sure the machine parameters check out
+  * Diagnostics?
 
 Models
 -------
 
-All models are found in the :file:`src/models/` and are written with pytorch.
-
-1. Vanilla VAE
-
-  * Simple fully connected linear layer model
-  * TBD: Activation function
-  * TBD: KL-Div weighting hyperparam for loss function, as it needs to be quite small or else the recon loss dominates and the model just spits out the (literal) average profile found in the training set
-
-2. Convolutional VAE
-
-  * TBD: Variable stride
+All models are found in the :file:`src/models/` and are written with pytorch, see the models page for more info.
 
 
 Experiments
