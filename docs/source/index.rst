@@ -17,7 +17,12 @@ Long Term Plan
   :width: 200
   :alt: Version 1 of Long term model
 
+This 'meta-model' is comprised of many **modular** sub-models, which can operate independently.
+The current list of sub-models:
 
+* VAE for single timestep predictions
+
+  * Determining relevant SOL parameters like :math:`n_{e, sep}, P_{sep}` from latent space or profile of single time step
 
 Contents
 --------

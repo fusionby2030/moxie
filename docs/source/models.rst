@@ -49,8 +49,15 @@ If we crank up :math:`\beta`, the latent vector changes in the following way:
 
 My implementation only likes small betas, so we will try to give a small beta to start, then slowly increase it overtime.
 
-Current Models
---------------
+Sub-Models
+-----------
+
+Nesep Determining [PSI 21]
+
+* Machine Parameters -> Profile -> Nesep
+  * Using VAEs, where (eventually) the latent space will be encoded
+
+-----------
 
 .. autoclass:: moxie.models.BaseVAE
   :members:
@@ -63,6 +70,7 @@ Current Models
   :inherited-members:
   :exclude-members:
 
+-----------
 
 
 .. [betavae] Beta-vae citation

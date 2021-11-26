@@ -1,5 +1,5 @@
-Generating Profile(s)
-===================================
+Generating Time-Independent Profile(s) [PSI 2022]
+=================================================
 
 We want to use Variational Autoencoders to generate density and temperature profiles in the edge/scrape-of-layer.
 
@@ -14,10 +14,13 @@ Goals
   * Dual headed VAE, with one highway taking inputs, the other taking profiles, then concat before latent space.
   * Entanglement of latent space with inputs? Not sure how this works but sounds fancy
   * Two separate VAEs with entangled latent space, then modular switch encoding components to get input -> profile
+
 3. Extent machine control parameters + profile inputs into a time evolving predictor
+
   * Take previous time step params + profiles to predict next time step profile
 4. Diagnostics as inputs???
 5. Establish physics informed neural networks (PINN)
+
    * Requiring plasma edge to have 0 temperature and density (in the loss?)
 
 Accomplished
@@ -35,12 +38,7 @@ TODO's
   * Allow input of Te and Ne profiles into model
   * Layers and how to stack them
 
-2. Documentation
-
-  * Methods for VisualizeBetaVAE
-  * Rename VisualizeBetaVAE
-
-3. Visualizations
+2. Visualizations
 
   * Output Plots
     * Latent Space
@@ -48,14 +46,16 @@ TODO's
   * Clustering of predictions from latent space (see how the model is actually grouping profiles)
   * Layer by layer output of conv. and tranposed. blocks to see what features the model is deeming important
 
-4. Experiments
+3. Experiments
 
   * Rework Experiment class to be able to plot Te from given Ne for test set
-  * Achieve a successful Beta run 
+  * Achieve a successful Beta run
 
-5. Data
+4. Data
 
+  * Psep
   * Make sure the machine parameters check out
+  * Convert pulse dict into HD5Y
   * Diagnostics?
 
 Models
