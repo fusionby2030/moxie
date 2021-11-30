@@ -4,6 +4,7 @@ Data Storage
 This subdirectory contains an overview of the profile database used in the analysis.
 
 .. code-block:: text
+
   data                                        - the data dir, (if have it know you know)
   ├── raw_datasets                            - raw data dumps
   │   ├── all_shots.pickle                    - original data dump profile from HEIMDALL
@@ -20,6 +21,7 @@ The profile database is an hd5y file which houses many pulses and the relevant m
 Below is an example to get the toroidal field and time steps as well as the density profile data, radius and time steps of pulse 86932:
 
 .. code-block:: python
+
   with h5py.File('profile_database.hdf5', 'r') as file:
     bt_vals = file['86932/machine_parameters/BT/values'][:] # the [:] at the yields the dataset in numpy array form
     bt_time = file['86932/machine_parameters/BT/time'][:]
@@ -59,6 +61,7 @@ If one wanted to update or add information to the pulse, then simply write to th
 For example, to add a machine parameter or toroidal flux coordinate for the profiles you could do the following:
 
 .. code-block:: python
+
   with h5py.File('profile_database.hdf5', 'r+') as file:
     my_new_vals = np.array([1., 1., 1.])
     my_new_time_array = np.array([1., 1., 1.])
