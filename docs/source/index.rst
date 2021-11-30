@@ -33,4 +33,5 @@ Contents
    models
    literature_review
    data
+   datasets
    nesep_problem_statement

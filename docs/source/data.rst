@@ -1,109 +1,79 @@
 Data Storage
-===================================
+==============
 
-This subdirectory contains the various forms of datasets used in the analysis.
+This subdirectory contains an overview of the profile database used in the analysis.
 
+.. code-block:: text
+  data                                        - the data dir, (if have it know you know)
+  ├── raw_datasets                            - raw data dumps
+  │   ├── all_shots.pickle                    - original data dump profile from HEIMDALL
+  ├── processed                               - final, canonical datasets for modeling
+  │   ├── pedestal_profile_dataset_v3.pickle  - The first version of the pedestal database, has missing input values, do not use
+  │   ├── profile_database.hd5y               - The current version of the pedestal database, description below
 
-| data
-| ├── raw_datasets < original immutable data dump from HEIMDALL
-| |  ├── all_shots.pickle
-| ├── processed  < final, canonical datasets for modeling
-| |  ├── pedestal_profile_dataset_v3.pickle
+To see more information on specific datasets, see :doc:`/datasets`
 
+Profile Database
+----------------
 
-Processed
-----------
-
-Dataset(s)
-""""""""""""""
-
-The code for this section is found in :file:`/src/data/`
-
-1. JET Pedestal Database (JPDB)
-
-  * We use the entries found in the established DB between the time averaged windows given.
-  * These are all flat top H-mode entries
-  * Currently called v3 in sceibo
-
-2. Extension of JPDB
-
-  * Use time windows outside of those found in the JET DSP
-  * Still use the same pulses found in the DB, but this will include L-mode, as well as L-H mode transition profiles
-
-3. All HRTS validated shots >= 79000
-
-  * Yeah. Big data energy.
-
-Description of Datasets
-""""""""""""""""""""""""""""
-
-We will take temperature and density profiles from HRTS scans, as well as the machine control parameters for the entire duration of the pulse. Additionally, we can grab any and all diagnostic equipment we may like.
-
-1. We initially grabbed all HRTS validated shots with shot number >= 79000.
-
-  * These are stored in dictionary format in a pickle file. If you have the file, then each key in the dictionary is a pulse number
-  * Each pulse is another dicitonary with keys: `'inputs', 'outputs'`
-  * Inputs is a dictionary, with keys corresponding to the control parameters
-    * Each control parameters is a dictionary, with keys `'values', 'time'`
-  * Outputs is a dictionary with keys `'NE', 'DNE', 'DTE', 'TE', 'radius', 'time'`
-  * If you know you know
-
-2. 82557 total profiles from 2176 HRTS validated pulses found in JPDB (see :file:`/src/data/create_psi_database.ipynb`)
-
-  * These are then stored in an HD5Y file
-  * The (current, V3) HD5Y file is organized into two data groups: `'strohman' and 'density_and_temperature'`
-  * There is additionally the `'meta'` group, which has `'pulse_list', 'y_column_names'` which store arrays regarding which pulses and what the columns of the y vector relate to.
-  * These two groups are structured with three subgroups: `'train', 'valid', 'test'`
-  * Each subgroup has 2 datasets:   `'X', 'y'`, where `'X'` has the inputs (profiles) and `'y'` has the machine parameters and nesep
-
-Example of accessing the 2 channel density and temperature profile looks like this:
+The profile database is an hd5y file which houses many pulses and the relevant machine parameter and profile data. If you don't know how to use hd5y files, then check out `HD5Y <https://docs.h5py.org/en/stable/index.html>`_
+Below is an example to get the toroidal field and time steps as well as the density profile data, radius and time steps of pulse 86932:
 
 .. code-block:: python
+  with h5py.File('profile_database.hdf5', 'r') as file:
+    bt_vals = file['86932/machine_parameters/BT/values'][:] # the [:] at the yields the dataset in numpy array form
+    bt_time = file['86932/machine_parameters/BT/time'][:]
 
-  with h5py.File('../processed/pedestal_profile_dataset_v3.hdf5', 'r') as file:
-  group = file['density_and_temperature']
-  X_train, y_train = group['train']['X'][:], group['train']['y'][:]
-  X_test, y_test = ...
-
-
-Data-splitting
-""""""""""""""
-
-For each pulse, we should take 70% of the profiles for training, 10% for validation, and 20% for testing. This will ensure that each pulse is represented in each dataset.
-
-See above
-
-Preprocessing and DataClasses
-""""""""""""""""""""""""""""""""""""""""""
-
-Currently, we just take the max density value for the training set and divide all ne points by that value. This constrains the input profiles to be between 0 and 1. This is subject to change.
-The dataclasses are stored in :file:`src/data/profile_dataset.py`
+    de_data = file['86932/profiles/NE'][:]
+    de_radius = file['86932/profiles/radius'][:]
+    de_time = file['86932/profiles/time'][:]
 
 
-Raw Datasets
--------------
+Pulse Structure
+""""""""""""""""
+The pulses in the database are structured in the following format:
 
-**Total HRTS validated shot count: 4942 Shots.**
+* Each pulse is a group
 
-Stored in the following raw format:
+  * For each pulse, there are the following groups
+
+    * :code:`'machine_parameters'`, which contain relevant machine parameters as subgroups following subgroups, within each there are datasets named:
+
+      * :code:`'time'`: The time steps at which the machine parameter is sampled during a pulse
+      * :code:`'values'`: The value of the machine parameter for each given time step in :code:`'time'`
+      * Each of the above datasets are the same length (naturally)
+
+  * To check which machine parameters are stored, run :code:`file['pulse_id/machine_parameters'].keys()`
+
+  * Within each profile group there are the following datasets
+
+    * :code:`'radius'`: the spatial resolution of the HRTS scan (this is R (m) and **NOT** the normalized flux coordinate)
+    * :code:`'time'`: The temporal resolution of the HRTS scan
+    * :code:`'NE'`: The density profiles, a 2D vector, with rows corresponding to each time step given in :code:`'time'`, and columns corresponding to the values in :code:`'radius'`, with each entry being the electron density
+    * :code:`'DNE'`: The error in the density profiles, similar structure to above
+    * :code:`'TE'`: The temperature profiles, similar structure to above
+    * :code:`'DTE'`: Error in temperature profiles, similar structure to above
+
+
+If one wanted to update or add information to the pulse, then simply write to the file using the above syntax!
+For example, to add a machine parameter or toroidal flux coordinate for the profiles you could do the following:
 
 .. code-block:: python
+  with h5py.File('profile_database.hdf5', 'r+') as file:
+    my_new_vals = np.array([1., 1., 1.])
+    my_new_time_array = np.array([1., 1., 1.])
+    new_vals = file['86932/machine_parameters/new_parameter'].create_dataset('values', my_new_vals)
+    new_time = file['86932/machine_parameters/new_parameter'].create_dataset('time', my_new_time_array)
 
-  {'79100': {'inputs': {'BT': {'values': np.array, 'time': np.array},
-                          'IP': {'values': np.array, 'time': np.array}, ...}
-              'outputs': {'time': np.array, 'radius': np.array, 'NE': 2D np.array, 'DNE': 2D np.array }
-              },
-  '79103': {'inputs': {'BT': {'values': np.array, 'time': np.array},
-                          'IP': {'values': np.array, 'time': np.array}, ...}
-              'outputs': {'time': np.array, 'radius': np.array, 'NE': 2D np.array, 'DNE': 2d np.array}
-              },
-              }
+    my_flux_coords = np.array([0, 0.5, 1])
+    flux_radius = file['86932/profiles'].create_dataset('flux_coords', my_flux_coords)
 
 
-Input Columns
+
+Machine Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-All are numpy arrays with shape given. The keys in the raw inputs dictionary are written below.
+The current machine parameters stored for each pulse in :code:`'machine_parameters'`. The top-level is the dda, whereas the sub-lists are the actual names of the parameters.
 
 * EFIT: shape (989,)
 	* Q95
@@ -130,9 +100,10 @@ Each of the next columns have both the value and time stored in it as a dicition
 	* PTOT (Total ICRH power)
 
 
-
-Output Profiles
+Profiles
 ~~~~~~~~~~~~~~~~~~~~~~~~
+
+The profile data from each pulse is stored in the :code:`'profiles'` subgroup.
 
 * Density (NE)
   * 2D array: shape (701, 63)
