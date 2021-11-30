@@ -114,3 +114,8 @@ The profile data from each pulse is stored in the :code:`'profiles'` subgroup.
   * This changes depending on the pulse
 
 Shape is (701, 63) for each pulse, where 701 and 63 are the temporal and spatial resolution respectively.
+
+The HRTS scans are found using the following:
+
+.. image:: ./images/HRTS1.png
+  :width: 600

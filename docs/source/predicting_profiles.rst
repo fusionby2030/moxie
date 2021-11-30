@@ -24,11 +24,23 @@ Goals
    * Requiring plasma edge to have 0 temperature and density (in the loss?)
 
 Accomplished
-~~~~~~~~~~~~~~~
+"""""""""""""
 
 * A simple 1D Convolutional VAE that can represent profiles given the previous profiles.
 * Initial Latent space discovery shows that even 4 dim can recreate the profile
 * Beta + Gamma VAEs coded, but not optimized
+
+Initial Results
+""""""""""""""""
+
+.. image:: ./images/Singular_latent_space_aaro.png
+  :width: 400
+
+.. image:: ./images/Singular_profile_space_aaro.png
+  :width: 400
+
+
+
 
 TODO's
 ~~~~~~~~~~
@@ -54,8 +66,6 @@ TODO's
 4. Data
 
   * Psep
-  * Make sure the machine parameters check out
-  * Convert pulse dict into HD5Y
   * Diagnostics?
 
 Models
