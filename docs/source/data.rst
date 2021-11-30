@@ -1,18 +1,7 @@
 Data Storage
 ==============
 
-This subdirectory contains an overview of the profile database used in the analysis.
 
-.. code-block:: text
-
-  data                                        - the data dir, (if have it know you know)
-  ├── raw_datasets                            - raw data dumps
-  │   ├── all_shots.pickle                    - original data dump profile from HEIMDALL
-  ├── processed                               - final, canonical datasets for modeling
-  │   ├── pedestal_profile_dataset_v3.pickle  - The first version of the pedestal database, has missing input values, do not use
-  │   ├── profile_database.hd5y               - The current version of the pedestal database, description below
-
-To see more information on specific datasets, see :doc:`/datasets`
 
 Profile Database
 ----------------
@@ -30,6 +19,7 @@ Below is an example to get the toroidal field and time steps as well as the dens
     de_radius = file['86932/profiles/radius'][:]
     de_time = file['86932/profiles/time'][:]
 
+To see more information on specific datasets held within the profile-database, see :doc:`/datasets`
 
 Pulse Structure
 """"""""""""""""
