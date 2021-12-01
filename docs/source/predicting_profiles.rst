@@ -8,20 +8,30 @@ This is a semi-unsupervised learning approach, where we use the profiles to then
 Goals
 ~~~~~
 
-1. Generate density (and tempearture) profiles using VAEs
-2. Encode machine control parameters into the inputs and or latent space (dreaming)
 
-  * Dual headed VAE, with one highway taking inputs, the other taking profiles, then concat before latent space.
-  * Entanglement of latent space with inputs? Not sure how this works but sounds fancy
-  * Two separate VAEs with entangled latent space, then modular switch encoding components to get input -> profile
+0. Machine parameters per profile slice
 
-3. Extent machine control parameters + profile inputs into a time evolving predictor
+  * The machine parameters per time slice should not vary that much (currently flat top H-modes),
+  * But, it is still best practice to grab specific machine parameters per time slice
 
-  * Take previous time step params + profiles to predict next time step profile
-4. Diagnostics as inputs???
-5. Establish physics informed neural networks (PINN)
+1. Normalize machine parameters
 
-   * Requiring plasma edge to have 0 temperature and density (in the loss?)
+  * Standardization
+  * Normalizing flows
+
+    * **if** standardization does not constrain machine parameters to normal distribution
+
+2. Generate density (and tempearture) profiles using VAEs and encode machine control parameters into latent spaces
+
+  * VAE has dual latent spaces, `z_stochastic, z_machine` (graph below)
+  * Loss function to match: :math:`L = \alpha MSE(y, \hat{y}) + \beta KL((mu_{stoch}, var_{stoch}), \mathcal{N}(0, 1)) + \beta KL((mu_{machine}, var_{machine}), \mathcal{N}(0, 1))`
+  * Find :math:`\alpha, \beta, \gamma` that evenly regularizes the two latent spaces
+  * Should be able to hold `z_machine` constant and sample from `z_stochastic` without too much change in the profiles.
+
+
+.. image:: ./images/dual_vae.svg
+  :width: 200
+
 
 Accomplished
 """""""""""""
@@ -42,7 +52,7 @@ Initial Results
 
 
 
-TODO's
+Ongoing's
 ~~~~~~~~~~
 
 1. Model development
@@ -50,15 +60,7 @@ TODO's
   * Allow input of Te and Ne profiles into model
   * Layers and how to stack them
 
-2. Visualizations
-
-  * Output Plots
-    * Latent Space
-    * Profiles
-  * Clustering of predictions from latent space (see how the model is actually grouping profiles)
-  * Layer by layer output of conv. and tranposed. blocks to see what features the model is deeming important
-
-3. Experiments
+2. Experiments
 
   * Rework Experiment class to be able to plot Te from given Ne for test set
   * Achieve a successful Beta run
