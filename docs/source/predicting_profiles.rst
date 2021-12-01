@@ -24,7 +24,7 @@ Goals
 2. Generate density (and tempearture) profiles using VAEs and encode machine control parameters into latent spaces
 
   * VAE has dual latent spaces, `z_stochastic, z_machine` (graph below)
-  * Loss function to match: :math:`L = \alpha MSE(y, \hat{y}) + \beta KL((mu_{stoch}, var_{stoch}), \mathcal{N}(0, 1)) + \beta KL((mu_{machine}, var_{machine}), \mathcal{N}(0, 1))`
+  * Loss function to match: :math:`L = \alpha MSE(y, \hat{y}) + \beta_{stoch} KL((mu_{stoch}, var_{stoch}), \mathcal{N}(0, 1)) + \beta_{mach} KL((mu_{machine}, var_{machine}), \mathcal{N}(0, 1)) + \gamma MSE(mu_{machine}, machine_{real, norm})`
   * Find :math:`\alpha, \beta, \gamma` that evenly regularizes the two latent spaces
   * Should be able to hold `z_machine` constant and sample from `z_stochastic` without too much change in the profiles.
 
