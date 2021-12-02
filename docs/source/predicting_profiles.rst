@@ -16,10 +16,11 @@ Goals
 
 1. Normalize machine parameters
 
-  * Standardization
-  * Normalizing flows
+  * Standardization |standardize_simple|
 
-    * **if** standardization does not constrain machine parameters to normal distribution
+    * For the moment this seems OK for a prototype, but in the future will check normalizing flows
+
+  * Normalizing flows
 
 2. Generate density (and tempearture) profiles using VAEs and encode machine control parameters into latent spaces
 
@@ -29,7 +30,7 @@ Goals
   * Should be able to hold `z_machine` constant and sample from `z_stochastic` without too much change in the profiles.
 
 
-.. image:: ./images/dual_vae.svg
+.. image:: ./images/dual_vae.png
   :width: 200
 
 
@@ -45,9 +46,11 @@ Initial Results
 
 .. image:: ./images/Singular_latent_space_aaro.png
   :width: 400
+  :align: middle
 
 .. image:: ./images/Singular_profile_space_aaro.png
   :width: 400
+  :align: middle
 
 
 
@@ -63,7 +66,7 @@ Ongoing's
 2. Experiments
 
   * Rework Experiment class to be able to plot Te from given Ne for test set
-  * Achieve a successful Beta run
+  * Move experiments to its own dir and call explicitly from run
 
 4. Data
 
@@ -81,3 +84,7 @@ Experiments
 
 We use pytorch lightning, but this is subject to change.
 See :file:`src/experiment.py` and :file:`src/run.py`
+
+.. |standardize_simple| image:: machine_params_standardization.png
+  :align: middle
+  :width: 500
