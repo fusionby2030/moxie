@@ -1,5 +1,5 @@
 import pytorch_lightning as pl
-from experiment import VAExperiment
+# from experiment import VAExperiment, DualVAExperiment
 from data.profile_dataset import DS, DataModuleClass
 import torch
 
@@ -11,32 +11,37 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 
+
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 generator=torch.Generator().manual_seed(42)
 torch.manual_seed(42)
-logger = TensorBoardLogger("tb_logs", name="my_model")
+logger = TensorBoardLogger("tb_logs", name="DualVAE")
 
-STATIC_PARAMS = {'data_dir': '/home/kitadam/ENR_Sven/moxie/data/processed/pedestal_profile_dataset_v3.hdf5', 'num_workers': 4}
+STATIC_PARAMS = {'data_dir': '/home/kitadam/ENR_Sven/moxie/data/processed/profile_database_v1_psi22.hdf5', 'num_workers': 4}
 HYPERPARAMS = {'LR': 0.0001, 'weight_decay': 0.0, 'batch_size': 512}
 
 # from models.VAE import VanillaVAE
-from models import BetaGammaVAE, VisualizeBetaVAE
+from models import BetaGammaVAE, VisualizeBetaVAE, DualVAE
 
-model_hyperparams = {'in_ch': 1, 'out_dim':63, 'latent_dim':10, 'hidden_dims': [4, 8], 'beta': 5, 'gamma': 300000000000.0, 'loss_type': 'G'}
-# model_hyperparams = {'in_ch': 1, 'out_dim':63, 'latent_dim':10, 'hidden_dims': [2, 4], 'beta': 5, 'gamma': 300000000000.0, 'loss_type': 'G'}
+# model_hyperparams = {'in_ch': 1, 'out_dim':63, 'latent_dim':10, 'hidden_dims': [4, 8], 'beta': 5, 'gamma': 300000000000.0, 'loss_type': 'G'}
+model_hyperparams = {'in_ch': 1, 'out_dim':63, 'hidden_dims': [2, 8],
+                    'stoch_latent_dim':4, 'mach_latent_dim':13,
+                    'num_conv_blocks': 3, 'num_trans_conv_blocks': 1,
+                    'alpha': 1.0, 'beta_mach': 0.0008, 'beta_stoch': 0.000008, 'gamma': 0.000001}
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
-model = VisualizeBetaVAE(**model_hyperparams)
-trainer_params = {'max_epochs': 10, 'gpus': 1 if str(device).startswith('cuda') else 0}
+model = DualVAE(**model_hyperparams)
+trainer_params = {'max_epochs': 10000, 'gpus': 1 if str(device).startswith('cuda') else 0}
+
+from experiments import DualVAExperiment
+
+experiment = DualVAExperiment(model, params)
 
 
-experiment = VAExperiment(model, params)
-
-
-early_stop_callback = EarlyStopping(monitor="hp/final_loss", min_delta=0.001, patience=15, verbose=True, mode="min")
-
-runner = pl.Trainer(logger=logger, callbacks=[early_stop_callback], **trainer_params)
+# early_stop_callback = EarlyStopping(monitor="hp/recon", min_delta=0.001, patience=15, verbose=True, mode="min")
+# callbacks=[early_stop_callback]
+runner = pl.Trainer(logger=logger, **trainer_params)
 
 
 datacls = DataModuleClass(**params)

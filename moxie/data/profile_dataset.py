@@ -8,7 +8,15 @@ import pytorch_lightning as pl
 import h5py
 
 
-
+def standardize_simple(x, mu=None, var=None):
+    if mu is not None and var is not None:
+        x_normed = (x - mu ) / var
+        return x_normed
+    else:
+        mu = x.mean(0, keepdim=True)[0]
+        var = x.std(0, keepdim=True)[0]
+        x_normed = (x - mu ) / var
+        return x_normed, mu, var
 
 
 class DS(Dataset):
@@ -48,7 +56,7 @@ class DataModuleClass(pl.LightningDataModule):
         Depends on data, but can be either 'strohman' or 'density_and_temperature'
     """
 
-    def __init__(self, data_dir: str = '../processed/pedestal_profile_dataset_v3.hdf5', num_workers: int =1, batch_size: int = 512, **params):
+    def __init__(self, data_dir: str = '../processed/profile_database_v1_psi22.hdf5', num_workers: int =1, batch_size: int = 512, **params):
         super().__init__()
         self.batch_size = batch_size
         self.file_loc = data_dir
@@ -60,7 +68,7 @@ class DataModuleClass(pl.LightningDataModule):
 
     def prepare_data(self):
         with h5py.File(self.file_loc, 'r') as file:
-            group = file[self.problem]
+            group = file['processed_datasets/PSI22/density']
             X_train, y_train = group['train']['X'][:], group['train']['y'][:]
             X_val, y_val = group['valid']['X'][:], group['valid']['y'][:]
             X_test, y_test = group['test']['X'][:], group['test']['y'][:]
@@ -69,6 +77,9 @@ class DataModuleClass(pl.LightningDataModule):
         self.X_val, self.y_val = torch.from_numpy(X_val), torch.from_numpy(y_val)
         self.X_test, self.y_test = torch.from_numpy(X_test), torch.from_numpy(y_test)
 
+        self.y_train[torch.isnan(self.y_train)] = 0.0
+        self.y_val[torch.isnan(self.y_val)] = 0.0
+        self.y_test[torch.isnan(self.y_test)] = 0.0
     def setup(self,stage=None):
 
         self.max_X = torch.max(self.X_train)
@@ -80,6 +91,20 @@ class DataModuleClass(pl.LightningDataModule):
             self.X_train, self.y_train = (self.X_train / self.max_X), self.y_train
             self.X_val, self.y_val = (self.X_val / self.max_X), self.y_val
             self.X_test, self.y_test = (self.X_test / self.max_X), self.y_test
+
+        # Normalize the machine parameters
+        self.y_train, mu_train, var_train = standardize_simple(self.y_train)
+        self.y_val = standardize_simple(self.y_val, mu_train, var_train)
+        self.y_test = standardize_simple(self.y_test, mu_train, var_train)
+
+        # Nesep is in the machine parameters so we have to take it out (last column)
+
+        self.y_train, self.y_val, self.y_test = self.y_train[:, :13], self.y_val[:, :13], self.y_test[:, :13]
+        self.mu_normalizer = mu_train
+        self.var_normalizer = var_train
+
+        self.y_train, self.y_val, self.y_test = self.y_train.float(), self.y_val.float(), self.y_test.float()
+
         self.train_set = DS(self.X_train, self.y_train, self.problem)
         self.val_set = DS(self.X_val, self.y_val, self.problem)
         self.test_set = DS(self.X_test, self.y_test, self.problem)
