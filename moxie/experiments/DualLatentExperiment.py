@@ -108,14 +108,14 @@ class DualVAExperiment(pl.LightningModule):
 
 
         # val_params[:, -4] = val_params[:, -4]*(1E-21)
-
+        """
         mu_stoch, log_var_stoch, mu_mach, log_var_mach = self.model.encode(real_profile)
         z_stoch = self.model.reparameterize(mu_stoch, log_var_stoch)
         z_mach = self.model.reparameterize(mu_mach, log_var_mach)
 
         self.plot_latent_for_corr(z_stoch, machine_params)
         self.plot_latent_for_corr(z_mach, machine_params)
-        plt.show()
+        plt.show()"""
         # Log the computational Graph!
         # self.logger.experiment.add_graph(self.model, real_profile)
 
