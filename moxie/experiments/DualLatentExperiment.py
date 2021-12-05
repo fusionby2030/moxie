@@ -107,6 +107,14 @@ class DualVAExperiment(pl.LightningModule):
         test_loss = self.model.loss_function(*results, machine_params=machine_params, M_N = self.params['batch_size']/ len(self.trainer.datamodule.test_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx)
 
 
+        if batch_idx%25 == 0:
+            mu_stoch, log_var_stoch, mu_mach, log_var_mach = self.model.encode(real_profile)
+            z_machine = self.model.reparameterize( mu_mach, log_var_mach)
+            self.plot_corr_matrix(z_machine, machine_params )
+            z_stoch = self.model.reparameterize(mu_stoch, log_var_stoch, )
+            self.plot_corr_matrix(z_stoch, machine_params, title='Z_stoch vs Machine Params')
+
+
         # val_params[:, -4] = val_params[:, -4]*(1E-21)
         """
         mu_stoch, log_var_stoch, mu_mach, log_var_mach = self.model.encode(real_profile)
@@ -160,6 +168,36 @@ class DualVAExperiment(pl.LightningModule):
             fig.suptitle('DualVae: {}-Hidden Layers {}-D Z_st'.format(len(self.model.hidden_dims), self.model.stoch_latent_dim))
         plt.legend()
         plt.show()
+
+    def plot_corr_matrix(self, z, val_params, title='Z_machine vs Machine Params'):
+        LABEL = ['Q95', 'RGEO', 'CR0', 'VOLM', 'TRIU', 'TRIL', 'XIP', 'ELON', 'POHM', 'BT', 'ELER', 'P_NBI', 'P_ICRH']
+
+        # correlation = torch.cov(z, val_params, rowVar=False)
+
+        fig, axs = plt.subplots(figsize=(20,20))
+        all_cors = []
+        for i in range(z.shape[1]):
+            val_params[np.isnan(val_params)] = 0
+            # print(val_params)
+            # print(np.cov(val_params))
+
+            single_dim = z[:, i]
+            # print(single_dim.shape)
+            correlation = np.cov(single_dim,val_params, rowvar=False) # the first column is the correlation with hidden dim and other params
+            correlation = correlation[:, 0][1:]
+            # print(correlation)
+            all_cors.append(correlation)
+        im = axs.imshow(all_cors, cmap='viridis')
+        axs.set_xticks(np.arange(len(LABEL)))
+        axs.set_xticklabels(LABEL)
+        axs.set_yticks(np.arange(z.shape[1]))
+        plt.setp(axs.get_xticklabels(), rotation=45, ha="right",rotation_mode="anchor")
+        plt.title(title)
+        fig.colorbar(im)
+        plt.show()
+
+        pass
+
 
     def plot_latent_for_corr(self, z, val_params):
         fig, axs = plt.subplots(2, 7, figsize=(18, 18), sharey=True, sharex=True)

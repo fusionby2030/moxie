@@ -29,11 +29,11 @@ from models import BetaGammaVAE, VisualizeBetaVAE, DualVAE, DualEncoderVAE
 model_hyperparams = {'in_ch': 1, 'out_dim':63, 'hidden_dims': [2, 8],
                     'stoch_latent_dim':4, 'mach_latent_dim':13,
                     'num_conv_blocks': 3, 'num_trans_conv_blocks': 1,
-                    'alpha': 1.0, 'beta_mach': 0.00008, 'beta_stoch': 0.00008, 'gamma': 0.000000}
+                    'alpha': 1.0, 'beta_mach': 0.0000008, 'beta_stoch': 0.00008, 'gamma': 0.000000}
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
 model = DualEncoderVAE(**model_hyperparams)
-trainer_params = {'max_epochs': 88, 'gpus': 1 if str(device).startswith('cuda') else 0}
+trainer_params = {'max_epochs': 100000, 'gpus': 1 if str(device).startswith('cuda') else 0}
 
 from experiments import DualVAExperiment
 
