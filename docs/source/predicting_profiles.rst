@@ -85,6 +85,6 @@ Experiments
 We use pytorch lightning, but this is subject to change.
 See :file:`src/experiment.py` and :file:`src/run.py`
 
-.. |standardize_simple| image:: machine_params_standardization.png
+.. |standardize_simple| image:: ./images/machine_params_standardization.png
   :align: middle
   :width: 500

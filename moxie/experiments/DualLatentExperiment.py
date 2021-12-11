@@ -2,16 +2,19 @@ import math
 from typing import List, Callable, Union, Any, TypeVar, Tuple
 import numpy as np
 Tensor = TypeVar('torch.tensor')
-
+import PIL.Image
 import torch
 from torch import optim
-
+from torchvision.transforms import ToTensor
 import pytorch_lightning as pl
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
+import io 
 # from..models.VAE import BaseVAE
 
+
+# def plot_to_image(figure):
 
 
 class DualVAExperiment(pl.LightningModule):
@@ -110,10 +113,11 @@ class DualVAExperiment(pl.LightningModule):
         if batch_idx%25 == 0:
             mu_stoch, log_var_stoch, mu_mach, log_var_mach = self.model.encode(real_profile)
             z_machine = self.model.reparameterize( mu_mach, log_var_mach)
-            self.plot_corr_matrix(z_machine, machine_params )
+            machine_space_corrs = self.plot_corr_matrix(z_machine, machine_params )
+            self.logger.experiment.add_figure('machine_latent', machine_space_corrs)
             z_stoch = self.model.reparameterize(mu_stoch, log_var_stoch, )
-            self.plot_corr_matrix(z_stoch, machine_params, title='Z_stoch vs Machine Params')
-
+            stoch_space_corrs = self.plot_corr_matrix(z_stoch, machine_params, title='Z_stoch vs Machine Params')
+            self.logger.experiment.add_figure('stoch_latent', stoch_space_corrs)
 
         # val_params[:, -4] = val_params[:, -4]*(1E-21)
         """
@@ -135,7 +139,8 @@ class DualVAExperiment(pl.LightningModule):
 
         # self.plot_latent_space()
         # self.correlation_of_latent_space()
-        self.sample_profiles()
+        final_res = self.sample_profiles()
+        self.logger.experiment.add_figure('test_outputs', final_res)
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
         avg_recon_loss = torch.stack([x['Reconstruction_Loss'] for x in outputs]).mean()
         tensorboard_logs = {'avg_val_loss': avg_loss}
@@ -167,7 +172,8 @@ class DualVAExperiment(pl.LightningModule):
 
             fig.suptitle('DualVae: {}-Hidden Layers {}-D Z_st'.format(len(self.model.hidden_dims), self.model.stoch_latent_dim))
         plt.legend()
-        plt.show()
+        return fig
+        # plt.show()
 
     def plot_corr_matrix(self, z, val_params, title='Z_machine vs Machine Params'):
         LABEL = ['Q95', 'RGEO', 'CR0', 'VOLM', 'TRIU', 'TRIL', 'XIP', 'ELON', 'POHM', 'BT', 'ELER', 'P_NBI', 'P_ICRH']
@@ -187,16 +193,15 @@ class DualVAExperiment(pl.LightningModule):
             correlation = correlation[:, 0][1:]
             # print(correlation)
             all_cors.append(correlation)
+        all_cors = np.stack(all_cors)
+        all_cors = torch.from_numpy(all_cors)
         im = axs.imshow(all_cors, cmap='viridis')
         axs.set_xticks(np.arange(len(LABEL)))
         axs.set_xticklabels(LABEL)
         axs.set_yticks(np.arange(z.shape[1]))
         plt.setp(axs.get_xticklabels(), rotation=45, ha="right",rotation_mode="anchor")
         plt.title(title)
-        fig.colorbar(im)
-        plt.show()
-
-        pass
+        return fig
 
 
     def plot_latent_for_corr(self, z, val_params):
