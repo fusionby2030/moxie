@@ -165,10 +165,11 @@ class VisualizeBetaVAE(BaseVAE):
     None
     """
     num_iter = 0
-    def __init__(self, in_ch: int, latent_dim: int, hidden_dims: List=None, out_length: int = 63,
+    def __init__(self, in_ch: int = 1, latent_dim: int = 4, hidden_dims: List=[2, 8], out_length: int = 63,
                 beta: float = 4.0, gamma: float = 3000000.,  loss_type: str = 'B',
                 num_conv_blocks: int = 2, conv_kernel_size: int = 3, conv_stride: int = 1, conv_padding = 'same',
                 num_trans_conv_blocks: int = 2, trans_kernel_size: int = 3, trans_stride: int = 2, trans_padding: int = 1,
+                channel_1_size: int=2, channel_2_size: int=8,
                 **kwargs) -> None:
         super(VisualizeBetaVAE, self).__init__()
 
@@ -194,6 +195,9 @@ class VisualizeBetaVAE(BaseVAE):
         self.trans_padding = trans_padding
 
         # Deep Params
+        if channel_1_size != 0 and channel_2_size != 0:
+            hidden_dims = [channel_1_size, channel_2_size]
+            
         self.hidden_dims = hidden_dims
 
         in_length = out_length
@@ -209,7 +213,7 @@ class VisualizeBetaVAE(BaseVAE):
         # Build Encoder
         modules = nn.ModuleList()
         if hidden_dims is None:
-            hidden_dims = [4, 8]
+            hidden_dims = [2, 4]
 
         for h_dim in hidden_dims:
             modules.append(ConvBlock(in_ch, h_dim, self.conv_kernel_size, self.max_pool_stride, self.conv_stride, self.num_conv_blocks, self.conv_padding))

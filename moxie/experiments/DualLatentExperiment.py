@@ -5,12 +5,12 @@ Tensor = TypeVar('torch.tensor')
 import PIL.Image
 import torch
 from torch import optim
-from torchvision.transforms import ToTensor
+# from torchvision.transforms import ToTensor
 import pytorch_lightning as pl
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
-import io 
+import io
 # from..models.VAE import BaseVAE
 
 

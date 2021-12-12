@@ -10,8 +10,6 @@ import pytorch_lightning as pl
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
-# from ..models.VAE import BaseVAE
-
 
 
 class BasicExperiment(pl.LightningModule):
@@ -19,15 +17,27 @@ class BasicExperiment(pl.LightningModule):
     def __init__(self, vae_model: None, params: dict) -> None:
         super(BasicExperiment, self).__init__()
 
+        """
+        Needs params:
+            LR
+            batch_size
+            weight_decay
+
+        """
+
         self.model = vae_model
         self.params = params
         self.current_device = None
         self.learning_rate = params['LR']
+
         self.save_hyperparameters(params)
 
     def forward(self, input: Tensor, **kwargs) -> Tensor:
         return self.model(input, **kwargs)
 
+    def on_train_start(self):
+        if self.current_epoch == 1:
+            self.logger.log_hyperparams(self.hparams, {"hp/final_loss": 0, "hp/recon": 0})
 
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
         real_profile, labels = batch
@@ -38,16 +48,14 @@ class BasicExperiment(pl.LightningModule):
 
         train_loss = self.model.loss_function(*results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.train_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx)
 
+        self.log('Loss/train', train_loss['loss'])
+        self.log('ReconLoss/train', train_loss['Reconstruction_Loss'])
+        self.log('KLD/train', train_loss['KLD'])
         logs = {'train_loss': train_loss}
-
-        # self.logger.log_metrics({key: val.item() for key, val in train_loss.items()})
 
         batch_dictionary = {'loss': train_loss, 'log': logs}
         return train_loss
 
-    def on_train_start(self):
-        if self.current_epoch == 1:
-            self.logger.log_hyperparams(self.hparams, {"hp/final_loss": 0, "hp/recon": 0})
 
     def training_epoch_end(self, outputs):
         # Outputs is whatever that is returned from training_step
@@ -56,11 +64,9 @@ class BasicExperiment(pl.LightningModule):
         avg_recon_loss = torch.stack([x['Reconstruction_Loss'] for x in outputs]).mean()
         avg_KLD_loss = torch.stack([x['KLD'] for x in outputs]).mean()
 
-        self.logger.experiment.add_scalar('Loss/Train', avg_loss, self.current_epoch)
-        self.logger.experiment.add_scalar('ReconLoss/Train', avg_recon_loss, self.current_epoch)
-        self.logger.experiment.add_scalar('KLDLoss/Train', avg_KLD_loss, self.current_epoch)
-
-        self.custom_histogram()
+        # self.logger.experiment.add_scalar('Loss/Train', avg_loss, self.current_epoch)
+        # self.logger.experiment.add_scalar('ReconLoss/Train', avg_recon_loss, self.current_epoch)
+        # self.logger.experiment.add_scalar('KLDLoss/Train', avg_KLD_loss, self.current_epoch)
 
         epoch_dictionary = {'loss': avg_loss}
 
@@ -76,19 +82,20 @@ class BasicExperiment(pl.LightningModule):
         return val_loss
 
     def validation_epoch_end(self, outputs):
+
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
         avg_recon_loss = torch.stack([x['Reconstruction_Loss'] for x in outputs]).mean()
         avg_KLD_loss = torch.stack([x['KLD'] for x in outputs]).mean()
         tensorboard_logs = {'avg_val_loss': avg_loss}
 
-        self.logger.experiment.add_scalar('Loss/Valid', avg_loss, self.current_epoch)
-        self.logger.experiment.add_scalar('ReconLoss/Valid', avg_recon_loss, self.current_epoch)
-        self.logger.experiment.add_scalar('KLDLoss/Valid', avg_KLD_loss, self.current_epoch)
+        # self.logger.experiment.add_scalar('Loss/Valid', avg_loss, self.current_epoch)
+        # self.logger.experiment.add_scalar('ReconLoss/Valid', avg_recon_loss, self.current_epoch)
+        # self.logger.experiment.add_scalar('KLDLoss/Valid', avg_KLD_loss, self.current_epoch)
 
-        self.log("hp/final_loss", avg_loss, on_epoch=True)
-        self.log("hp_metric", avg_loss, on_epoch=True)
-        self.log("hp/recon", avg_recon_loss, on_epoch=True)
-        self.logger.experiment.add_scalar("weighting_factor", self.model.beta * self.model.num_iter / (self.model.gamma), self.current_epoch)
+        self.log("Loss/valid", avg_loss)
+        self.log("ReconLoss/valid", avg_loss)
+        self.log("KLD/valid", avg_KLD_loss)
+        # self.logger.experiment.add_scalar("weighting_factor", self.model.beta * self.model.num_iter / (self.model.gamma), self.current_epoch)
 
     def test_step(self, batch, batch_idx, optimizer_idx=0):
 
@@ -96,28 +103,21 @@ class BasicExperiment(pl.LightningModule):
         self.current_device = real_profile.device
 
         results = self.forward(real_profile, labels=labels)
-        # generated_profiles = results[0]
         test_loss = self.model.loss_function(*results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.test_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx)
 
-
-        # while self.plotting_stay:
-        #     profile_plot_params = {'title': 'Reconstruction: {}-Hidden Layers {}-D Latent Space'.format(len(self.model.hidden_dims), self.model.latent_dim), 'ylabel': '$n_e (m^{-3})$', 'xlabel': 'R (m)', 'ylim': (-0.1, self.trainer.datamodule.max_X)}
-        #     self.plotting_stay = plot_sample_profiles_from_batch(results, plot_params=profile_plot_params)
-
         # Log the computational Graph!
-        if self.logger._log_graph:
-            self.logger.experiment.add_graph(self.model, real_profile)
+
+        # if self.logger._log_graph:
+        #     self.logger.experiment.add_graph(self.model, real_profile)
 
 
         return test_loss
 
     def test_epoch_end(self, outputs):
-        # self.plot_per_latent_dim()
-        # self.sample_single_profile()
 
-        # self.plot_latent_space()
-        self.correlation_of_latent_space()
-        self.sample_profiles()
+        self.generate_samples_compare_with_mean()
+        self.compare_generate_with_real()
+
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
         avg_recon_loss = torch.stack([x['Reconstruction_Loss'] for x in outputs]).mean()
         tensorboard_logs = {'avg_val_loss': avg_loss}
@@ -144,6 +144,72 @@ class BasicExperiment(pl.LightningModule):
                     name_list[2] = 'BN'
             logger_name = '/'.join(name_list)
             self.logger.experiment.add_histogram(logger_name, params, self.current_epoch)
+
+    def compare_generate_with_real(self):
+        train_data_iter = iter(self.trainer.datamodule.train_dataloader())
+        val_data_iter = iter(self.trainer.datamodule.val_dataloader())
+        test_data_iter = iter(self.trainer.datamodule.test_dataloader())
+
+        train_prof, train_mp = next(train_data_iter)
+        val_prof, val_mp = next(val_data_iter)
+        test_prof, test_mp = next(test_data_iter)
+
+        train_res, _, _, _ = self.model.forward(train_prof) # recons, input, mu, logvar
+        val_res, _, _, _ = self.model.forward(val_prof) # recons, input, mu, logvar
+        test_res, _, _, _ = self.model.forward(test_prof) # recons, input, mu, logvar
+
+
+        fig, axs = plt.subplots(3, 3, figsize=(18, 18), constrained_layout=True, sharex=True, sharey=True)
+
+        for k in [0, 1, 2]:
+            axs[0, k].plot(train_res[k*100].squeeze(), label='Generated', lw=4)
+            axs[0, k].plot(train_prof[k*100].squeeze(), label='Real', lw=4)
+            axs[1, k].plot(val_res[k*100].squeeze(), label='Generated', lw=4)
+            axs[1, k].plot(val_prof[k*100].squeeze(), label='Real', lw=4)
+            axs[2, k].plot(test_res[k*100].squeeze(), label='Generated', lw=4)
+            axs[2, k].plot(test_prof[k*100].squeeze(), label='Real', lw=4)
+
+            if k == 0:
+                axs[0, k].set_ylabel('Train', size='x-large')
+                axs[1, k].set_ylabel('Valid', size='x-large')
+                axs[2, k].set_ylabel('Test', size='x-large')
+                axs[0, k].legend()
+                axs[1, k].legend()
+                axs[2, k].legend()
+
+        fig.supxlabel('R', size='xx-large')
+        fig.supylabel('$n_e \; \; (10^{20}$ m$^{-3})$', size='xx-large')
+        fig.suptitle('{}-D Latent Space'.format(self.model.latent_dim))
+        plt.setp(axs, xticks=[])
+        self.logger.experiment.add_figure('comparison', fig)
+        plt.show()
+
+
+    def generate_samples_compare_with_mean(self):
+        train_data = self.trainer.datamodule.X_train
+        mean_profiles = torch.mean(train_data, 0)
+
+        sampled_profiles = self.model.sample(10000, self.current_device)
+        mean_sampled = torch.mean(sampled_profiles, 0)
+
+        max_sample,  min_sample = torch.max(sampled_profiles, 0), torch.min(sampled_profiles, 0)
+        max_sample, _ = max_sample
+        min_sample, _ = min_sample
+
+        fig, axs = plt.subplots(1, 1, figsize=(18, 18), constrained_layout=True)
+        axs.plot(mean_sampled.squeeze(), label='VAE Mean', lw=3)
+        axs.plot(mean_profiles, label='Train Mean', lw=3)
+        axs.fill_between(np.arange(0, 63), max_sample.squeeze(), min_sample.squeeze(), color='grey', alpha=0.3)
+
+        axs.legend()
+        fig.supxlabel('R', size='xx-large')
+        fig.supylabel('$n_e \; \; (10^{20}$ m$^{-3})$', size='xx-large')
+        fig.suptitle('{}-D Latent Space'.format(self.model.latent_dim))
+        plt.setp(axs, xticks=[], ylim=(-0.05, 1.0))
+
+        self.logger.experiment.add_figure('samples_vs_mean', fig)
+
+        plt.show()
 
     def plot_latent_for_corr(self, z, val_params):
         fig, axs = plt.subplots(2, 5, figsize=(18, 18), sharey=True, sharex=True)
