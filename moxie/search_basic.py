@@ -55,7 +55,7 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus):
     model_params = search_space
     # 1 if str(device).startswith('cuda') else 0
     experiment_params ={'LR': 0.0001, 'weight_decay': 0.0, 'batch_size': 512}
-    data_params = {'data_dir': '/home/kitadam/ENR_Sven/moxie/data/processed/profile_database_v1_psi22.hdf5',
+    data_params = {'data_dir': '/scratch/project_2005083/moxie/data/processed/profile_database_v1_psi22.hdf5',
                     'num_workers': num_cpus}
 
     trainer_params = {
@@ -86,14 +86,14 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus):
     runner = pl.Trainer(**trainer_params)
 
     runner.fit(experiment, datamodule=datacls)
-    runner.test(experiment, datamodule=datacls)
+    # runner.test(experiment, datamodule=datacls)
 
 
 def train_model_on_tune_checkpoint(search_space, num_epochs, num_gpus, num_cpus, checkpoint_dir=None):
     model_params = search_space
     # 1 if str(device).startswith('cuda') else 0
     experiment_params ={'LR': 0.0001, 'weight_decay': 0.0, 'batch_size': 512}
-    data_params = {'data_dir': '/home/kitadam/ENR_Sven/moxie/data/processed/profile_database_v1_psi22.hdf5',
+    data_params = {'data_dir': '/scratch/project_2005083/moxie/data/processed/profile_database_v1_psi22.hdf5',
                     'num_workers': num_cpus}
 
     trainer_params = {
@@ -128,7 +128,7 @@ def train_model_on_tune_checkpoint(search_space, num_epochs, num_gpus, num_cpus,
     runner = pl.Trainer(**trainer_params)
 
     runner.fit(experiment, datamodule=datacls)
-    runner.test(experiment, datamodule=datacls)
+    # runner.test(experiment, datamodule=datacls)
 
 
 def tune_random(num_samples=100, num_epochs=300, gpus_per_trial=0, cpus_per_trial=2):
@@ -168,6 +168,7 @@ def tune_random(num_samples=100, num_epochs=300, gpus_per_trial=0, cpus_per_tria
         num_samples=num_samples,
         search_alg=search_alg,
         progress_reporter=reporter,
+	local_dir='./ray_results',
         name="tune_random_trial")
 
     print("Best hyperparameters found were: ", analysis.best_config)
@@ -251,7 +252,8 @@ def tune_asha(num_samples=10, num_epochs=200, gpus_per_trial=0, cpus_per_trial=2
 
 
 if __name__ == '__main__':
-    tune_random()
+    os.environ["SLURM_JOB_NAME"] = "bash"
+    tune_random(cpus_per_trial=4)
     """
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     DATA_PARAMS = {'data_dir': '/home/kitadam/ENR_Sven/moxie/data/processed/profile_database_v1_psi22.hdf5',
