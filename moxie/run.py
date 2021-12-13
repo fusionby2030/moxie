@@ -18,7 +18,7 @@ generator=torch.Generator().manual_seed(42)
 torch.manual_seed(42)
 logger = TensorBoardLogger("tb_logs", name="DualEncoderVAE")
 
-STATIC_PARAMS = {'data_dir': '/home/kitadam/ENR_Sven/moxie/data/processed/profile_database_v1_psi22.hdf5',
+STATIC_PARAMS = {'data_dir': '/scratch/project_2005083/moxie/data/processed/profile_database_v1_psi22.hdf5',
                 'num_workers': 4}
 HYPERPARAMS = {'LR': 0.0001, 'weight_decay': 0.0, 'batch_size': 512}
 
@@ -33,7 +33,7 @@ model_hyperparams = {'in_ch': 1, 'out_dim':63, 'hidden_dims': [2, 8],
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
 model = DualEncoderVAE(**model_hyperparams)
-trainer_params = {'max_epochs': 100000, 'gpus': 1 if str(device).startswith('cuda') else 0}
+trainer_params = {'max_epochs': 200, 'gpus': 1 if str(device).startswith('cuda') else 0}
 
 from experiments import DualVAExperiment
 

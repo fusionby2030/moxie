@@ -39,9 +39,6 @@ def train_model(param_dict):
 
     runner = pl.Trainer(logger=logger, **trainer_params)
 
-
-
-
     runner.fit(experiment, datamodule=datacls)
     runner.test(experiment, datamodule=datacls)
 
@@ -53,14 +50,13 @@ from ray.tune.suggest.basic_variant import BasicVariantGenerator
 
 def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus):
     model_params = search_space
-    # 1 if str(device).startswith('cuda') else 0
     experiment_params ={'LR': 0.0001, 'weight_decay': 0.0, 'batch_size': 512}
     data_params = {'data_dir': '/scratch/project_2005083/moxie/data/processed/profile_database_v1_psi22.hdf5',
                     'num_workers': num_cpus}
 
     trainer_params = {
         'max_epochs': num_epochs,
-        'gpus': num_gpus,
+        'gpus': num_gpus if isinstance(num_gpus, int) else 1,
         'logger': TensorBoardLogger(save_dir=tune.get_trial_dir(), name="", version='.'),
         'progress_bar_refresh_rate':0,
         'callbacks': [
@@ -86,7 +82,7 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus):
     runner = pl.Trainer(**trainer_params)
 
     runner.fit(experiment, datamodule=datacls)
-    # runner.test(experiment, datamodule=datacls)
+    runner.test(experiment, datamodule=datacls)
 
 
 def train_model_on_tune_checkpoint(search_space, num_epochs, num_gpus, num_cpus, checkpoint_dir=None):
@@ -128,7 +124,7 @@ def train_model_on_tune_checkpoint(search_space, num_epochs, num_gpus, num_cpus,
     runner = pl.Trainer(**trainer_params)
 
     runner.fit(experiment, datamodule=datacls)
-    # runner.test(experiment, datamodule=datacls)
+    runner.test(experiment, datamodule=datacls)
 
 
 def tune_random(num_samples=100, num_epochs=300, gpus_per_trial=0, cpus_per_trial=2):
@@ -137,8 +133,8 @@ def tune_random(num_samples=100, num_epochs=300, gpus_per_trial=0, cpus_per_tria
         'beta': tune.loguniform(1e-7, 1),
         'num_conv_blocks': tune.choice([1, 2, 3]),
         'num_trans_conv_blocks': tune.choice([1, 2, 3]),
-        'channel_1_size': tune.choice([2, 3, 4, 5, 6, 7, 8]),
-        'channel_2_size': tune.choice([2, 3, 4, 5, 6, 7, 8])
+        'channel_1_size': tune.choice([2, 3, 4]),
+        'channel_2_size': tune.choice([4, 5, 6, 7, 8])
     }
 
 
@@ -150,7 +146,7 @@ def tune_random(num_samples=100, num_epochs=300, gpus_per_trial=0, cpus_per_tria
         ]
     )
     reporter = CLIReporter(
-        parameter_columns=["latent_dim", "beta", "num_conv_blocks", "num_trans_conv_blocks"],
+        parameter_columns=["latent_dim", "beta", "num_conv_blocks", "num_trans_conv_blocks", "channel_1_size", "channel_2_size"],
         metric_columns=["loss", "KLD_loss", "training_iteration"])
 
 
@@ -168,12 +164,12 @@ def tune_random(num_samples=100, num_epochs=300, gpus_per_trial=0, cpus_per_tria
         num_samples=num_samples,
         search_alg=search_alg,
         progress_reporter=reporter,
-	local_dir='./ray_results',
-        name="tune_random_trial")
+	    local_dir='./ray_results',
+        name="tune_random_v2")
 
     print("Best hyperparameters found were: ", analysis.best_config)
 
-def tune_pbt(num_samples=10, num_epochs=300, gpus_per_trial=0, cpus_per_trial=2):
+def tune_pbt(num_samples=10, num_epochs=300, gpus_per_trial=0, cpus_per_trial=5):
     search_space = {
         'latent_dim': tune.choice([3, 4, 5, 6, 7, 8]),
         'beta': 0.000001,
@@ -212,22 +208,25 @@ def tune_pbt(num_samples=10, num_epochs=300, gpus_per_trial=0, cpus_per_trial=2)
     print("Best hyperparameters found were: ", analysis.best_config)
 
 
-def tune_asha(num_samples=10, num_epochs=200, gpus_per_trial=0, cpus_per_trial=2):
+def tune_asha(num_samples=1, num_epochs=350, gpus_per_trial=0, cpus_per_trial=5):
 
     search_space = {
-        'latent_dim': tune.choice([3, 4, 5, 6, 7, 8]),
-        'beta': tune.loguniform(1e-6, 1),
-        'num_conv_blocks': tune.choice([1, 2, 3]),
-        'num_trans_conv_blocks': tune.choice([1, 2, 3]),
+        'latent_dim': tune.grid_search([3, 4, 5]),
+        # 'beta': tune.loguniform(1e-10, 1),
+        'num_conv_blocks': tune.grid_search([1, 2, 3]),
+        'num_trans_conv_blocks': tune.grid_search([1, 2, 3]),
+        'hidden_dims': [tune.grid_search([2, 3, 4]), tune.grid_search([4, 5, 6, 7, 8])]
+        # 'channel_1_size': tune.choice([2, 3, 4]),
+        # 'channel_2_size': tune.choice([4, 5, 6, 7, 8])
     }
 
     scheduler = ASHAScheduler(
         max_t=num_epochs,
-        grace_period=1,
+        grace_period=50,
         reduction_factor=2)
 
     reporter = CLIReporter(
-        parameter_columns=["latent_dim", "beta", "num_conv_blocks", "num_trans_conv_blocks"],
+        parameter_columns=["latent_dim", "num_conv_blocks", "num_trans_conv_blocks", 'hidden_dims'],
         metric_columns=["loss", "KLD_loss", "training_iteration"])
 
 
@@ -245,7 +244,8 @@ def tune_asha(num_samples=10, num_epochs=200, gpus_per_trial=0, cpus_per_trial=2
         num_samples=num_samples,
         scheduler=scheduler,
         progress_reporter=reporter,
-        name="tune_asha_trial")
+        local_dir='./ray_results',
+        name="tune_asha_v1")
 
     print("Best hyperparameters found were: ", analysis.best_config)
 
@@ -253,7 +253,7 @@ def tune_asha(num_samples=10, num_epochs=200, gpus_per_trial=0, cpus_per_trial=2
 
 if __name__ == '__main__':
     os.environ["SLURM_JOB_NAME"] = "bash"
-    tune_random(cpus_per_trial=4)
+    tune_asha(cpus_per_trial=10)
     """
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     DATA_PARAMS = {'data_dir': '/home/kitadam/ENR_Sven/moxie/data/processed/profile_database_v1_psi22.hdf5',

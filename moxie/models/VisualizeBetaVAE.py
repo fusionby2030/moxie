@@ -166,7 +166,7 @@ class VisualizeBetaVAE(BaseVAE):
     """
     num_iter = 0
     def __init__(self, in_ch: int = 1, latent_dim: int = 4, hidden_dims: List=[2, 8], out_length: int = 63,
-                beta: float = 4.0, gamma: float = 3000000.,  loss_type: str = 'B',
+                beta: float = 0.00000005, gamma: float = 3000000.,  loss_type: str = 'B',
                 num_conv_blocks: int = 2, conv_kernel_size: int = 3, conv_stride: int = 1, conv_padding = 'same',
                 num_trans_conv_blocks: int = 2, trans_kernel_size: int = 3, trans_stride: int = 2, trans_padding: int = 1,
                 channel_1_size: int=2, channel_2_size: int=8,

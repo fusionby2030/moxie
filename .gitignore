@@ -5,6 +5,7 @@
 /data/
 /tb_logs/
 /lightning_logs/
+/ray_results/
 ### JupyterNotebooks ###
 # gitignore template for Jupyter Notebooks
 # website: http://jupyter.org/
