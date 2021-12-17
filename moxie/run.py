@@ -16,28 +16,31 @@ device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cp
 
 generator=torch.Generator().manual_seed(42)
 torch.manual_seed(42)
-logger = TensorBoardLogger("tb_logs", name="DualEncoderVAE")
+logger = TensorBoardLogger("tb_logs", name="DIVA_Working")
 
-STATIC_PARAMS = {'data_dir': '/scratch/project_2005083/moxie/data/processed/profile_database_v1_psi22.hdf5',
+STATIC_PARAMS = {'data_dir': '/home/kitadam/ENR_Sven/moxie/data/processed/profile_database_v1_psi22.hdf5',
                 'num_workers': 4}
 HYPERPARAMS = {'LR': 0.0001, 'weight_decay': 0.0, 'batch_size': 512}
 
 # from models.VAE import VanillaVAE
-from models import BetaGammaVAE, VisualizeBetaVAE, DualVAE, DualEncoderVAE
+from models import BetaGammaVAE, VisualizeBetaVAE, DualVAE, DualEncoderVAE, DIVA_v1
 
-# model_hyperparams = {'in_ch': 1, 'out_dim':63, 'latent_dim':10, 'hidden_dims': [4, 8], 'beta': 5, 'gamma': 300000000000.0, 'loss_type': 'G'}
-model_hyperparams = {'in_ch': 1, 'out_dim':63, 'hidden_dims': [2, 8],
+model_hyperparams = {'in_ch': 1, 'out_dim':63, 'latent_dim':5,
+                        'beta_stoch':  0.0000001, 'beta_mach': 10000.0,
+                        'alpha_mach': 100., 'alpha_prof': 100.0, 
+                    'loss_type': 'supervised'}
+"""model_hyperparams = {'in_ch': 1, 'out_dim':63, 'hidden_dims': [2, 4],
                     'stoch_latent_dim':4, 'mach_latent_dim':13,
                     'num_conv_blocks': 3, 'num_trans_conv_blocks': 1,
-                    'alpha': 1.0, 'beta_mach': 0.0000008, 'beta_stoch': 0.00008, 'gamma': 0.000000}
+                    'alpha': 1.0, 'beta_mach': 0.000005, 'beta_stoch': 0.00008, 'gamma': 0.000000}"""
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
-model = DualEncoderVAE(**model_hyperparams)
-trainer_params = {'max_epochs': 200, 'gpus': 1 if str(device).startswith('cuda') else 0}
+model = DIVA_v1(**model_hyperparams)
+trainer_params = {'max_epochs': 1000, 'gpus': 1 if str(device).startswith('cuda') else 0}
 
-from experiments import DualVAExperiment
+from experiments import DualVAExperiment, BasicExperiment, DIVA_EXP
 
-experiment = DualVAExperiment(model, params)
+experiment = DIVA_EXP(model, params)
 
 
 # early_stop_callback = EarlyStopping(monitor="hp/recon", min_delta=0.001, patience=15, verbose=True, mode="min")

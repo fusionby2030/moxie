@@ -10,6 +10,17 @@ import pytorch_lightning as pl
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
+SMALL_SIZE = 20
+MEDIUM_SIZE = 22
+BIGGER_SIZE = 24
+
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)
 
 
 class BasicExperiment(pl.LightningModule):
@@ -117,6 +128,7 @@ class BasicExperiment(pl.LightningModule):
 
         self.generate_samples_compare_with_mean()
         self.compare_generate_with_real()
+        self.plot_corr_matrix()
 
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
         avg_recon_loss = torch.stack([x['Reconstruction_Loss'] for x in outputs]).mean()
@@ -154,10 +166,13 @@ class BasicExperiment(pl.LightningModule):
         val_prof, val_mp = next(val_data_iter)
         test_prof, test_mp = next(test_data_iter)
 
-        train_res, _, _, _ = self.model.forward(train_prof) # recons, input, mu, logvar
-        val_res, _, _, _ = self.model.forward(val_prof) # recons, input, mu, logvar
-        test_res, _, _, _ = self.model.forward(test_prof) # recons, input, mu, logvar
+        train_results = self.model.forward(train_prof) # recons, input, mu, logvar
+        val_results = self.model.forward(val_prof) # recons, input, mu, logvar
+        test_results = self.model.forward(test_prof) # recons, input, mu, logvar
 
+        train_res = train_results[0]
+        val_res = val_results[0]
+        test_res = test_results[0]
 
         fig, axs = plt.subplots(3, 3, figsize=(18, 18), constrained_layout=True, sharex=True, sharey=True)
 
@@ -221,6 +236,41 @@ class BasicExperiment(pl.LightningModule):
             fig.suptitle('Latent Space vs $\Gamma$ - Dim = {}'.format(len(z[0])))
         pass
 
+    def plot_corr_matrix(self, title='Latent Space vs Machine Params'):
+        train_data_iter = iter(self.trainer.datamodule.train_dataloader())
+        train_prof, val_params = next(train_data_iter)
+        mu_mach, log_var_mach = self.model.encode(train_prof)
+        z = self.model.reparameterize( mu_mach, log_var_mach)
+
+        LABEL = ['Q95', 'RGEO', 'CR0', 'VOLM', 'TRIU', 'TRIL', 'XIP', 'ELON', 'POHM', 'BT', 'ELER', 'P_NBI', 'P_ICRH']
+
+        fig, axs = plt.subplots(figsize=(20,20))
+        all_cors = []
+        for i in range(z.shape[1]):
+            val_params[np.isnan(val_params)] = 0
+            # print(val_params)
+            # print(np.cov(val_params))
+
+            single_dim = z[:, i]
+            # print(single_dim.shape)
+            correlation = np.cov(single_dim,val_params, rowvar=False) # the first column is the correlation with hidden dim and other params
+            correlation = correlation[:, 0][1:]
+            # print(correlation)
+            all_cors.append(correlation)
+        all_cors = np.stack(all_cors)
+        all_cors = torch.from_numpy(all_cors)
+        im = axs.imshow(all_cors, cmap='viridis')
+
+        axs.set_xticks(np.arange(len(LABEL)))
+        axs.set_xticklabels(LABEL)
+        axs.set_yticks(np.arange(z.shape[1]))
+        plt.setp(axs.get_xticklabels(), rotation=45, ha="right",rotation_mode="anchor")
+        plt.title(title)
+        fig.colorbar(im, orientation="horizontal", pad=0.2)
+        self.logger.experiment.add_figure('correlation_mparams', fig)
+        plt.show()
+        return fig
+
     def correlation_of_latent_space(self):
         LABEL = ['Q95', 'RGEO', 'CR0', 'VOLM', 'TRIU', 'TRIL', 'XIP', 'ELON', 'POHM', 'BT', 'ELER', 'P_NBI', 'P_ICRH', 'NE']
         validation_data_iter = iter(self.trainer.datamodule.val_dataloader())
@@ -231,10 +281,11 @@ class BasicExperiment(pl.LightningModule):
         for k in range(2):
             val_input, val_params = next(validation_data_iter)
             # val_params[:, -4] = val_params[:, -4]*(1E-21)
-            val_params = normalize(val_params)
+            # val_params = normalize(val_params)
+            print(val_params)
             mu, logvar = self.model.encode(val_input)
             z = self.model.reparameterize(mu, logvar)
-            self.plot_latent_for_corr(z, val_params)
+            # self.plot_latent_for_corr(z, val_params)
             # print(z.shape, print(val_params.shape))
 
             # For each latent space, we want the correlation between it and the

@@ -7,6 +7,7 @@ from .base import BaseVAE
 from .utils import get_conv_output_size, get_trans_output_size, get_final_output
 Tensor = TypeVar('torch.tensor')
 
+import numpy as np
 
 class Flatten(nn.Module):
     def forward(self, input):
@@ -25,7 +26,7 @@ class UnFlatten(nn.Module):
 
 
 class ConvBlock(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, conv_kernel_size: int, max_pool_kernel_size: int, stride: int = 1, num_conv_blocks: int = 1,  padding='same'):
+    def __init__(self, in_channels: int, out_channels: int, conv_kernel_size: int, max_pool_kernel_size: int, stride: int = 1, num_conv_blocks: int = 1,  padding='same', max_pool=True):
         """
         A convoution block, with form:
         input [BS, in_channel, len] -> [CONV(*N) -> Max Pool] -> output [BS, out_channel, length / max_pool_kernel_size]
@@ -63,7 +64,8 @@ class ConvBlock(nn.Module):
             self.block.append(nn.Conv1d(in_channels, out_channels, kernel_size=conv_kernel_size, stride=stride, padding=padding))
             self.block.append(nn.ReLU())
             in_channels = out_channels
-        self.block.append(nn.MaxPool1d(max_pool_kernel_size))
+        if max_pool:
+            self.block.append(nn.MaxPool1d(max_pool_kernel_size))
 
     def forward(self, x):
         for blc in self.block:
@@ -169,7 +171,7 @@ class VisualizeBetaVAE(BaseVAE):
                 beta: float = 0.00000005, gamma: float = 3000000.,  loss_type: str = 'B',
                 num_conv_blocks: int = 2, conv_kernel_size: int = 3, conv_stride: int = 1, conv_padding = 'same',
                 num_trans_conv_blocks: int = 2, trans_kernel_size: int = 3, trans_stride: int = 2, trans_padding: int = 1,
-                channel_1_size: int=2, channel_2_size: int=8,
+                max_pool=True,
                 **kwargs) -> None:
         super(VisualizeBetaVAE, self).__init__()
 
@@ -187,6 +189,7 @@ class VisualizeBetaVAE(BaseVAE):
         self.conv_stride = conv_stride
         self.conv_padding = conv_padding
         self.max_pool_stride = 2
+        self.max_pool = max_pool
 
         # Transpose convolution layer params
         self.num_trans_conv_blocks = num_trans_conv_blocks
@@ -195,16 +198,13 @@ class VisualizeBetaVAE(BaseVAE):
         self.trans_padding = trans_padding
 
         # Deep Params
-        if channel_1_size != 0 and channel_2_size != 0:
-            hidden_dims = [channel_1_size, channel_2_size]
-            
         self.hidden_dims = hidden_dims
 
         in_length = out_length
         start_k = in_ch
 
         # Get the length of the output after (convolution + max pool blocks)
-        end_conv_size = get_conv_output_size(in_length, len(self.hidden_dims))
+        end_conv_size = get_conv_output_size(in_length, len(self.hidden_dims), self.max_pool)
 
         # Get the length of the output after decoder (transposed convolution blocks)
         final_size = get_final_output(end_conv_size, len(self.hidden_dims), self.num_trans_conv_blocks, self.trans_stride, self.trans_padding, self.trans_kernel_size)
@@ -216,7 +216,7 @@ class VisualizeBetaVAE(BaseVAE):
             hidden_dims = [2, 4]
 
         for h_dim in hidden_dims:
-            modules.append(ConvBlock(in_ch, h_dim, self.conv_kernel_size, self.max_pool_stride, self.conv_stride, self.num_conv_blocks, self.conv_padding))
+            modules.append(ConvBlock(in_ch, h_dim, self.conv_kernel_size, self.max_pool_stride, self.conv_stride, self.num_conv_blocks, self.conv_padding, max_pool=self.max_pool))
             in_ch = h_dim
         modules.append(Flatten())
 
@@ -296,11 +296,18 @@ class VisualizeBetaVAE(BaseVAE):
         # kld_weight = 0.001 # kwargs['M_N'] # Account for the minibatch samples from the dataset
         recons_loss =F.mse_loss(recons, input)
 
+        kld_loss_analytical = torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim = 1), dim = 0)
 
+        var_prior = torch.FloatTensor(log_var.shape[0], log_var.shape[1]).fill_(1)
 
-        kld_loss = torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim = 1), dim = 0)
+        a1 = torch.distributions.normal.Normal(mu, torch.exp(0.5*log_var))
+        a2 = torch.distributions.normal.Normal(0, 1)
 
-        # loss = recons_loss * kwargs['M_N'] + self.beta * kwargs['M_N'] * kld_loss
+        kld_loss_torch = torch.distributions.kl.kl_divergence(a1, a2).mean(0).sum()
+
+        kld_loss = kld_loss_torch
+        assert torch.isclose(kld_loss_torch, kld_loss_analytical)
+
         if self.loss_type == 'B':
             loss =  kwargs['M_N']*recons_loss  + self.beta  *  kwargs['M_N']* kld_loss
         elif self.loss_type == 'G':

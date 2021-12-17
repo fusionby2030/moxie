@@ -6,3 +6,4 @@ from .DualVAE import *
 from .VisualizeBetaVAE import *
 from .BetaGammaVAE import *
 from .DualEncoderVAE import *
+from .DIVA import *

@@ -1,5 +1,7 @@
-def get_conv_output_size(initial_input_size, number_blocks):
+def get_conv_output_size(initial_input_size, number_blocks, max_pool=True):
     """ The conv blocks we use keep the same size but use max pooling, so the output of all convolution blocks will be of length input_size / 2"""
+    if max_pool==False:
+        return initial_input_size
     out_size = initial_input_size
     for i in range(number_blocks):
         out_size = int(out_size / 2)

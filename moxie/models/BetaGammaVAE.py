@@ -25,7 +25,6 @@ class UnFlatten(nn.Module):
 
 
 class BetaGammaVAE(BaseVAE):
-
     num_iter = 0 # To track the number of itarations
     def __init__(self, in_ch: int, latent_dim: int, hidden_dims: List=None, out_dim: int = 63, beta: float = 4.0, gamma: float=1000., loss_type: str = 'G',   **kwargs) -> None:
         super(BetaGammaVAE, self).__init__()
