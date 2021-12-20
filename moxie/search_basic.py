@@ -49,10 +49,10 @@ from ray.tune.schedulers import ASHAScheduler, PopulationBasedTraining
 from ray.tune.integration.pytorch_lightning import TuneReportCallback, TuneReportCheckpointCallback
 from ray.tune.suggest.basic_variant import BasicVariantGenerator
 
-def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus):
+def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='./data/processed/profile_database_v1_psi22.hdf5'):
     model_params = search_space
     experiment_params ={'LR': 0.0001, 'weight_decay': 0.0, 'batch_size': 512}
-    data_params = {'data_dir': '/scratch/project_2005083/moxie/data/processed/profile_database_v1_psi22.hdf5',
+    data_params = {'data_dir': data_dir,
                     'num_workers': num_cpus}
 
     trainer_params = {
@@ -63,8 +63,9 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus):
         'callbacks': [
         TuneReportCallback(
             metrics={
-                "loss": "ReconLoss/valid",
-                "KLD_loss": "KLD/valid"
+                "loss": "ReconLoss/Valid",
+                "KLD_mach": "KLD_mach/Valid",
+                "KLD_stoch": "KLD_stoch/Valid"
             },
             on="validation_end")
         ]
@@ -77,7 +78,7 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus):
 
     model = DIVA_v1(**model_params)
 
-    experiment = BasicExperiment(model, experiment_params)
+    experiment = DIVA_EXP(model, experiment_params)
 
 
     runner = pl.Trainer(**trainer_params)
@@ -101,8 +102,9 @@ def train_model_on_tune_checkpoint(search_space, num_epochs, num_gpus, num_cpus,
         'callbacks': [
         TuneReportCheckpointCallback(
             metrics={
-                "loss": "ReconLoss/valid",
-                "KLD_loss": "KLD/valid"
+                "loss": "ReconLoss/Valid",
+                "KLD_mach": "KLD_mach/Valid",
+                "KLD_stoch": "KLD_stoch/Valid"
             },
             filename="checkpoint",
             on="validation_end")
@@ -119,7 +121,7 @@ def train_model_on_tune_checkpoint(search_space, num_epochs, num_gpus, num_cpus,
 
     model = VisualizeBetaVAE(**model_params)
 
-    experiment = BasicExperiment(model, experiment_params)
+    experiment = DIVA_EXP(model, experiment_params)
 
 
     runner = pl.Trainer(**trainer_params)
@@ -211,7 +213,7 @@ def tune_pbt(num_samples=10, num_epochs=300, gpus_per_trial=0, cpus_per_trial=5)
     df.to_csv('./deva_search_results.csv')
 
 
-def tune_asha(num_samples=200, num_epochs=350, gpus_per_trial=0, cpus_per_trial=5):
+def tune_asha(num_samples=200, num_epochs=350, gpus_per_trial=0, cpus_per_trial=5,data_dir='/scratch/project_2005083/moxie/data/processed/profile_database_v1_psi22.hdf5'):
 
     search_space = {
         'mach_latent_dim': tune.randint(13, 30),
@@ -239,7 +241,8 @@ def tune_asha(num_samples=200, num_epochs=350, gpus_per_trial=0, cpus_per_trial=
     train_fn_with_parameters = tune.with_parameters(train_model_on_tune,
                                                 num_epochs=num_epochs,
                                                 num_gpus=gpus_per_trial,
-                                                num_cpus=cpus_per_trial)
+                                                num_cpus=cpus_per_trial,
+                                                data_dir=data_dir)
 
     resources_per_trial = {"cpu": cpus_per_trial, "gpu": gpus_per_trial}
     print('Almost Started')
@@ -258,11 +261,24 @@ def tune_asha(num_samples=200, num_epochs=350, gpus_per_trial=0, cpus_per_trial=
     print("Best hyperparameters found were: ", analysis.best_config)
 
 
-
+from pathlib import Path
 
 if __name__ == '__main__':
     os.environ["SLURM_JOB_NAME"] = "bash"
-    tune_asha(cpus_per_trial=10)
+    # dir_path = os.path.dirname(os.path.realpath(__file__))
+    # print(dir_path)
+    dir_path = Path(__file__).parent
+    print(dir_path)
+    desired_path = dir_path.parent
+    print(desired_path)
+    desired_path = desired_path / 'data' / 'processed' / 'profile_database_v1_psi22.hdf5'
+
+    print(desired_path.exists())
+    print(desired_path.resolve())
+    # rel_path = os.path.dirname(os.path.relpath(__file__))
+    # print(rel_path)
+
+    tune_asha(cpus_per_trial=1, data_dir=desired_path.resolve())
     """
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     DATA_PARAMS = {'data_dir': '/home/kitadam/ENR_Sven/moxie/data/processed/profile_database_v1_psi22.hdf5',

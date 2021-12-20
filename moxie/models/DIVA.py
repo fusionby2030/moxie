@@ -257,7 +257,7 @@ class DIVA_v1(BaseVAE):
 
         # Auxiliarly Regressor
 
-        self.aux_reg = AUXreg(self.mach_latent_dim, num_machine_params)
+        self.aux_reg = AUXreg(z_mach_dim=self.mach_latent_dim, mp_size=num_machine_params)
 
 
     def q_zy(self, profile: Tensor) -> List[Tensor]:

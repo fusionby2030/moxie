@@ -62,10 +62,15 @@ class DIVA_EXP(pl.LightningModule):
         # avg_mach_loss = torch.stack([x['Machine_Loss'] for x in outputs]).mean()
 
         self.logger.experiment.add_scalar('Loss/Train', avg_loss, self.current_epoch)
-        self.logger.experiment.add_scalar('ReconLoss/Train', avg_recon_loss, self.current_epoch)
+        self.log('Loss/Train', avg_loss, self.current_epoch)
+        self.log('ReconLoss/Train', avg_recon_loss, self.current_epoch)
         self.logger.experiment.add_scalar('ReconLossMP/Train', avg_recon_loss_mp, self.current_epoch)
         self.logger.experiment.add_scalar('KL_stoch/Train', avg_KLD_stoch, self.current_epoch)
         self.logger.experiment.add_scalar('KL_mach/Train', avg_KLD_mach, self.current_epoch)
+        self.logger.experiment.add_scalar('ReconLoss/Train', avg_recon_loss, self.current_epoch)
+        self.log('ReconLossMP/Train', avg_recon_loss_mp, self.current_epoch)
+        self.log('KL_stoch/Train', avg_KLD_stoch, self.current_epoch)
+        self.log('KL_mach/Train', avg_KLD_mach, self.current_epoch)
         # self.logger.experiment.add_scalar('Mach_loss/Train', avg_mach_loss, self.current_epoch)
 
         epoch_dictionary = {'loss': avg_loss}
@@ -92,9 +97,16 @@ class DIVA_EXP(pl.LightningModule):
         self.logger.experiment.add_scalar('Loss/Valid', avg_loss, self.current_epoch)
         self.logger.experiment.add_scalar('ReconLoss/Valid', avg_recon_loss, self.current_epoch)
         self.logger.experiment.add_scalar('ReconLossMP/Valid', avg_recon_loss_mp, self.current_epoch)
-        self.logger.experiment.add_scalar('KL_stoch/Valid', avg_KLD_stoch, self.current_epoch)
-        self.logger.experiment.add_scalar('KL_mach/Valid', avg_KLD_mach, self.current_epoch)
+        self.logger.experiment.add_scalar('KLD_stoch/Valid', avg_KLD_stoch, self.current_epoch)
+        self.logger.experiment.add_scalar('KLD_mach/Valid', avg_KLD_mach, self.current_epoch)
         # self.logger.experiment.add_scalar('Mach_loss/Valid', avg_mach_loss, self.current_epoch)
+        
+        self.log('Loss/Valid', avg_loss, self.current_epoch)
+        self.log('ReconLoss/Valid', avg_recon_loss, self.current_epoch)
+
+        self.log('ReconLossMP/Valid', avg_recon_loss_mp, self.current_epoch)
+        self.log('KLD_stoch/Valid', avg_KLD_stoch, self.current_epoch)
+        self.log('KLD_mach/Valid', avg_KLD_mach, self.current_epoch)
 
         tensorboard_logs = {'avg_val_loss': avg_loss}
 
