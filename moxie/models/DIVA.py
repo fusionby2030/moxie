@@ -207,14 +207,16 @@ class DIVA_v1(BaseVAE):
     """
     DIVA
     """
-    def __init__(self, alpha_prof: float = 1., alpha_mach: float=1., beta_stoch: float =  0.01,
-                        beta_mach: float = 1000.,
+    num_iterations = 0
+    def __init__(self, alpha_prof: float = 1., alpha_mach: float=1., 
+                        beta_stoch: float =  0.01, beta_mach: float = 1000., 
+                        mach_latent_dim: int = 13, stoch_latent_dim: int = 5,
                         loss_type: str = 'supervised', **kwargs) -> None:
         super(DIVA_v1, self).__init__()
 
         num_machine_params = 13
-        self.stoch_latent_dim = 5
-        self.mach_latent_dim = 13
+        self.stoch_latent_dim = stoch_latent_dim
+        self.mach_latent_dim = mach_latent_dim
         self.hidden_dims = [2, 4]
         end_conv_size = get_conv_output_size(63, len(self.hidden_dims))
 
@@ -392,6 +394,11 @@ class DIVA_v1(BaseVAE):
             torch.distributions.normal.Normal(0, 1)
             ).mean(0).sum()
 
+        """if self.num_iterations%2 ==0:
+            self.loss_type == 'unsupervised'
+        else:
+            self.loss_type = 'supervised'"""
+        self.num_iterations += 1
 
         if self.loss_type=='unsupervised':
         # Z_machine latent space losses
@@ -411,6 +418,24 @@ class DIVA_v1(BaseVAE):
 
             supervised_loss = self.alpha_prof * recon_prof_loss + self.alpha_mach * recon_mp_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach * sup_kld_loss
             return {'loss': supervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': supervised_loss, 'Reconstruction_Loss_mp': recon_mp_loss, 'Reconstruction_Loss': recon_prof_loss}
+        elif self.loss_type == 'semi-supervised': 
+            if self.num_iterations%2 == 0:
+                sup_kld_loss =torch.distributions.kl.kl_divergence(
+                 torch.distributions.normal.Normal(mu_mach, torch.exp(0.5*log_var_mach)),
+                 torch.distributions.normal.Normal(prior_mu, torch.exp(0.5*prior_stoch))
+                 ).mean(0).sum()
+
+                supervised_loss = self.alpha_prof * recon_prof_loss + self.alpha_mach * recon_mp_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach * sup_kld_loss
+
+                return {'loss': supervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': supervised_loss, 'Reconstruction_Loss_mp': recon_mp_loss, 'Reconstruction_Loss': recon_prof_loss}
+            else: 
+                unsup_kld_loss = torch.distributions.kl.kl_divergence(
+                 torch.distributions.normal.Normal(mu_mach, torch.exp(0.5*log_var_mach)),
+                 torch.distributions.normal.Normal(0, 1)
+                 ).mean(0).sum()
+
+                unsupervised_loss = self.alpha_prof * recon_prof_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach * unsup_kld_loss
+                return {'loss': unsupervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': unsup_kld_loss, 'Reconstruction_Loss': recon_prof_loss, 'Reconstruction_Loss_mp': recon_mp_loss}
         else:
             raise ValueError('Undefined Loss type, choose between unsupervised or supervised')
 

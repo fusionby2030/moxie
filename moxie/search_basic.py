@@ -16,9 +16,10 @@ from experiments import BasicExperiment
 from sklearn.model_selection import ParameterSampler
 from scipy.stats.distributions import loguniform
 
-from models import BetaGammaVAE, VisualizeBetaVAE, DualVAE, DualEncoderVAE
-from experiments import DualVAExperiment, BasicExperiment
+from models import BetaGammaVAE, VisualizeBetaVAE, DualVAE, DualEncoderVAE, DIVA_v1
+from experiments import DualVAExperiment, BasicExperiment, DIVA_EXP
 import os
+import pandas as pd 
 
 def train_model(param_dict):
     model_params = param_dict['MODEL_PARAMS']
@@ -74,7 +75,7 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus):
 
     datacls = DataModuleClass(**data_params)
 
-    model = VisualizeBetaVAE(**model_params)
+    model = DIVA_v1(**model_params)
 
     experiment = BasicExperiment(model, experiment_params)
 
@@ -206,16 +207,21 @@ def tune_pbt(num_samples=10, num_epochs=300, gpus_per_trial=0, cpus_per_trial=5)
         name="tune_pbt_v2")
 
     print("Best hyperparameters found were: ", analysis.best_config)
+    df = analysis.results_df
+    df.to_csv('./deva_search_results.csv')
 
 
-def tune_asha(num_samples=1, num_epochs=350, gpus_per_trial=0, cpus_per_trial=5):
+def tune_asha(num_samples=200, num_epochs=350, gpus_per_trial=0, cpus_per_trial=5):
 
     search_space = {
-        'latent_dim': tune.grid_search([3, 4, 5]),
+        'mach_latent_dim': tune.randint(13, 30),
+        'beta_stoch': tune.loguniform(1e-10, 10),
+        'beta_mach': tune.qrandint(10, 100000, 10),
+        'loss_type': tune.choice(['supervised', 'unsupervised', 'semi-supervised'])
         # 'beta': tune.loguniform(1e-10, 1),
-        'num_conv_blocks': tune.grid_search([1, 2, 3]),
-        'num_trans_conv_blocks': tune.grid_search([1, 2, 3]),
-        'hidden_dims': [tune.grid_search([2, 3, 4]), tune.grid_search([4, 5, 6, 7, 8])]
+        # 'num_conv_blocks': tune.grid_search([1, 2, 3]),
+        # 'num_trans_conv_blocks': tune.grid_search([1, 2, 3]),
+        # 'hidden_dims': [tune.grid_search([2, 3, 4]), tune.grid_search([4, 5, 6, 7, 8])]
         # 'channel_1_size': tune.choice([2, 3, 4]),
         # 'channel_2_size': tune.choice([4, 5, 6, 7, 8])
     }
@@ -226,8 +232,8 @@ def tune_asha(num_samples=1, num_epochs=350, gpus_per_trial=0, cpus_per_trial=5)
         reduction_factor=2)
 
     reporter = CLIReporter(
-        parameter_columns=["latent_dim", "num_conv_blocks", "num_trans_conv_blocks", 'hidden_dims'],
-        metric_columns=["loss", "KLD_loss", "training_iteration"])
+        parameter_columns=["mach_latent_dim", "beta_stoch", "beta_mach"],
+        metric_columns=["loss", "ReconLoss/Valid", "training_iteration"])
 
 
     train_fn_with_parameters = tune.with_parameters(train_model_on_tune,
@@ -236,6 +242,7 @@ def tune_asha(num_samples=1, num_epochs=350, gpus_per_trial=0, cpus_per_trial=5)
                                                 num_cpus=cpus_per_trial)
 
     resources_per_trial = {"cpu": cpus_per_trial, "gpu": gpus_per_trial}
+    print('Almost Started')
     analysis = tune.run(train_fn_with_parameters,
         resources_per_trial=resources_per_trial,
         metric="loss",
@@ -245,9 +252,11 @@ def tune_asha(num_samples=1, num_epochs=350, gpus_per_trial=0, cpus_per_trial=5)
         scheduler=scheduler,
         progress_reporter=reporter,
         local_dir='./ray_results',
-        name="tune_asha_v1")
+        name="tune_DIVA_beta",
+        fail_fast=True)
 
     print("Best hyperparameters found were: ", analysis.best_config)
+
 
 
 
