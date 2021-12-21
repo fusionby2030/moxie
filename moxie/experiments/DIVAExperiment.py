@@ -35,9 +35,11 @@ class DIVA_EXP(pl.LightningModule):
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
         real_profile, machine_params = batch
         self.current_device = real_profile.device
+        # print(real_profile)
+        # print(machine_params)
 
         results = self.forward(real_profile, in_mp=machine_params)
-
+        # print(results)
         train_loss = self.model.loss_function(**results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.train_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx)
 
         logs = {'train_loss': train_loss}
@@ -61,16 +63,21 @@ class DIVA_EXP(pl.LightningModule):
         avg_recon_loss_mp = torch.stack([x['Reconstruction_Loss_mp'] for x in outputs]).mean()
         # avg_mach_loss = torch.stack([x['Machine_Loss'] for x in outputs]).mean()
 
-        self.logger.experiment.add_scalar('Loss/Train', avg_loss, self.current_epoch)
-        self.log('Loss/Train', avg_loss, self.current_epoch)
-        self.log('ReconLoss/Train', avg_recon_loss, self.current_epoch)
+        metrics = {'Loss/Train': avg_loss,
+                'ReconLoss/Train': avg_recon_loss,
+                'ReconLossMP/Train': avg_recon_loss_mp,
+                'KLD_stoch/Train': avg_KLD_stoch,
+                'KLD_mach/Train': avg_KLD_mach}
+
+        self.log_dict(metrics)
+        self.logger.experiment.add_scalars('', metrics, self.current_epoch)
+
+        """self.logger.experiment.add_scalar('Loss/Train', avg_loss, self.current_epoch)
         self.logger.experiment.add_scalar('ReconLossMP/Train', avg_recon_loss_mp, self.current_epoch)
         self.logger.experiment.add_scalar('KL_stoch/Train', avg_KLD_stoch, self.current_epoch)
         self.logger.experiment.add_scalar('KL_mach/Train', avg_KLD_mach, self.current_epoch)
         self.logger.experiment.add_scalar('ReconLoss/Train', avg_recon_loss, self.current_epoch)
-        self.log('ReconLossMP/Train', avg_recon_loss_mp, self.current_epoch)
-        self.log('KL_stoch/Train', avg_KLD_stoch, self.current_epoch)
-        self.log('KL_mach/Train', avg_KLD_mach, self.current_epoch)
+        """
         # self.logger.experiment.add_scalar('Mach_loss/Train', avg_mach_loss, self.current_epoch)
 
         epoch_dictionary = {'loss': avg_loss}
@@ -89,31 +96,36 @@ class DIVA_EXP(pl.LightningModule):
     def validation_epoch_end(self, outputs):
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
         avg_recon_loss = torch.stack([x['Reconstruction_Loss'] for x in outputs]).mean()
+        avg_recon_loss_mp = torch.stack([x['Reconstruction_Loss_mp'] for x in outputs]).mean()
         avg_KLD_stoch = torch.stack([x['KLD_stoch'] for x in outputs]).mean()
         avg_KLD_mach = torch.stack([x['KLD_mach'] for x in outputs]).mean()
-        avg_recon_loss_mp = torch.stack([x['Reconstruction_Loss_mp'] for x in outputs]).mean()
+
+
+        metrics = {'Loss/Valid': avg_loss,
+                'ReconLoss/Valid': avg_recon_loss,
+                'ReconLossMP/Valid': avg_recon_loss_mp,
+                'KLD_stoch/Valid': avg_KLD_stoch,
+                'KLD_mach/Valid': avg_KLD_mach}
+
+
+        self.log_dict(metrics)
+        self.logger.experiment.add_scalars('', metrics, self.current_epoch)
         # avg_mach_loss = torch.stack([x['Machine_Loss'] for x in outputs]).mean()
 
-        self.logger.experiment.add_scalar('Loss/Valid', avg_loss, self.current_epoch)
-        self.logger.experiment.add_scalar('ReconLoss/Valid', avg_recon_loss, self.current_epoch)
-        self.logger.experiment.add_scalar('ReconLossMP/Valid', avg_recon_loss_mp, self.current_epoch)
-        self.logger.experiment.add_scalar('KLD_stoch/Valid', avg_KLD_stoch, self.current_epoch)
-        self.logger.experiment.add_scalar('KLD_mach/Valid', avg_KLD_mach, self.current_epoch)
+        # self.logger.experiment.add_scalar('Loss/Valid', avg_loss, self.current_epoch)
+        # self.logger.experiment.add_scalar('ReconLoss/Valid', avg_recon_loss, self.current_epoch)
+        # self.logger.experiment.add_scalar('ReconLossMP/Valid', avg_recon_loss_mp, self.current_epoch)
+        # self.logger.experiment.add_scalar('KLD_stoch/Valid', avg_KLD_stoch, self.current_epoch)
+        # self.logger.experiment.add_scalar('KLD_mach/Valid', avg_KLD_mach, self.current_epoch)
         # self.logger.experiment.add_scalar('Mach_loss/Valid', avg_mach_loss, self.current_epoch)
-        
-        self.log('Loss/Valid', avg_loss, self.current_epoch)
-        self.log('ReconLoss/Valid', avg_recon_loss, self.current_epoch)
-
-        self.log('ReconLossMP/Valid', avg_recon_loss_mp, self.current_epoch)
-        self.log('KLD_stoch/Valid', avg_KLD_stoch, self.current_epoch)
-        self.log('KLD_mach/Valid', avg_KLD_mach, self.current_epoch)
-
-        tensorboard_logs = {'avg_val_loss': avg_loss}
 
 
-        self.log("hp/final_loss", avg_loss, on_epoch=True)
-        self.log("hp_metric", avg_loss, on_epoch=True)
-        self.log("hp/recon", avg_recon_loss, on_epoch=True)
+        # tensorboard_logs = {'avg_val_loss': avg_loss}
+
+
+        # self.log("hp/final_loss", avg_loss, on_epoch=True)
+        # self.log("hp_metric", avg_loss, on_epoch=True)
+        # self.log("hp/recon", avg_recon_loss, on_epoch=True)
 
 
     def test_step(self, batch, batch_idx, optimizer_idx=0):

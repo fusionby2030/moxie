@@ -80,6 +80,9 @@ class DataModuleClass(pl.LightningDataModule):
         self.y_train[torch.isnan(self.y_train)] = 0.0
         self.y_val[torch.isnan(self.y_val)] = 0.0
         self.y_test[torch.isnan(self.y_test)] = 0.0
+
+        assert torch.isnan(self.y_train).any() == False
+        assert torch.isnan(self.X_train).any() == False
     def setup(self,stage=None):
 
         self.max_X = torch.max(self.X_train)

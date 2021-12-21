@@ -18,7 +18,7 @@ generator=torch.Generator().manual_seed(42)
 torch.manual_seed(42)
 logger = TensorBoardLogger("tb_logs", name="DIVA_Working")
 
-STATIC_PARAMS = {'data_dir': '/home/kitadam/ENR_Sven/moxie/data/processed/profile_database_v1_psi22.hdf5',
+STATIC_PARAMS = {'data_dir': '/home/adam/ENR_Sven/moxie/data/processed/profile_database_v1_psi22.hdf5',
                 'num_workers': 4}
 HYPERPARAMS = {'LR': 0.0001, 'weight_decay': 0.0, 'batch_size': 512}
 
@@ -26,8 +26,8 @@ HYPERPARAMS = {'LR': 0.0001, 'weight_decay': 0.0, 'batch_size': 512}
 from models import BetaGammaVAE, VisualizeBetaVAE, DualVAE, DualEncoderVAE, DIVA_v1
 
 model_hyperparams = {'in_ch': 1, 'out_dim':63, 'latent_dim':5,
-                        'beta_stoch':  0.0000001, 'beta_mach': 10000.0,
-                        'alpha_mach': 100., 'alpha_prof': 100.0, 
+                        'beta_stoch':   0.000139164, 'beta_mach': 84840,
+                        'alpha_mach': 1., 'alpha_prof': 1.0,
                     'loss_type': 'supervised'}
 """model_hyperparams = {'in_ch': 1, 'out_dim':63, 'hidden_dims': [2, 4],
                     'stoch_latent_dim':4, 'mach_latent_dim':13,
@@ -36,7 +36,7 @@ model_hyperparams = {'in_ch': 1, 'out_dim':63, 'latent_dim':5,
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
 model = DIVA_v1(**model_hyperparams)
-trainer_params = {'max_epochs': 1000, 'gpus': 1 if str(device).startswith('cuda') else 0}
+trainer_params = {'max_epochs': 1000,  'gpus': 1 if str(device).startswith('cuda') else 0}
 
 from experiments import DualVAExperiment, BasicExperiment, DIVA_EXP
 

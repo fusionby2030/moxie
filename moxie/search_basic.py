@@ -5,21 +5,17 @@ import torch
 
 import matplotlib.pyplot as plt
 
-from sklearn.model_selection import train_test_split
-
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 from models import VisualizeBetaVAE
 from experiments import BasicExperiment
 
-from sklearn.model_selection import ParameterSampler
-from scipy.stats.distributions import loguniform
 
 from models import BetaGammaVAE, VisualizeBetaVAE, DualVAE, DualEncoderVAE, DIVA_v1
 from experiments import DualVAExperiment, BasicExperiment, DIVA_EXP
 import os
-import pandas as pd 
+import pandas as pd
 
 def train_model(param_dict):
     model_params = param_dict['MODEL_PARAMS']
@@ -265,40 +261,13 @@ from pathlib import Path
 
 if __name__ == '__main__':
     os.environ["SLURM_JOB_NAME"] = "bash"
-    # dir_path = os.path.dirname(os.path.realpath(__file__))
-    # print(dir_path)
-    dir_path = Path(__file__).parent
-    print(dir_path)
-    desired_path = dir_path.parent
-    print(desired_path)
-    desired_path = desired_path / 'data' / 'processed' / 'profile_database_v1_psi22.hdf5'
 
+    dir_path = Path(__file__).parent
+    desired_path = dir_path.parent
+    desired_path = desired_path / 'data' / 'processed' / 'profile_database_v1_psi22.hdf5'
+    print('\n# Path to Dataset Exists? ')
     print(desired_path.exists())
     print(desired_path.resolve())
-    # rel_path = os.path.dirname(os.path.relpath(__file__))
-    # print(rel_path)
+
 
     tune_asha(cpus_per_trial=1, data_dir=desired_path.resolve())
-    """
-    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    DATA_PARAMS = {'data_dir': '/home/kitadam/ENR_Sven/moxie/data/processed/profile_database_v1_psi22.hdf5',
-                    'num_workers': 4}
-    EXPERIMENT_PARAMS = {'LR': 0.0001, 'weight_decay': 0.0, 'batch_size': 512}
-    MODEL_PARAMS = {'in_ch': 1, 'out_dim':63, 'hidden_dims': [2, 4],
-                        'latent_dim':4,
-                        'beta': 0.0005, 'gamma': 300000000000.0, 'loss_type': 'B',
-                        'num_conv_blocks': 2, 'num_trans_conv_blocks': 1,}
-    TRAINER_PARAMS = {'max_epochs': 400, 'gpus': 1 if str(device).startswith('cuda') else 0}
-
-
-    param_grid = {'beta': loguniform(0.000001, 1.0)}
-
-    param_list = list(ParameterSampler(param_grid, n_iter=100, random_state=41))
-
-    for param in param_list:
-        print(param)
-        MODEL_PARAMS.update(param)
-        print(MODEL_PARAMS)
-        all_params = {'DATA_PARAMS': {**DATA_PARAMS, **EXPERIMENT_PARAMS}, 'EXPERIMENT_PARAMS': EXPERIMENT_PARAMS, 'MODEL_PARAMS': MODEL_PARAMS, 'TRAINER_PARAMS': TRAINER_PARAMS}
-        main(all_params)
-    """
