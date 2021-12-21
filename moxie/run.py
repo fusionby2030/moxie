@@ -36,7 +36,7 @@ model_hyperparams = {'in_ch': 1, 'out_dim':63, 'latent_dim':5,
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
 model = DIVA_v1(**model_hyperparams)
-trainer_params = {'max_epochs': 1000,  'gpus': 1 if str(device).startswith('cuda') else 0}
+trainer_params = {'max_epochs': 1000,  'gpus': 1 if str(device).startswith('cuda') else 0, 'gradient_clip_val': 0.5, 'gradient_clip_algorithm':"value", 'profiler':"advanced"}
 
 from experiments import DualVAExperiment, BasicExperiment, DIVA_EXP
 

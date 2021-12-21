@@ -129,6 +129,7 @@ class DECODER(nn.Module):
 
         for i in range(len(hidden_dims) - 1):
             self.block.append(TranspConvBlock(hidden_dims[i], hidden_dims[i+1], trans_kernel_size, num_trans_conv_blocks, trans_stride, trans_padding))
+            # self.block.append(nn.ReLU())
 
         self.final_size = get_final_output(end_conv_size, len(self.hidden_dims) -1, self.num_trans_conv_blocks, self.trans_stride, self.trans_padding, self.trans_kernel_size)
     def forward(self, x):
@@ -152,6 +153,7 @@ class ENCODER(nn.Module):
         self.block = nn.ModuleList()
         for h_dim in hidden_dims:
             self.block.append(ConvBlock(in_ch, h_dim, self.conv_kernel_size, self.max_pool_stride, self.conv_stride, self.num_conv_blocks, self.conv_padding, max_pool=self.max_pool))
+            # self.block.append(nn.ReLU())
             in_ch = h_dim
         self.block.append(Flatten())
 
@@ -191,16 +193,17 @@ class AUXreg(nn.Module):
     """
     def __init__(self, mp_size, z_mach_dim):
         super(AUXreg, self).__init__()
-
-        self.fc1 = nn.Linear(z_mach_dim, 32)
-        self.fc2 = nn.Linear(32, 16)
-        self.out = nn.Linear(16, mp_size)
-        self.act = nn.ReLU()
+        self.block = nn.ModuleList()
+        self.block.append(nn.Linear(z_mach_dim, 32))
+        self.block.append(nn.ReLU())
+        self.block.append(nn.Linear(32, 16))
+        self.block.append(nn.ReLU())
+        self.block.append(nn.Linear(16, mp_size))
 
     def forward(self, x):
-        x = self.act(self.fc1(x))
-        x = self.act(self.fc2(x))
-        return self.out(x)
+        for lay in self.block:
+            x = lay(x)
+        return x
 
 
 class DIVA_v1(BaseVAE):
@@ -208,8 +211,8 @@ class DIVA_v1(BaseVAE):
     DIVA
     """
     num_iterations = 0
-    def __init__(self, alpha_prof: float = 1., alpha_mach: float=1., 
-                        beta_stoch: float =  0.01, beta_mach: float = 1000., 
+    def __init__(self, alpha_prof: float = 1., alpha_mach: float=1.,
+                        beta_stoch: float =  0.01, beta_mach: float = 1000.,
                         mach_latent_dim: int = 13, stoch_latent_dim: int = 5,
                         loss_type: str = 'supervised', **kwargs) -> None:
         super(DIVA_v1, self).__init__()
@@ -418,7 +421,7 @@ class DIVA_v1(BaseVAE):
 
             supervised_loss = self.alpha_prof * recon_prof_loss + self.alpha_mach * recon_mp_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach * sup_kld_loss
             return {'loss': supervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': supervised_loss, 'Reconstruction_Loss_mp': recon_mp_loss, 'Reconstruction_Loss': recon_prof_loss}
-        elif self.loss_type == 'semi-supervised': 
+        elif self.loss_type == 'semi-supervised':
             if self.num_iterations%2 == 0:
                 sup_kld_loss =torch.distributions.kl.kl_divergence(
                  torch.distributions.normal.Normal(mu_mach, torch.exp(0.5*log_var_mach)),
@@ -428,7 +431,7 @@ class DIVA_v1(BaseVAE):
                 supervised_loss = self.alpha_prof * recon_prof_loss + self.alpha_mach * recon_mp_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach * sup_kld_loss
 
                 return {'loss': supervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': supervised_loss, 'Reconstruction_Loss_mp': recon_mp_loss, 'Reconstruction_Loss': recon_prof_loss}
-            else: 
+            else:
                 unsup_kld_loss = torch.distributions.kl.kl_divergence(
                  torch.distributions.normal.Normal(mu_mach, torch.exp(0.5*log_var_mach)),
                  torch.distributions.normal.Normal(0, 1)

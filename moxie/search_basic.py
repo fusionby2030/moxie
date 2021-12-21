@@ -55,13 +55,16 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
         'max_epochs': num_epochs,
         'gpus': num_gpus if isinstance(num_gpus, int) else 1,
         'logger': TensorBoardLogger(save_dir=tune.get_trial_dir(), name="", version='.'),
+        'gradient_clip_val': 0.5,
+        'gradient_clip_algorithm':"value",
         'progress_bar_refresh_rate':0,
         'callbacks': [
         TuneReportCallback(
             metrics={
                 "loss": "ReconLoss/Valid",
                 "KLD_mach": "KLD_mach/Valid",
-                "KLD_stoch": "KLD_stoch/Valid"
+                "KLD_stoch": "KLD_stoch/Valid",
+                'loss_mp': 'ReconLossMP/Valid'
             },
             on="validation_end")
         ]
@@ -209,12 +212,12 @@ def tune_pbt(num_samples=10, num_epochs=300, gpus_per_trial=0, cpus_per_trial=5)
     df.to_csv('./deva_search_results.csv')
 
 
-def tune_asha(num_samples=200, num_epochs=350, gpus_per_trial=0, cpus_per_trial=5,data_dir='/scratch/project_2005083/moxie/data/processed/profile_database_v1_psi22.hdf5'):
+def tune_asha(num_samples=500, num_epochs=350, gpus_per_trial=0, cpus_per_trial=5,data_dir='/scratch/project_2005083/moxie/data/processed/profile_database_v1_psi22.hdf5'):
 
     search_space = {
         'mach_latent_dim': tune.randint(13, 30),
-        'beta_stoch': tune.loguniform(1e-10, 10),
-        'beta_mach': tune.qrandint(10, 100000, 10),
+        'beta_stoch': tune.loguniform(1e-6, 10),
+        'beta_mach': tune.qrandint(10, 10000, 10),
         'loss_type': tune.choice(['supervised', 'unsupervised', 'semi-supervised'])
         # 'beta': tune.loguniform(1e-10, 1),
         # 'num_conv_blocks': tune.grid_search([1, 2, 3]),
@@ -231,7 +234,8 @@ def tune_asha(num_samples=200, num_epochs=350, gpus_per_trial=0, cpus_per_trial=
 
     reporter = CLIReporter(
         parameter_columns=["mach_latent_dim", "beta_stoch", "beta_mach"],
-        metric_columns=["loss", "ReconLoss/Valid", "training_iteration"])
+        metric_columns=["loss", "KLD_mach", "KLD_stoch", "loss_mp", "training_iteration", "loss_type"],
+        max_report_frequency=20)
 
 
     train_fn_with_parameters = tune.with_parameters(train_model_on_tune,
@@ -252,9 +256,13 @@ def tune_asha(num_samples=200, num_epochs=350, gpus_per_trial=0, cpus_per_trial=
         progress_reporter=reporter,
         local_dir='./ray_results',
         name="tune_DIVA_beta",
-        fail_fast=True)
+        fail_fast=False)
 
     print("Best hyperparameters found were: ", analysis.best_config)
+
+    df = analysis.results_df
+    df.to_csv('./diva_res_1.csv')
+
 
 
 from pathlib import Path
@@ -265,8 +273,7 @@ if __name__ == '__main__':
     dir_path = Path(__file__).parent
     desired_path = dir_path.parent
     desired_path = desired_path / 'data' / 'processed' / 'profile_database_v1_psi22.hdf5'
-    print('\n# Path to Dataset Exists? ')
-    print(desired_path.exists())
+    print('\n# Path to Dataset Exists? {}'.format(desired_path.exists()))
     print(desired_path.resolve())
 
 
