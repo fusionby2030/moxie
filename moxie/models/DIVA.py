@@ -254,8 +254,6 @@ class DIVA_v1(BaseVAE):
         self.decoder_input = nn.Linear(self.stoch_latent_dim + self.mach_latent_dim, self.hidden_dims[-1]*end_conv_size)
         self.decoder = DECODER(end_conv_size=end_conv_size)
         final_size = self.decoder.final_size
-        print(end_conv_size)
-        print(final_size)
         self.final_layer = nn.Linear(final_size, 63)
 
         # Auxiliarly Regressor
