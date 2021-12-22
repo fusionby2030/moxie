@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 import os
 
 
-def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='./data/processed/profile_database_v1_psi22.hdf5'):
+def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='./data/processed/profile_database_v1_psi22.hdf5', pin_memory=False):
     model_params = search_space
     experiment_params ={'LR': 0.0001, 'weight_decay': 0.0, 'batch_size': 512}
     data_params = {'data_dir': data_dir,
@@ -71,11 +71,11 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
     runner.test(experiment, datamodule=datacls)
 
 
-def tune_asha(num_samples=500, num_epochs=350, gpus_per_trial=0, cpus_per_trial=5, data_dir='/scratch/project_2005083/moxie/data/processed/profile_database_v1_psi22.hdf5'):
+def tune_asha(num_samples=500, num_epochs=350, gpus_per_trial=0, cpus_per_trial=5, data_dir='/scratch/project_2005083/moxie/data/processed/profile_database_v1_psi22.hdf5', pin_memory=False):
     search_space = {
-        'mach_latent_dim': tune.randint(13, 30),
-        'beta_stoch': tune.loguniform(1e-6, 10),
-        'beta_mach': tune.qrandint(10, 10000, 10),
+        'mach_latent_dim': tune.randint(13, 40),
+        'beta_stoch': tune.loguniform(1e-4, 10),
+        'beta_mach': tune.qrandint(10, 1000, 10),
         'loss_type': tune.choice(['supervised', 'unsupervised', 'semi-supervised'])
         # 'beta': tune.loguniform(1e-10, 1),
         # 'num_conv_blocks': tune.grid_search([1, 2, 3]),
@@ -100,7 +100,8 @@ def tune_asha(num_samples=500, num_epochs=350, gpus_per_trial=0, cpus_per_trial=
                                                 num_epochs=num_epochs,
                                                 num_gpus=gpus_per_trial,
                                                 num_cpus=cpus_per_trial,
-                                                data_dir=data_dir)
+                                                data_dir=data_dir,
+                                                pin_memory=pin_memory)
 
     resources_per_trial = {"cpu": cpus_per_trial, "gpu": gpus_per_trial}
     analysis = tune.run(train_fn_with_parameters,
@@ -126,6 +127,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Search for hyperparams using raytune and HPC.')
     parser.add_argument('-gpu', '--gpus_per_trial', default=0, help='# GPUs per trial')
     parser.add_argument('-cpu', '--cpus_per_trial', default=10, help='# CPUs per trial')
+    parser.add_argument('-ep', '--num_epochs', default=50, help='# Epochs to train on')
+    parser.add_argument('-pm', '--pin_memory', default=False, help='# Epochs to train on', type=bool)
 
     args = parser.parse_args()
 
@@ -139,4 +142,4 @@ if __name__ == '__main__':
     print(desired_path.resolve())
 
 
-    tune_asha(cpus_per_trial=int(args.cpus_per_trial), gpus_per_trial=float(args.gpus_per_trial),  data_dir=desired_path.resolve())
+    tune_asha(cpus_per_trial=int(args.cpus_per_trial), gpus_per_trial=float(args.gpus_per_trial),  data_dir=desired_path.resolve(), pin_memory=args.pin_memory)

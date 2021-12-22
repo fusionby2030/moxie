@@ -16,7 +16,7 @@ import argparse
 import os
 
 def train_model(data_dir='/home/adam/ENR_Sven/moxie/data/processed/profile_database_v1_psi22.hdf5',
-                cpus_per_trial=8, gpus_per_trial=1, name='STANDALONE', num_epochs=350):
+                cpus_per_trial=8, gpus_per_trial=1, name='STANDALONE', num_epochs=350, pin_memory=False):
 
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
@@ -25,15 +25,16 @@ def train_model(data_dir='/home/adam/ENR_Sven/moxie/data/processed/profile_datab
     logger = TensorBoardLogger("tb_logs", name=name)
 
     STATIC_PARAMS = {'data_dir':data_dir,
-                    'num_workers': cpus_per_trial}
+                    'num_workers': cpus_per_trial,
+                    'pin_memory': pin_memory}
     HYPERPARAMS = {'LR': 0.0001, 'weight_decay': 0.0, 'batch_size': 512}
 
     # from models.VAE import VanillaVAE
 
     # 14 |  0.000193631 |       13930
     model_hyperparams = {'in_ch': 1, 'out_dim':63,
-                            'mach_latent_dim': 25, 'beta_stoch': 0.218665, 'beta_mach':  1000.,
-                            'alpha_mach': 50., 'alpha_prof': 1.0,
+                            'mach_latent_dim': 20, 'beta_stoch': 0.218665, 'beta_mach':  1000.,
+                            'alpha_mach': 1., 'alpha_prof': 1.0,
                         'loss_type': 'semi-supervised'}
 
     params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
@@ -58,7 +59,8 @@ if __name__ == '__main__':
     parser.add_argument('-gpu', '--gpus_per_trial', default=0, help='# GPUs per trial')
     parser.add_argument('-cpu', '--cpus_per_trial', default=8, help='# CPUs per trial')
     parser.add_argument('-name', '--experiment_name', default='STANDALONE', help='What is the name of the experiment? i.e., how will it be logged under')
-    parser.add_argument('-ep', '--num_epochs', default=8, help='# Epochs to train on')
+    parser.add_argument('-ep', '--num_epochs', default=50, help='# Epochs to train on')
+    parser.add_argument('-pm', '--pin_memory', default=False, help='# Epochs to train on', type=bool)
     args = parser.parse_args()
 
     os.environ["SLURM_JOB_NAME"] = "bash"
@@ -69,4 +71,4 @@ if __name__ == '__main__':
     desired_path = desired_path / 'data' / 'processed' / 'profile_database_v1_psi22.hdf5'
     print('\n# Path to Dataset Exists? {}'.format(desired_path.exists()))
     print(desired_path.resolve())
-    train_model(data_dir=desired_path.resolve(), cpus_per_trial=int(args.cpus_per_trial), gpus_per_trial=int(args.gpus_per_trial), name=args.experiment_name, args.num_epochs)
+    train_model(data_dir=desired_path.resolve(), cpus_per_trial=int(args.cpus_per_trial), gpus_per_trial=int(args.gpus_per_trial), name=args.experiment_name, args.num_epochs, args.pin_memory)
