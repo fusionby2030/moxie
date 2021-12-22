@@ -15,6 +15,7 @@ from data.profile_dataset import DS, DataModuleClass
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+import torch
 
 # Raytunefrom
 from ray import tune
@@ -34,7 +35,8 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
     model_params = search_space
     experiment_params ={'LR': 0.0001, 'weight_decay': 0.0, 'batch_size': 512}
     data_params = {'data_dir': data_dir,
-                    'num_workers': num_cpus}
+                    'num_workers': num_cpus,
+                    'pin_memory': pin_memory}
 
     trainer_params = {
         'max_epochs': num_epochs,
@@ -68,7 +70,7 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
     runner = pl.Trainer(**trainer_params)
 
     runner.fit(experiment, datamodule=datacls)
-    runner.test(experiment, datamodule=datacls)
+    # runner.test(experiment, datamodule=datacls)
 
 
 def tune_asha(num_samples=500, num_epochs=350, gpus_per_trial=0, cpus_per_trial=5, data_dir='/scratch/project_2005083/moxie/data/processed/profile_database_v1_psi22.hdf5', pin_memory=False):
@@ -91,8 +93,8 @@ def tune_asha(num_samples=500, num_epochs=350, gpus_per_trial=0, cpus_per_trial=
         reduction_factor=2)
 
     reporter = CLIReporter(
-        parameter_columns=["mach_latent_dim", "beta_stoch", "beta_mach"],
-        metric_columns=["loss", "KLD_mach", "KLD_stoch", "loss_mp", "training_iteration", "loss_type"],
+        parameter_columns=["mach_latent_dim", "beta_stoch", "beta_mach", "loss_type"],
+        metric_columns=["loss", "KLD_mach", "KLD_stoch", "loss_mp", "training_iteration"],
         max_report_frequency=20)
 
 
@@ -133,7 +135,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     os.environ["SLURM_JOB_NAME"] = "bash"
-    # os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = '8'
+    os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = '8'
 
     dir_path = Path(__file__).parent
     desired_path = dir_path.parent

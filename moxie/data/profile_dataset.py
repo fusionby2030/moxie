@@ -61,6 +61,8 @@ class DataModuleClass(pl.LightningDataModule):
         self.batch_size = batch_size
         self.file_loc = data_dir
         self.num_workers = num_workers
+        
+        self.pin_memory = self.params['pin_memory']
         if 'problem' in params.keys():
             self.problem = params['problem']
         else:
@@ -113,10 +115,10 @@ class DataModuleClass(pl.LightningDataModule):
         self.test_set = DS(self.X_test, self.y_test, self.problem)
 
     def train_dataloader(self):
-        return DataLoader(self.train_set, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True)
+        return DataLoader(self.train_set, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True, pin_memory=self.pin_memory)
 
     def val_dataloader(self):
-        return DataLoader(self.val_set, batch_size=self.batch_size, num_workers=self.num_workers)
+        return DataLoader(self.val_set, batch_size=self.batch_size, num_workers=self.num_workers, pin_memory=self.pin_memory)
 
     def test_dataloader(self):
         return DataLoader(self.test_set, batch_size=self.batch_size, num_workers=self.num_workers)
