@@ -61,8 +61,11 @@ class DataModuleClass(pl.LightningDataModule):
         self.batch_size = batch_size
         self.file_loc = data_dir
         self.num_workers = num_workers
-        
-        self.pin_memory = self.params['pin_memory']
+
+        if 'pin_memory' in params.keys():
+            self.pin_memory = params['pin_memory']
+        else:
+            self.pin_memory = False
         if 'problem' in params.keys():
             self.problem = params['problem']
         else:
