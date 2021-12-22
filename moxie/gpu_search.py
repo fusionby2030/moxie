@@ -12,11 +12,12 @@ from experiments import DIVA_EXP
 from data.profile_dataset import DS, DataModuleClass
 
 # pytorch lightning
+import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 # Raytunefrom
-ray import tune
+from ray import tune
 from ray.tune import CLIReporter
 from ray.tune.schedulers import ASHAScheduler, PopulationBasedTraining
 from ray.tune.integration.pytorch_lightning import TuneReportCallback, TuneReportCheckpointCallback
@@ -129,7 +130,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     os.environ["SLURM_JOB_NAME"] = "bash"
-    os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = 8
+    # os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = '8'
 
     dir_path = Path(__file__).parent
     desired_path = dir_path.parent
