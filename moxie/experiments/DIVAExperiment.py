@@ -35,18 +35,10 @@ class DIVA_EXP(pl.LightningModule):
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
         real_profile, machine_params = batch
         self.current_device = real_profile.device
-        # print(real_profile)
-        # print(machine_params)
 
         results = self.forward(real_profile, in_mp=machine_params)
-        # print(results)
         train_loss = self.model.loss_function(**results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.train_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx)
 
-        logs = {'train_loss': train_loss}
-
-        # self.logger.log_metrics({key: val.item() for key, val in train_loss.items()})
-
-        batch_dictionary = {'loss': train_loss, 'log': logs}
         return train_loss
 
     def on_train_start(self):
@@ -61,7 +53,6 @@ class DIVA_EXP(pl.LightningModule):
         avg_KLD_stoch = torch.stack([x['KLD_stoch'] for x in outputs]).mean()
         avg_KLD_mach = torch.stack([x['KLD_mach'] for x in outputs]).mean()
         avg_recon_loss_mp = torch.stack([x['Reconstruction_Loss_mp'] for x in outputs]).mean()
-        # avg_mach_loss = torch.stack([x['Machine_Loss'] for x in outputs]).mean()
 
         metrics = {'Loss/Train': avg_loss,
                 'ReconLoss/Train': avg_recon_loss,
@@ -70,16 +61,6 @@ class DIVA_EXP(pl.LightningModule):
                 'KLD_mach/Train': avg_KLD_mach}
 
         self.log_dict(metrics)
-        self.logger.experiment.add_scalars('', metrics, self.current_epoch)
-
-        """self.logger.experiment.add_scalar('Loss/Train', avg_loss, self.current_epoch)
-        self.logger.experiment.add_scalar('ReconLossMP/Train', avg_recon_loss_mp, self.current_epoch)
-        self.logger.experiment.add_scalar('KL_stoch/Train', avg_KLD_stoch, self.current_epoch)
-        self.logger.experiment.add_scalar('KL_mach/Train', avg_KLD_mach, self.current_epoch)
-        self.logger.experiment.add_scalar('ReconLoss/Train', avg_recon_loss, self.current_epoch)
-        """
-        # self.logger.experiment.add_scalar('Mach_loss/Train', avg_mach_loss, self.current_epoch)
-
         epoch_dictionary = {'loss': avg_loss}
 
 
@@ -109,72 +90,50 @@ class DIVA_EXP(pl.LightningModule):
 
 
         self.log_dict(metrics)
-        self.logger.experiment.add_scalars('', metrics, self.current_epoch)
-        # avg_mach_loss = torch.stack([x['Machine_Loss'] for x in outputs]).mean()
-
-        # self.logger.experiment.add_scalar('Loss/Valid', avg_loss, self.current_epoch)
-        # self.logger.experiment.add_scalar('ReconLoss/Valid', avg_recon_loss, self.current_epoch)
-        # self.logger.experiment.add_scalar('ReconLossMP/Valid', avg_recon_loss_mp, self.current_epoch)
-        # self.logger.experiment.add_scalar('KLD_stoch/Valid', avg_KLD_stoch, self.current_epoch)
-        # self.logger.experiment.add_scalar('KLD_mach/Valid', avg_KLD_mach, self.current_epoch)
-        # self.logger.experiment.add_scalar('Mach_loss/Valid', avg_mach_loss, self.current_epoch)
-
-
-        # tensorboard_logs = {'avg_val_loss': avg_loss}
-
-
-        # self.log("hp/final_loss", avg_loss, on_epoch=True)
-        # self.log("hp_metric", avg_loss, on_epoch=True)
-        # self.log("hp/recon", avg_recon_loss, on_epoch=True)
 
 
     def test_step(self, batch, batch_idx, optimizer_idx=0):
 
         real_profile, machine_params = batch
-        # self.model.example_input_array = batch
         self.current_device = real_profile.device
 
         results = self.forward(real_profile, in_mp=machine_params)
-        # generated_profiles = results[0]
         test_loss = self.model.loss_function(**results, machine_params=machine_params, M_N = self.params['batch_size']/ len(self.trainer.datamodule.test_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx)
-
-
-        # if batch_idx%25 == 0:
-        #     mu_stoch, log_var_stoch, mu_mach, log_var_mach = self.model.encode(real_profile)
-        #    z_machine = self.model.reparameterize( mu_mach, log_var_mach)
-        #    machine_space_corrs = self.plot_corr_matrix(z_machine, machine_params )
-        #    self.logger.experiment.add_figure('machine_latent', machine_space_corrs)
-        #    z_stoch = self.model.reparameterize(mu_stoch, log_var_stoch, )
-        #    stoch_space_corrs = self.plot_corr_matrix(z_stoch, machine_params, title='Z_stoch vs Machine Params')
-        #    self.logger.experiment.add_figure('stoch_latent', stoch_space_corrs)
-
-        # val_params[:, -4] = val_params[:, -4]*(1E-21)
-        """
-        mu_stoch, log_var_stoch, mu_mach, log_var_mach = self.model.encode(real_profile)
-        z_stoch = self.model.reparameterize(mu_stoch, log_var_stoch)
-        z_mach = self.model.reparameterize(mu_mach, log_var_mach)
-
-        self.plot_latent_for_corr(z_stoch, machine_params)
-        self.plot_latent_for_corr(z_mach, machine_params)
-        plt.show()"""
         # Log the computational Graph!
-        self.logger.experiment.add_graph(self.model, [real_profile, machine_params], use_strict_trace=False)
+        # self.logger.experiment.add_graph(self.model, [real_profile, machine_params], use_strict_trace=False)
 
         return test_loss
 
     def test_epoch_end(self, outputs):
-        # self.plot_per_latent_dim()
-        # self.sample_single_profile()
 
-        # self.plot_latent_space()
-        # self.correlation_of_latent_space()
-        # final_res = self.sample_profiles()
-        # self.logger.experiment.add_figure('test_outputs', final_res)
         self.compare_generate_with_real()
+        self.compare_correlations()
 
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
         avg_recon_loss = torch.stack([x['Reconstruction_Loss'] for x in outputs]).mean()
         tensorboard_logs = {'avg_val_loss': avg_loss}
+
+    def compare_correlations(self):
+        train_data_iter = iter(self.trainer.datamodule.train_dataloader())
+        val_data_iter = iter(self.trainer.datamodule.val_dataloader())
+        test_data_iter = iter(self.trainer.datamodule.test_dataloader())
+
+        train_prof, train_mp = next(train_data_iter)
+        mu_stoch, log_var_stoch, mu_mach, log_var_mach = self.model.q_zy(train_prof)
+        z_stoch, z_mach = self.model.reparameterize(mu_stoch, log_var_stoch), self.model.reparameterize(mu_mach, log_var_mach)
+
+        z_mach_all = z_mach
+        in_all = train_mp
+
+        for (train_prof, train_mp) in train_data_iter:
+            mu_stoch, log_var_stoch, mu_mach, log_var_mach = self.model.q_zy(train_prof)
+            z_stoch, z_mach = self.model.reparameterize(mu_stoch, log_var_stoch), self.model.reparameterize(mu_mach, log_var_mach)
+            z_mach_all = torch.vstack((z_mach, z_mach_all))
+            in_all = torch.vstack((train_mp, in_all))
+        print(in_all.shape)
+        print(z_mach_all.shape)
+        self.plot_corr_matrix(z_mach_all, in_all)
+
 
     def compare_generate_with_real(self):
         train_data_iter = iter(self.trainer.datamodule.train_dataloader())
@@ -222,7 +181,6 @@ class DIVA_EXP(pl.LightningModule):
         test_data_iter = iter(self.trainer.datamodule.test_dataloader())
         fig = plt.figure(figsize=(18, 18), constrained_layout=True)
         gs = GridSpec(4, 3, figure=fig)
-        # all_inputs, all_machine = torch.Tensor()
         for k in range(4):
             test_input, test_label = next(test_data_iter)
             data = self.model.forward(test_input)
@@ -246,25 +204,17 @@ class DIVA_EXP(pl.LightningModule):
             fig.suptitle('DualVae: {}-Hidden Layers {}-D Z_st'.format(len(self.model.hidden_dims), self.model.stoch_latent_dim))
         plt.legend()
         return fig
-        # plt.show()
 
     def plot_corr_matrix(self, z, val_params, title='Z_machine vs Machine Params'):
         LABEL = ['Q95', 'RGEO', 'CR0', 'VOLM', 'TRIU', 'TRIL', 'XIP', 'ELON', 'POHM', 'BT', 'ELER', 'P_NBI', 'P_ICRH']
-
-        # correlation = torch.cov(z, val_params, rowVar=False)
 
         fig, axs = plt.subplots(figsize=(20,20))
         all_cors = []
         for i in range(z.shape[1]):
             val_params[np.isnan(val_params)] = 0
-            # print(val_params)
-            # print(np.cov(val_params))
-
             single_dim = z[:, i]
-            # print(single_dim.shape)
             correlation = np.cov(single_dim,val_params, rowvar=False) # the first column is the correlation with hidden dim and other params
             correlation = correlation[:, 0][1:]
-            # print(correlation)
             all_cors.append(correlation)
         all_cors = np.stack(all_cors)
         all_cors = torch.from_numpy(all_cors)
@@ -274,18 +224,10 @@ class DIVA_EXP(pl.LightningModule):
         axs.set_yticks(np.arange(z.shape[1]))
         plt.setp(axs.get_xticklabels(), rotation=45, ha="right",rotation_mode="anchor")
         plt.title(title)
+        self.logger.experiment.add_figure('correlation', fig)
         return fig
 
 
-    def plot_latent_for_corr(self, z, val_params):
-        fig, axs = plt.subplots(2, 7, figsize=(18, 18), sharey=True, sharex=True)
-        axs = axs.ravel()
-        for i in range(z.shape[1]-1):
-            axs[i].scatter(z[:, i], z[:, i+1], c=val_params[:, 7])
-            axs[i].set_ylabel('Z {}'.format(i +1))
-            axs[i].set_xlabel('Z {}'.format(i))
-            fig.suptitle('Latent Space vs $\Gamma$ - Dim = {}'.format(len(z[0])))
-        pass
 
     def configure_optimizers(self):
 

@@ -1,5 +1,5 @@
 import pytorch_lightning as pl
-# from experiment import VAExperiment, DualVAExperiment
+
 from data.profile_dataset import DS, DataModuleClass
 import torch
 
@@ -7,10 +7,6 @@ import matplotlib.pyplot as plt
 
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-
-from models import VisualizeBetaVAE
-from experiments import BasicExperiment
-
 
 from models import BetaGammaVAE, VisualizeBetaVAE, DualVAE, DualEncoderVAE, DIVA_v1
 from experiments import DualVAExperiment, BasicExperiment, DIVA_EXP
@@ -244,7 +240,6 @@ def tune_asha(num_samples=500, num_epochs=350, gpus_per_trial=0, cpus_per_trial=
                                                 data_dir=data_dir)
 
     resources_per_trial = {"cpu": cpus_per_trial, "gpu": gpus_per_trial}
-    print('Almost Started')
     analysis = tune.run(train_fn_with_parameters,
         resources_per_trial=resources_per_trial,
         metric="loss",
@@ -253,6 +248,8 @@ def tune_asha(num_samples=500, num_epochs=350, gpus_per_trial=0, cpus_per_trial=
         num_samples=num_samples,
         scheduler=scheduler,
         progress_reporter=reporter,
+        log_to_file=True,
+        raise_on_failed_trial=False,
         local_dir='./ray_results',
         name="tune_DIVA_beta",
         fail_fast=False)
@@ -275,6 +272,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     os.environ["SLURM_JOB_NAME"] = "bash"
+    os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = 8
 
     dir_path = Path(__file__).parent
     desired_path = dir_path.parent
@@ -283,4 +281,4 @@ if __name__ == '__main__':
     print(desired_path.resolve())
 
 
-    tune_asha(cpus_per_trial=args.cpus_per_trial, gpus_per_trial=args.gpus_per_trial,  data_dir=desired_path.resolve())
+    tune_asha(cpus_per_trial=int(args.cpus_per_trial), gpus_per_trial=int(args.gpus_per_trial),  data_dir=desired_path.resolve())
