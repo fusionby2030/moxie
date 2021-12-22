@@ -53,7 +53,7 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
 
     trainer_params = {
         'max_epochs': num_epochs,
-        'gpus': num_gpus if isinstance(num_gpus, int) else 1,
+        'gpus': num_gpus,
         'logger': TensorBoardLogger(save_dir=tune.get_trial_dir(), name="", version='.'),
         'gradient_clip_val': 0.5,
         'gradient_clip_algorithm':"value",
@@ -213,7 +213,6 @@ def tune_pbt(num_samples=10, num_epochs=300, gpus_per_trial=0, cpus_per_trial=5)
 
 
 def tune_asha(num_samples=500, num_epochs=350, gpus_per_trial=0, cpus_per_trial=5,data_dir='/scratch/project_2005083/moxie/data/processed/profile_database_v1_psi22.hdf5'):
-
     search_space = {
         'mach_latent_dim': tune.randint(13, 30),
         'beta_stoch': tune.loguniform(1e-6, 10),
@@ -266,8 +265,15 @@ def tune_asha(num_samples=500, num_epochs=350, gpus_per_trial=0, cpus_per_trial=
 
 
 from pathlib import Path
+import argparse
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Search for hyperparams using raytune and HPC.')
+    parser.add_argument('-gpu', '--gpus_per_trial', default=0, help='# GPUs per trial')
+    parser.add_argument('-cpu', '--cpus_per_trial', default=10, help='# CPUs per trial')
+
+    args = parser.parse_args()
+
     os.environ["SLURM_JOB_NAME"] = "bash"
 
     dir_path = Path(__file__).parent
@@ -277,4 +283,4 @@ if __name__ == '__main__':
     print(desired_path.resolve())
 
 
-    tune_asha(cpus_per_trial=1, data_dir=desired_path.resolve())
+    tune_asha(cpus_per_trial=args.cpus_per_trial, gpus_per_trial=args.gpus_per_trial,  data_dir=desired_path.resolve())
