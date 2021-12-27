@@ -73,7 +73,7 @@ class DataModuleClass(pl.LightningDataModule):
 
     def prepare_data(self):
         with h5py.File(self.file_loc, 'r') as file:
-            group = file['processed_datasets/PSI22/density']
+            group = file['processed_datasets/PSI22/density_revised']
             X_train, y_train = group['train']['X'][:], group['train']['y'][:]
             X_val, y_val = group['valid']['X'][:], group['valid']['y'][:]
             X_test, y_test = group['test']['X'][:], group['test']['y'][:]
