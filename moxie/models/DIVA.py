@@ -194,7 +194,9 @@ class AUXreg(nn.Module):
     def __init__(self, mp_size, z_mach_dim):
         super(AUXreg, self).__init__()
         self.block = nn.ModuleList()
-        self.block.append(nn.Linear(z_mach_dim, 32))
+        self.block.append(nn.Linear(z_mach_dim, 64))
+        self.block.append(nn.ReLU())
+        self.block.append(nn.Linear(64, 32))
         self.block.append(nn.ReLU())
         self.block.append(nn.Linear(32, 16))
         self.block.append(nn.ReLU())
