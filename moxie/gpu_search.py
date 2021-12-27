@@ -1,5 +1,3 @@
-
-
 # Argument parsing and finding the training dir
 from pathlib import Path
 import argparse
@@ -73,7 +71,7 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
     # runner.test(experiment, datamodule=datacls)
 
 
-def tune_asha(num_samples=500, num_epochs=350, gpus_per_trial=0, cpus_per_trial=5, data_dir='/scratch/project_2005083/moxie/data/processed/profile_database_v1_psi22.hdf5', pin_memory=False):
+def tune_asha(num_samples=500, num_epochs=150, gpus_per_trial=0, cpus_per_trial=5, data_dir='/scratch/project_2005083/moxie/data/processed/profile_database_v1_psi22.hdf5', pin_memory=False):
     search_space = {
         'mach_latent_dim': tune.randint(13, 40),
         'beta_stoch': tune.loguniform(1e-4, 10),
@@ -144,4 +142,4 @@ if __name__ == '__main__':
     print(desired_path.resolve())
 
 
-    tune_asha(cpus_per_trial=int(args.cpus_per_trial), gpus_per_trial=float(args.gpus_per_trial),  data_dir=desired_path.resolve(), pin_memory=args.pin_memory)
+    tune_asha(cpus_per_trial=int(args.cpus_per_trial), gpus_per_trial=float(args.gpus_per_trial),  num_epochs=int(args.num_epochs), data_dir=desired_path.resolve(), pin_memory=args.pin_memory)

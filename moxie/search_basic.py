@@ -1,55 +1,46 @@
-import pytorch_lightning as pl
+# Argument parsing and finding the training dir
+from pathlib import Path
+import argparse
 
+# Experiments and models
+from models import DIVA_v1
+from experiments import DIVA_EXP
+
+# Dataloading
 from data.profile_dataset import DS, DataModuleClass
-import torch
 
-import matplotlib.pyplot as plt
-
+# pytorch lightning
+import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+import torch
 
-from models import BetaGammaVAE, VisualizeBetaVAE, DualVAE, DualEncoderVAE, DIVA_v1
-from experiments import DualVAExperiment, BasicExperiment, DIVA_EXP
-import os
-import pandas as pd
-
-def train_model(param_dict):
-    model_params = param_dict['MODEL_PARAMS']
-    trainer_params = param_dict['TRAINER_PARAMS']
-    experiment_params = param_dict['EXPERIMENT_PARAMS']
-    data_params = param_dict['DATA_PARAMS']
-
-    generator=torch.Generator().manual_seed(42)
-    torch.manual_seed(42)
-
-    datacls = DataModuleClass(**data_params)
-
-    logger = TensorBoardLogger("tb_logs", name="Search_4_Beta")
-
-    model = VisualizeBetaVAE(**model_params)
-
-    experiment = BasicExperiment(model, experiment_params)
-
-    runner = pl.Trainer(logger=logger, **trainer_params)
-
-    runner.fit(experiment, datamodule=datacls)
-    runner.test(experiment, datamodule=datacls)
-
+# Raytunefrom
 from ray import tune
 from ray.tune import CLIReporter
 from ray.tune.schedulers import ASHAScheduler, PopulationBasedTraining
 from ray.tune.integration.pytorch_lightning import TuneReportCallback, TuneReportCheckpointCallback
 from ray.tune.suggest.basic_variant import BasicVariantGenerator
 
-def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='./data/processed/profile_database_v1_psi22.hdf5'):
+
+# Ectetera
+import pandas as pd
+import matplotlib.pyplot as plt
+import os
+
+
+def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='./data/processed/profile_database_v1_psi22.hdf5', pin_memory=False):
     model_params = search_space
     experiment_params ={'LR': 0.0001, 'weight_decay': 0.0, 'batch_size': 512}
+    if 'LR' in search_space.keys():
+        experiment_params['LR'] = search_space['LR']
     data_params = {'data_dir': data_dir,
-                    'num_workers': num_cpus}
+                    'num_workers': num_cpus,
+                    'pin_memory': pin_memory}
 
     trainer_params = {
         'max_epochs': num_epochs,
-        'gpus': num_gpus,
+        'gpus': 1 if num_gpus > 0.0 else 0,
         'logger': TensorBoardLogger(save_dir=tune.get_trial_dir(), name="", version='.'),
         'gradient_clip_val': 0.5,
         'gradient_clip_algorithm':"value",
@@ -79,7 +70,7 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
     runner = pl.Trainer(**trainer_params)
 
     runner.fit(experiment, datamodule=datacls)
-    runner.test(experiment, datamodule=datacls)
+    # runner.test(experiment, datamodule=datacls)
 
 
 def train_model_on_tune_checkpoint(search_space, num_epochs, num_gpus, num_cpus, checkpoint_dir=None):
@@ -208,28 +199,25 @@ def tune_pbt(num_samples=10, num_epochs=300, gpus_per_trial=0, cpus_per_trial=5)
     df.to_csv('./deva_search_results.csv')
 
 
-def tune_asha(num_samples=500, num_epochs=350, gpus_per_trial=0, cpus_per_trial=5,data_dir='/scratch/project_2005083/moxie/data/processed/profile_database_v1_psi22.hdf5'):
+def tune_asha(num_samples=500, num_epochs=350, gpus_per_trial=0, cpus_per_trial=5, data_dir='', pin_memory=False):
     search_space = {
         'mach_latent_dim': tune.randint(13, 30),
-        'beta_stoch': tune.loguniform(1e-6, 10),
-        'beta_mach': tune.qrandint(10, 10000, 10),
-        'loss_type': tune.choice(['supervised', 'unsupervised', 'semi-supervised'])
-        # 'beta': tune.loguniform(1e-10, 1),
-        # 'num_conv_blocks': tune.grid_search([1, 2, 3]),
-        # 'num_trans_conv_blocks': tune.grid_search([1, 2, 3]),
-        # 'hidden_dims': [tune.grid_search([2, 3, 4]), tune.grid_search([4, 5, 6, 7, 8])]
-        # 'channel_1_size': tune.choice([2, 3, 4]),
-        # 'channel_2_size': tune.choice([4, 5, 6, 7, 8])
+        # 'stoch_latent_dim': tune.randint(5, 10),
+        'beta_stoch': tune.qloguniform(1e-3, 0.1, 0.001),
+        'beta_mach': tune.qrandint(1, 1000, 10),
+        'loss_type': tune.choice(['supervised', 'semi-supervised']),
+        'alpha_prof': tune.uniform(1e-2, 200),
+        'alpha_mach': tune.uniform(1e-2, 200)
     }
 
     scheduler = ASHAScheduler(
         max_t=num_epochs,
-        grace_period=50,
+        grace_period=25,
         reduction_factor=2)
 
     reporter = CLIReporter(
-        parameter_columns=["mach_latent_dim", "beta_stoch", "beta_mach"],
-        metric_columns=["loss", "KLD_mach", "KLD_stoch", "loss_mp", "training_iteration", "loss_type"],
+        parameter_columns=["mach_latent_dim", "beta_stoch", "beta_mach", "alpha_prof", "alpha_mach", "loss_type"],
+        metric_columns=["loss", "loss_mp"],
         max_report_frequency=20)
 
 
@@ -237,12 +225,13 @@ def tune_asha(num_samples=500, num_epochs=350, gpus_per_trial=0, cpus_per_trial=
                                                 num_epochs=num_epochs,
                                                 num_gpus=gpus_per_trial,
                                                 num_cpus=cpus_per_trial,
-                                                data_dir=data_dir)
+                                                data_dir=data_dir,
+                                                pin_memory=pin_memory)
 
     resources_per_trial = {"cpu": cpus_per_trial, "gpu": gpus_per_trial}
     analysis = tune.run(train_fn_with_parameters,
         resources_per_trial=resources_per_trial,
-        metric="loss",
+        metric="loss_mp",
         mode="min",
         config=search_space,
         num_samples=num_samples,
@@ -251,34 +240,31 @@ def tune_asha(num_samples=500, num_epochs=350, gpus_per_trial=0, cpus_per_trial=
         log_to_file=True,
         raise_on_failed_trial=False,
         local_dir='./ray_results',
-        name="tune_DIVA_beta",
+        name="tune_DIVA_revised_mp_params",
         fail_fast=False)
 
     print("Best hyperparameters found were: ", analysis.best_config)
 
     df = analysis.results_df
-    df.to_csv('./diva_res_1.csv')
+    df.to_csv('./diva_revised.csv')
 
-
-
-from pathlib import Path
-import argparse
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Search for hyperparams using raytune and HPC.')
     parser.add_argument('-gpu', '--gpus_per_trial', default=0, help='# GPUs per trial')
     parser.add_argument('-cpu', '--cpus_per_trial', default=10, help='# CPUs per trial')
+    parser.add_argument('-ep', '--num_epochs', default=75, help='# Epochs to train on')
+    parser.add_argument('-pm', '--pin_memory', default=False, help='# Epochs to train on', type=bool)
 
     args = parser.parse_args()
 
     os.environ["SLURM_JOB_NAME"] = "bash"
-    os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = 8
+    os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = '8'
 
-    dir_path = Path(__file__).parent
-    desired_path = dir_path.parent
-    desired_path = desired_path / 'data' / 'processed' / 'profile_database_v1_psi22.hdf5'
+    dir_path = Path(__file__).parent.parent
+    desired_path = dir_path / 'data' / 'processed' / 'profile_database_v1_psi22.hdf5'
     print('\n# Path to Dataset Exists? {}'.format(desired_path.exists()))
     print(desired_path.resolve())
 
 
-    tune_asha(cpus_per_trial=int(args.cpus_per_trial), gpus_per_trial=int(args.gpus_per_trial),  data_dir=desired_path.resolve())
+    tune_asha(cpus_per_trial=int(args.cpus_per_trial), gpus_per_trial=float(args.gpus_per_trial),  num_epochs=int(args.num_epochs), data_dir=desired_path.resolve(), pin_memory=args.pin_memory)
