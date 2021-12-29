@@ -177,6 +177,7 @@ class DIVA_EXP(pl.LightningModule):
         self.logger.experiment.add_figure('comparison', fig)
         plt.show()
 
+    """
     def sample_profiles(self):
         test_data_iter = iter(self.trainer.datamodule.test_dataloader())
         fig = plt.figure(figsize=(18, 18), constrained_layout=True)
@@ -186,8 +187,6 @@ class DIVA_EXP(pl.LightningModule):
             data = self.model.forward(test_input)
             avg_loss = self.model.loss_function(*data,  machine_params= test_label,  M_N = self.params['batch_size']/ len(self.trainer.datamodule.test_dataloader()))
             recons, input, mu, logvar, _, _ = data
-
-
             ax = None
             for i in range(3):
                 ax = fig.add_subplot(gs[k, i], sharey=ax, sharex=ax)
@@ -204,14 +203,14 @@ class DIVA_EXP(pl.LightningModule):
             fig.suptitle('DualVae: {}-Hidden Layers {}-D Z_st'.format(len(self.model.hidden_dims), self.model.stoch_latent_dim))
         plt.legend()
         return fig
-
+    """
     def plot_corr_matrix(self, z, val_params, title='Z_machine vs Machine Params'):
         LABEL = ['Q95', 'RGEO', 'CR0', 'VOLM', 'TRIU', 'TRIL', 'XIP', 'ELON', 'POHM', 'BT', 'ELER', 'P_NBI', 'P_ICRH']
 
         fig, axs = plt.subplots(figsize=(20,20))
         all_cors = []
         for i in range(z.shape[1]):
-            val_params[np.isnan(val_params)] = 0
+            # val_params[np.isnan(val_params)] = 0
             single_dim = z[:, i]
             correlation = np.cov(single_dim,val_params, rowvar=False) # the first column is the correlation with hidden dim and other params
             correlation = correlation[:, 0][1:]
@@ -223,6 +222,7 @@ class DIVA_EXP(pl.LightningModule):
         axs.set_xticklabels(LABEL)
         axs.set_yticks(np.arange(z.shape[1]))
         plt.setp(axs.get_xticklabels(), rotation=45, ha="right",rotation_mode="anchor")
+        plt.colorbar(im)
         plt.title(title)
         self.logger.experiment.add_figure('correlation', fig)
         return fig

@@ -31,7 +31,10 @@ import os
 
 def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='./data/processed/profile_database_v1_psi22.hdf5', pin_memory=False):
     model_params = search_space
-    experiment_params ={'LR': 0.0001, 'weight_decay': 0.0, 'batch_size': 512}
+    experiment_params ={'LR': 0.001, 'weight_decay': 0.0, 'batch_size': 512}
+    if 'LR' in search_space.keys():
+        experiment_params['LR'] = search_space['LR']
+
     data_params = {'data_dir': data_dir,
                     'num_workers': num_cpus,
                     'pin_memory': pin_memory}
@@ -73,16 +76,13 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
 
 def tune_asha(num_samples=500, num_epochs=150, gpus_per_trial=0, cpus_per_trial=5, data_dir='/scratch/project_2005083/moxie/data/processed/profile_database_v1_psi22.hdf5', pin_memory=False):
     search_space = {
+        'LR': tune.loguniform(1e-4, 0.01),
         'mach_latent_dim': tune.randint(13, 40),
         'beta_stoch': tune.loguniform(1e-4, 10),
         'beta_mach': tune.qrandint(10, 1000, 10),
-        'loss_type': tune.choice(['supervised', 'unsupervised', 'semi-supervised'])
-        # 'beta': tune.loguniform(1e-10, 1),
-        # 'num_conv_blocks': tune.grid_search([1, 2, 3]),
-        # 'num_trans_conv_blocks': tune.grid_search([1, 2, 3]),
-        # 'hidden_dims': [tune.grid_search([2, 3, 4]), tune.grid_search([4, 5, 6, 7, 8])]
-        # 'channel_1_size': tune.choice([2, 3, 4]),
-        # 'channel_2_size': tune.choice([4, 5, 6, 7, 8])
+        'alpha_prof': tune.uniform(1e-2, 200),
+        'alpha_mach': tune.uniform(1e-2, 200),
+        'loss_type': tune.choice(['supervised', 'semi-supervised'])
     }
 
     scheduler = ASHAScheduler(
@@ -91,8 +91,8 @@ def tune_asha(num_samples=500, num_epochs=150, gpus_per_trial=0, cpus_per_trial=
         reduction_factor=2)
 
     reporter = CLIReporter(
-        parameter_columns=["mach_latent_dim", "beta_stoch", "beta_mach", "loss_type"],
-        metric_columns=["loss", "KLD_mach", "KLD_stoch", "loss_mp", "training_iteration"],
+        parameter_columns=["mach_latent_dim", "beta_stoch", "beta_mach", "loss_type", "alpha_mach", "alpha_prof"],
+        metric_columns=["loss", "loss_mp", "training_iteration"],
         max_report_frequency=20)
 
 
@@ -135,9 +135,8 @@ if __name__ == '__main__':
     os.environ["SLURM_JOB_NAME"] = "bash"
     os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = '8'
 
-    dir_path = Path(__file__).parent
-    desired_path = dir_path.parent
-    desired_path = desired_path / 'data' / 'processed' / 'profile_database_v1_psi22.hdf5'
+    dir_path = Path(__file__).parent.parent
+    desired_path = dir_path / 'data' / 'processed' / 'profile_database_v1_psi22.hdf5'
     print('\n# Path to Dataset Exists? {}'.format(desired_path.exists()))
     print(desired_path.resolve())
 
