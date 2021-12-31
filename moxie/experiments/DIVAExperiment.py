@@ -140,21 +140,26 @@ class DIVA_EXP(pl.LightningModule):
         val_data_iter = iter(self.trainer.datamodule.val_dataloader())
         test_data_iter = iter(self.trainer.datamodule.test_dataloader())
 
-        train_prof, train_mp = next(train_data_iter)
-        val_prof, val_mp = next(val_data_iter)
-        test_prof, test_mp = next(test_data_iter)
+        train_prof_og, train_mp = next(train_data_iter)
+        val_prof_og, val_mp = next(val_data_iter)
+        test_prof_og, test_mp = next(test_data_iter)
 
-        train_results = self.model.forward(train_prof, train_mp) # recons, input, mu, logvar
-        val_results = self.model.forward(val_prof, val_mp) # recons, input, mu, logvar
-        test_results = self.model.forward(test_prof, test_mp) # recons, input, mu, logvar
+        train_results = self.model.forward(train_prof_og, train_mp) # recons, input, mu, logvar
+        val_results = self.model.forward(val_prof_og, val_mp) # recons, input, mu, logvar
+        test_results = self.model.forward(test_prof_og, test_mp) # recons, input, mu, logvar
 
-        train_res = train_results['out_profs']
-        val_res = val_results['out_profs']
-        test_res = test_results['out_profs']
+        train_res = train_results['out_profs'][:, :,  0]
+        val_res = val_results['out_profs'][:, :, 0]
+        test_res = test_results['out_profs'][:, :, 0]
+
+        train_prof=train_prof_og[:, :, 0]
+        val_prof=val_prof_og[:, :, 0]
+        test_prof=test_prof_og[:, :, 0]
 
         fig, axs = plt.subplots(3, 3, figsize=(18, 18), constrained_layout=True, sharex=True, sharey=True)
 
         for k in [0, 1, 2]:
+
             axs[0, k].plot(train_res[k*100].squeeze(), label='Generated', lw=4)
             axs[0, k].plot(train_prof[k*100].squeeze(), label='Real', lw=4)
             axs[1, k].plot(val_res[k*100].squeeze(), label='Generated', lw=4)
@@ -174,7 +179,41 @@ class DIVA_EXP(pl.LightningModule):
         fig.supylabel('$n_e \; \; (10^{20}$ m$^{-3})$', size='xx-large')
         fig.suptitle('DIVA: {}-D Stoch, {}-D Mach'.format(self.model.stoch_latent_dim, self.model.mach_latent_dim))
         plt.setp(axs, xticks=[])
-        self.logger.experiment.add_figure('comparison', fig)
+        self.logger.experiment.add_figure('comparison_density', fig)
+        # plt.show()
+
+        train_res = train_results['out_profs'][:, :,  1]
+        val_res = val_results['out_profs'][:, :, 1]
+        test_res = test_results['out_profs'][:, :, 1]
+
+        train_prof=train_prof_og[:, :, 1]
+        val_prof=val_prof_og[:, :, 1]
+        test_prof=test_prof_og[:, :, 1]
+
+        fig, axs = plt.subplots(3, 3, figsize=(18, 18), constrained_layout=True, sharex=True, sharey=True)
+
+        for k in [0, 1, 2]:
+
+            axs[0, k].plot(train_res[k*100].squeeze(), label='Generated', lw=4)
+            axs[0, k].plot(train_prof[k*100].squeeze(), label='Real', lw=4)
+            axs[1, k].plot(val_res[k*100].squeeze(), label='Generated', lw=4)
+            axs[1, k].plot(val_prof[k*100].squeeze(), label='Real', lw=4)
+            axs[2, k].plot(test_res[k*100].squeeze(), label='Generated', lw=4)
+            axs[2, k].plot(test_prof[k*100].squeeze(), label='Real', lw=4)
+
+            if k == 0:
+                axs[0, k].set_ylabel('Train', size='x-large')
+                axs[1, k].set_ylabel('Valid', size='x-large')
+                axs[2, k].set_ylabel('Test', size='x-large')
+                axs[0, k].legend()
+                axs[1, k].legend()
+                axs[2, k].legend()
+
+        fig.supxlabel('R', size='xx-large')
+        fig.supylabel('$n_e \; \; (10^{20}$ m$^{-3})$', size='xx-large')
+        fig.suptitle('DIVA: {}-D Stoch, {}-D Mach'.format(self.model.stoch_latent_dim, self.model.mach_latent_dim))
+        plt.setp(axs, xticks=[])
+        self.logger.experiment.add_figure('comparison_temperature', fig)
         plt.show()
 
     """

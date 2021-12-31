@@ -10,7 +10,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 from experiments import DIVA_EXP
-from models import DIVA_v1
+from models import DIVA_v1, DIVA_v2
 from pathlib import Path
 import argparse
 import os
@@ -27,18 +27,21 @@ def train_model(data_dir='/home/adam/ENR_Sven/moxie/data/processed/profile_datab
     STATIC_PARAMS = {'data_dir':data_dir,
                     'num_workers': cpus_per_trial,
                     'pin_memory': pin_memory}
-    HYPERPARAMS = {'LR': 0.0001, 'weight_decay': 0.0, 'batch_size': 512}
+    HYPERPARAMS = {'LR': 0.0001174, 'weight_decay': 0.0, 'batch_size': 512}
 
     # from models.VAE import VanillaVAE
 
     # 14 |  0.000193631 |       13930
-    model_hyperparams = {'in_ch': 1, 'out_dim':63,
-                            'mach_latent_dim': 24, 'beta_stoch': 0.04584, 'beta_mach':  110.,
-                            'alpha_mach': 1., 'alpha_prof': 1.,
+    # 25, 'beta_stoch': 0.0013071927935371294, 'beta_mach': 240, 'loss_type': 'supervised', 'alpha_mach': 8.787106145338122, 'alpha_prof': 4.407600476836661}
+    #  {'LR': 0.004131252321597796, 'mach_latent_dim': 39, 'beta_stoch': 0.09321524399430335, 'beta_mach': 60, 'alpha_prof': 172.01358801832427, 'alpha_mach': 19.22641567358799, 'loss_type': 'supervised'}
+    #    17 |           15 |           6 | supervised      |   175.367    |     121.05   | 0.00019844  | 0.00270345 |  0.731794
+    model_hyperparams = {'in_ch': 2, 'out_dim':63,
+                            'mach_latent_dim': 25, 'beta_stoch': .00463757, 'beta_mach':  1000.,
+                            'alpha_mach': 10, 'alpha_prof': 1.,
                         'loss_type': 'supervised'}
 
     params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
-    model = DIVA_v1(**model_hyperparams)
+    model = DIVA_v2(**model_hyperparams)
     trainer_params = {'max_epochs': num_epochs,  'gpus': gpus_per_trial if str(device).startswith('cuda') else 0,
                     'gradient_clip_val': 0.5, 'gradient_clip_algorithm':"value",
                     'profiler':"simple"}
@@ -59,7 +62,7 @@ if __name__ == '__main__':
     parser.add_argument('-gpu', '--gpus_per_trial', default=0, help='# GPUs per trial')
     parser.add_argument('-cpu', '--cpus_per_trial', default=8, help='# CPUs per trial')
     parser.add_argument('-name', '--experiment_name', default='STANDALONE', help='What is the name of the experiment? i.e., how will it be logged under')
-    parser.add_argument('-ep', '--num_epochs', default=350, help='# Epochs to train on')
+    parser.add_argument('-ep', '--num_epochs', default=2000, help='# Epochs to train on')
     parser.add_argument('-pm', '--pin_memory', default=False, help='# Epochs to train on', type=bool)
     args = parser.parse_args()
 

@@ -20,7 +20,7 @@ def standardize_simple(x, mu=None, var=None):
 
 
 class DS(Dataset):
-    def __init__(self, X, y, problem='strohman'):
+    def __init__(self, X, y, problem='both'):
         if not torch.is_tensor(X):
             self.X = torch.from_numpy(X)
         else:
@@ -30,8 +30,10 @@ class DS(Dataset):
         else:
             self.y = y
 
-        if problem == 'strohman':
-            self.X = self.X.unsqueeze(1)
+        # print(self.X.shape)
+        #if len(self.X.shape) < 3:
+        # if problem == 'strohman':
+        self.X = self.X.unsqueeze(1)
 
     def __len__(self):
         return len(self.X)
@@ -73,7 +75,8 @@ class DataModuleClass(pl.LightningDataModule):
 
     def prepare_data(self):
         with h5py.File(self.file_loc, 'r') as file:
-            group = file['processed_datasets/PSI22/density_revised']
+            # print(file['processed_datasets/PSI22'].keys())
+            group = file['processed_datasets/PSI22/density_and_temperature_revised']
             X_train, y_train = group['train']['X'][:], group['train']['y'][:]
             X_val, y_val = group['valid']['X'][:], group['valid']['y'][:]
             X_test, y_test = group['test']['X'][:], group['test']['y'][:]
@@ -91,10 +94,18 @@ class DataModuleClass(pl.LightningDataModule):
     def setup(self,stage=None):
 
         self.max_X = torch.max(self.X_train)
-        if len(self.X_train.shape) == 3:
-            self.X_train[:, 0] = (X_train[:, 0] / self.max_X)
-            self.X_val[:, 0] = (X_val[:, 0] / self.max_X)
-            self.X_test[:, 0] = (X_test[:, 0] / self.max_X)
+        if self.X_train.shape[1] == 2:
+            # print(self.X_train)
+            # print(self.X_train[0, :])
+            # print(self.X_train[:, 0])
+            self.max_N = torch.max(self.X_train[:, 0])
+            self.X_train[:, 0] = (self.X_train[:, 0] / self.max_N)
+            self.X_val[:, 0] = (self.X_val[:, 0] / self.max_N)
+            self.X_test[:, 0] = (self.X_test[:, 0] / self.max_N)
+            self.max_T = torch.max(self.X_train[:, 1])
+            self.X_train[:, 1] = (self.X_train[:, 1] / self.max_T)
+            self.X_val[:, 1] = (self.X_val[:, 1] / self.max_T)
+            self.X_test[:, 1] = (self.X_test[:, 1] / self.max_T)
         else:
             self.X_train, self.y_train = (self.X_train / self.max_X), self.y_train
             self.X_val, self.y_val = (self.X_val / self.max_X), self.y_val

@@ -3,7 +3,7 @@ from pathlib import Path
 import argparse
 
 # Experiments and models
-from models import DIVA_v1
+from models import DIVA_v1, DIVA_v2
 from experiments import DIVA_EXP
 
 # Dataloading
@@ -63,7 +63,7 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
 
     datacls = DataModuleClass(**data_params)
 
-    model = DIVA_v1(**model_params)
+    model = DIVA_v2(**model_params)
 
     experiment = DIVA_EXP(model, experiment_params)
 
@@ -76,7 +76,7 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
 
 def tune_asha(num_samples=500, num_epochs=150, gpus_per_trial=0, cpus_per_trial=5, data_dir='/scratch/project_2005083/moxie/data/processed/profile_database_v1_psi22.hdf5', pin_memory=False):
     search_space = {
-        'LR': tune.loguniform(1e-4, 0.01),
+        'LR': tune.loguniform(0.00001, 0.01),
         'mach_latent_dim': tune.randint(13, 40),
         'beta_stoch': tune.loguniform(1e-4, 10),
         'beta_mach': tune.qrandint(10, 1000, 10),
