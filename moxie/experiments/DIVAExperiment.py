@@ -130,8 +130,6 @@ class DIVA_EXP(pl.LightningModule):
             z_stoch, z_mach = self.model.reparameterize(mu_stoch, log_var_stoch), self.model.reparameterize(mu_mach, log_var_mach)
             z_mach_all = torch.vstack((z_mach, z_mach_all))
             in_all = torch.vstack((train_mp, in_all))
-        print(in_all.shape)
-        print(z_mach_all.shape)
         self.plot_corr_matrix(z_mach_all, in_all)
 
 
@@ -148,13 +146,13 @@ class DIVA_EXP(pl.LightningModule):
         val_results = self.model.forward(val_prof_og, val_mp) # recons, input, mu, logvar
         test_results = self.model.forward(test_prof_og, test_mp) # recons, input, mu, logvar
 
-        train_res = train_results['out_profs'][:, :,  0]
-        val_res = val_results['out_profs'][:, :, 0]
-        test_res = test_results['out_profs'][:, :, 0]
+        train_res = train_results['out_profs'][:, 0:1,  :]
+        val_res = val_results['out_profs'][:, 0:1, :]
+        test_res = test_results['out_profs'][:, 0:1, :]
 
-        train_prof=train_prof_og[:, :, 0]
-        val_prof=val_prof_og[:, :, 0]
-        test_prof=test_prof_og[:, :, 0]
+        train_prof=train_prof_og[:, 0:1,:]
+        val_prof=val_prof_og[:, 0:1, :]
+        test_prof=test_prof_og[:, 0:1, :]
 
         fig, axs = plt.subplots(3, 3, figsize=(18, 18), constrained_layout=True, sharex=True, sharey=True)
 
@@ -182,13 +180,13 @@ class DIVA_EXP(pl.LightningModule):
         self.logger.experiment.add_figure('comparison_density', fig)
         # plt.show()
 
-        train_res = train_results['out_profs'][:, :,  1]
-        val_res = val_results['out_profs'][:, :, 1]
-        test_res = test_results['out_profs'][:, :, 1]
+        train_res = train_results['out_profs'][:, 1:, :]
+        val_res = val_results['out_profs'][:, 1:, :]
+        test_res = test_results['out_profs'][:, 1:, :]
 
-        train_prof=train_prof_og[:, :, 1]
-        val_prof=val_prof_og[:, :, 1]
-        test_prof=test_prof_og[:, :, 1]
+        train_prof=train_prof_og[:, 1:, :]
+        val_prof=val_prof_og[:, 1:, :]
+        test_prof=test_prof_og[:, 1:, :]
 
         fig, axs = plt.subplots(3, 3, figsize=(18, 18), constrained_layout=True, sharex=True, sharey=True)
 

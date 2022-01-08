@@ -31,9 +31,9 @@ class DS(Dataset):
             self.y = y
 
         # print(self.X.shape)
-        #if len(self.X.shape) < 3:
+        if len(self.X.shape) < 3:
         # if problem == 'strohman':
-        self.X = self.X.unsqueeze(1)
+            self.X = self.X.unsqueeze(1)
 
     def __len__(self):
         return len(self.X)
@@ -85,6 +85,7 @@ class DataModuleClass(pl.LightningDataModule):
         self.X_val, self.y_val = torch.from_numpy(X_val), torch.from_numpy(y_val)
         self.X_test, self.y_test = torch.from_numpy(X_test), torch.from_numpy(y_test)
 
+        # Can remove probably
         self.y_train[torch.isnan(self.y_train)] = 0.0
         self.y_val[torch.isnan(self.y_val)] = 0.0
         self.y_test[torch.isnan(self.y_test)] = 0.0
@@ -95,9 +96,6 @@ class DataModuleClass(pl.LightningDataModule):
 
         self.max_X = torch.max(self.X_train)
         if self.X_train.shape[1] == 2:
-            # print(self.X_train)
-            # print(self.X_train[0, :])
-            # print(self.X_train[:, 0])
             self.max_N = torch.max(self.X_train[:, 0])
             self.X_train[:, 0] = (self.X_train[:, 0] / self.max_N)
             self.X_val[:, 0] = (self.X_val[:, 0] / self.max_N)

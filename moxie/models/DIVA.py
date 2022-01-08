@@ -292,8 +292,8 @@ class DIVA_v2(BaseVAE):
         # print(profile[:, :, 0])
         # print(profile[:, : ,0].shape)
         # print(profile[0, :])
-        encoded_prof_n = self.encoder_n(profile[:, :, 0])
-        encoded_prof_t = self.encoder_t(profile[:, :, 1])
+        encoded_prof_n = self.encoder_n(profile[:, 0:1, :])
+        encoded_prof_t = self.encoder_t(profile[:, 1:, :])
         concat = torch.cat((encoded_prof_n, encoded_prof_t), 1)
         encoded_prof = self.encoder_end(concat)
 
@@ -351,7 +351,7 @@ class DIVA_v2(BaseVAE):
          result_t = self.decoder_t(result)
          out_prof_n = self.final_layer_n(result_n)
          out_prof_t = self.final_layer_t(result_t)
-         out_prof = torch.cat((out_prof_n, out_prof_t), 1).unsqueeze(1)
+         out_prof = torch.cat((out_prof_n, out_prof_t), 1)
 
          return out_prof
 
