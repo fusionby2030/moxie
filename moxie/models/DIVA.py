@@ -209,14 +209,14 @@ class AUXreg(nn.Module):
 
 class DIVA_v2(BaseVAE):
     """
-    DIVA
+    DIVA, but for temperature also predictions
     """
     num_iterations = 0
     def __init__(self, in_ch: int = 2, out_dim: int = 63,
                         alpha_prof: float = 1., alpha_mach: float=1.,
                         beta_stoch: float =  0.01, beta_mach: float = 1000.,
                         mach_latent_dim: int = 13, stoch_latent_dim: int = 5,
-                        loss_type: str = 'supervised', **kwargs) -> None:
+                        loss_type: str = 'semi-supervised', **kwargs) -> None:
         super(DIVA_v2, self).__init__()
 
         num_machine_params = 13

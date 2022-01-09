@@ -74,15 +74,15 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
     # runner.test(experiment, datamodule=datacls)
 
 
-def tune_asha(num_samples=500, num_epochs=150, gpus_per_trial=0, cpus_per_trial=5, data_dir='/scratch/project_2005083/moxie/data/processed/profile_database_v1_psi22.hdf5', pin_memory=False):
+def tune_asha(num_samples=1, num_epochs=150, gpus_per_trial=0, cpus_per_trial=5, data_dir='/scratch/project_2005083/moxie/data/processed/profile_database_v1_psi22.hdf5', pin_memory=False):
     search_space = {
-        'LR': tune.loguniform(0.00001, 0.01),
-        'mach_latent_dim': tune.randint(13, 40),
-        'beta_stoch': tune.loguniform(1e-4, 10),
-        'beta_mach': tune.qrandint(10, 1000, 10),
-        'alpha_prof': tune.uniform(1e-2, 200),
-        'alpha_mach': tune.uniform(1e-2, 200),
-        'loss_type': tune.choice(['supervised', 'semi-supervised'])
+        # 'LR': tune.loguniform(0.00001, 0.01),
+        'mach_latent_dim': tune.grid_search([10, 15, 20, 30, 40, 50]),
+        'beta_stoch': tune.grid_search([0.0001, 0.001, 0.01, 0.1, 1., 10. ,100.]),
+        'beta_mach': tune.grid_search([1., 10., 100., 1000.]),
+        'alpha_prof': tune.grid_search([0., 1., 10., 100., 1000.]),
+        'alpha_mach': tune.grid_search([0., 1., 10., 100., 1000.]),
+        # 'loss_type': tune.choice(['supervised', 'semi-supervised'])
     }
 
     scheduler = ASHAScheduler(
@@ -92,7 +92,7 @@ def tune_asha(num_samples=500, num_epochs=150, gpus_per_trial=0, cpus_per_trial=
 
     reporter = CLIReporter(
         parameter_columns=["mach_latent_dim", "beta_stoch", "beta_mach", "loss_type", "alpha_mach", "alpha_prof"],
-        metric_columns=["loss", "loss_mp", "training_iteration"],
+        metric_columns=["loss", "loss_mp"],
         max_report_frequency=20)
 
 
@@ -121,13 +121,13 @@ def tune_asha(num_samples=500, num_epochs=150, gpus_per_trial=0, cpus_per_trial=
     print("Best hyperparameters found were: ", analysis.best_config)
 
     df = analysis.results_df
-    df.to_csv('./diva_res_1.csv')
+    df.to_csv('./DIVA_TE_gridsearch.csv')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Search for hyperparams using raytune and HPC.')
     parser.add_argument('-gpu', '--gpus_per_trial', default=0, help='# GPUs per trial')
-    parser.add_argument('-cpu', '--cpus_per_trial', default=10, help='# CPUs per trial')
-    parser.add_argument('-ep', '--num_epochs', default=50, help='# Epochs to train on')
+    parser.add_argument('-cpu', '--cpus_per_trial', default=4, help='# CPUs per trial')
+    parser.add_argument('-ep', '--num_epochs', default=200, help='# Epochs to train on')
     parser.add_argument('-pm', '--pin_memory', default=False, help='# Epochs to train on', type=bool)
 
     args = parser.parse_args()

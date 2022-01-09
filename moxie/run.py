@@ -29,20 +29,10 @@ def train_model(data_dir='/home/adam/ENR_Sven/moxie/data/processed/profile_datab
                     'pin_memory': pin_memory}
     HYPERPARAMS = {'LR': 0.0005730566105316398, 'weight_decay': 0.0, 'batch_size': 512}
 
-    # from models.VAE import VanillaVAE
-
-    # 14 |  0.000193631 |       13930
-    # 25, 'beta_stoch': 0.0013071927935371294, 'beta_mach': 240, 'loss_type': 'supervised', 'alpha_mach': 8.787106145338122, 'alpha_prof': 4.407600476836661}
-    #  {'LR': 0.004131252321597796, 'mach_latent_dim': 39, 'beta_stoch': 0.09321524399430335, 'beta_mach': 60, 'alpha_prof': 172.01358801832427, 'alpha_mach': 19.22641567358799, 'loss_type': 'supervised'}
-    #    17 |           15 |           6 | supervised      |   175.367    |     121.05   | 0.00019844  | 0.00270345 |  0.731794
-    # {'LR': 0.0005730566105316398, 'mach_latent_dim': 39, 'beta_stoch': 116, 'beta_mach': 961, 'alpha_prof': 62.60761410724909, 'alpha_mach': 133.98989860403265, 'loss_type': 'supervised'}
-    # {'mach_latent_dim': 20, 'beta_stoch': 0.0001, 'beta_mach': 697, 'loss_type': 'unsupervised', 'alpha_mach': 166.47919667396363, 'alpha_prof': 183.064683203421}
-    # {'mach_latent_dim': 30, 'beta_stoch': 0.00335, 'beta_mach': 794, 'loss_type': 'unsupervised', 'alpha_mach': 33.849614329559, 'alpha_prof': 117.92061258801968}
-
     model_hyperparams = {'in_ch': 2, 'out_dim':63,
-                            'mach_latent_dim': 30, 'beta_stoch': 0.00335, 'beta_mach':  794.,
-                            'alpha_mach': 33.849614329559, 'alpha_prof': 117.92061258801968,
-                        'loss_type': 'unsupervised'}
+                            'mach_latent_dim': 30, 'beta_stoch': 0.00335, 'beta_mach':  100.,
+                            'alpha_mach': 1.0, 'alpha_prof': 1000.0,
+                        'loss_type': 'semi-supervised'}
 # {'LR': 0.002353728769593643, 'mach_latent_dim': 19, 'beta_stoch': 0.000762011535321718, 'beta_mach': 580, 'alpha_prof': 153.1195632076306, 'alpha_mach': 41.73907436207321, 'loss_type': 'supervised'}
 
     params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
@@ -65,7 +55,7 @@ def train_model(data_dir='/home/adam/ENR_Sven/moxie/data/processed/profile_datab
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Search for hyperparams using raytune and HPC.')
     parser.add_argument('-gpu', '--gpus_per_trial', default=0, help='# GPUs per trial')
-    parser.add_argument('-cpu', '--cpus_per_trial', default=8, help='# CPUs per trial')
+    parser.add_argument('-cpu', '--cpus_per_trial', default=4, help='# CPUs per trial')
     parser.add_argument('-name', '--experiment_name', default='STANDALONE', help='What is the name of the experiment? i.e., how will it be logged under')
     parser.add_argument('-ep', '--num_epochs', default=2000, help='# Epochs to train on')
     parser.add_argument('-pm', '--pin_memory', default=False, help='# Epochs to train on', type=bool)

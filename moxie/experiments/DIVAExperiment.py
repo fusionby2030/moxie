@@ -16,6 +16,9 @@ import io
 
 # def plot_to_image(figure):
 
+def de_standardize(x, mu, var):
+    return (x*var) + mu
+
 
 class DIVA_EXP(pl.LightningModule):
 
@@ -108,29 +111,123 @@ class DIVA_EXP(pl.LightningModule):
 
         self.compare_generate_with_real()
         self.compare_correlations()
+        self.diversity_of_generation()
 
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
         avg_recon_loss = torch.stack([x['Reconstruction_Loss'] for x in outputs]).mean()
         tensorboard_logs = {'avg_val_loss': avg_loss}
 
-    def compare_correlations(self):
+    def configure_optimizers(self):
+
+        optims = []
+        scheds = []
+
+        optimizer = optim.Adam(self.model.parameters(),
+                               lr=self.params['LR'],
+                               weight_decay=self.params['weight_decay'])
+        return optimizer
+
+    def compare_means(self):
+        pass
+
+    def diversity_of_generation(self):
+        """
+        Want to check how the latent dimensions change the output profile.
+        First up is the Z_stoch, i.e., how does varying Z_stoch change the output profile?
+        """
+
+        # Get training, val, test data
+
         train_data_iter = iter(self.trainer.datamodule.train_dataloader())
         val_data_iter = iter(self.trainer.datamodule.val_dataloader())
         test_data_iter = iter(self.trainer.datamodule.test_dataloader())
 
-        train_prof, train_mp = next(train_data_iter)
-        mu_stoch, log_var_stoch, mu_mach, log_var_mach = self.model.q_zy(train_prof)
-        z_stoch, z_mach = self.model.reparameterize(mu_stoch, log_var_stoch), self.model.reparameterize(mu_mach, log_var_mach)
+        train_prof_og, train_mp = next(train_data_iter)
+        val_prof_og, val_mp = next(val_data_iter)
+        test_prof_og, test_mp = next(test_data_iter)
 
-        z_mach_all = z_mach
-        in_all = train_mp
+        training_sample_profile = train_prof_og[0:1]
+        val_sample_profile = val_prof_og[0:1]
+        test_sample_profile = test_prof_og[0:1]
 
-        for (train_prof, train_mp) in train_data_iter:
-            mu_stoch, log_var_stoch, mu_mach, log_var_mach = self.model.q_zy(train_prof)
-            z_stoch, z_mach = self.model.reparameterize(mu_stoch, log_var_stoch), self.model.reparameterize(mu_mach, log_var_mach)
-            z_mach_all = torch.vstack((z_mach, z_mach_all))
-            in_all = torch.vstack((train_mp, in_all))
-        self.plot_corr_matrix(z_mach_all, in_all)
+        # Encode training data into latent space
+        mu_stoch, log_var_stoch, mu_mach, log_var_mach = self.model.q_zy(training_sample_profile)
+        z_stoch_og, z_mach_og = self.model.reparameterize(mu_stoch, log_var_stoch), self.model.reparameterize(mu_mach, log_var_mach)
+
+        print('\n# Original Stoch')
+        print(z_stoch_og)
+        print('\n# Original Mach')
+        print(z_mach_og)
+
+        # Decode Original Data
+        z_og = torch.cat((z_stoch_og, z_mach_og), 1)
+        out_profs_og = self.model.p_yhatz(z_og)
+
+        # Plot data
+        # Rows correspond to different sampling: 5
+        # Columns corrspond to density vs temperature: 2
+
+        # Plot original data
+        density_gen_og, temperature_gen_og = out_profs_og[:, 0], out_profs_og[:, 1]
+        density_real_og, temperature_real_og = training_sample_profile[:, 0], training_sample_profile[:, 1]
+
+        mu_T, var_T = self.trainer.datamodule.get_data_norms()
+
+        # print(train_res[:, :])
+        temperature_gen_og = de_standardize(temperature_gen_og, mu_T, var_T)
+        temperature_real_og = de_standardize(temperature_real_og, mu_T, var_T)
+
+        prior = torch.distributions.normal.Normal(0, 1)
+
+        fig, axs = plt.subplots(5, 2, figsize=(18, 18), constrained_layout=True)
+        axs[0, 0].plot(density_gen_og.squeeze(), label='Generated')
+        axs[0, 0].plot(density_real_og.squeeze(), label='Real')
+        axs[0, 1].plot(temperature_gen_og.squeeze(), label='Generated')
+        axs[0, 1].plot(temperature_real_og.squeeze(), label='Real')
+        axs[0, 0].set(title='Density', ylabel='Original')
+        axs[0, 1].set(title='Temperature')
+        axs[0, 0].legend()
+
+
+        for k in [1, 2, 3, 4]:
+
+            # Sample from Z_stoch = N(0, 1)
+            new_stoch = prior.sample(sample_shape=z_stoch_og.shape)
+            z_new = torch.cat((new_stoch, z_mach_og), 1)
+            out_profs_new_stoch = self.model.p_yhatz(z_new)
+            density_gen_stoch, temperature_gen_stoch = out_profs_new_stoch[:, 0], out_profs_new_stoch[:, 1]
+
+            # Sample from Z_mach = N(0, 1)
+            new_mach = prior.sample(sample_shape=z_mach_og.shape)
+
+            z_new = torch.cat((z_stoch_og, new_mach), 1)
+            out_profs_new_mach = self.model.p_yhatz(z_new)
+            density_gen_mach, temperature_gen_mach = out_profs_new_mach[:, 0], out_profs_new_mach[:, 1]
+
+            print('\n# Sample Stoch')
+            print(new_stoch)
+            print('\n# Sample Mach')
+            print(new_mach)
+            # Restandardize for plotting
+            temperature_gen_stoch = de_standardize(temperature_gen_stoch, mu_T, var_T)
+            temperature_gen_mach = de_standardize(temperature_gen_mach, mu_T, var_T)
+
+            # plot
+            axs[k, 0].plot(density_gen_og.squeeze())
+            axs[k, 0].plot(density_real_og.squeeze())
+            axs[k, 1].plot(temperature_gen_og.squeeze())
+            axs[k, 1].plot(temperature_real_og.squeeze())
+
+
+            axs[k, 0].plot(density_gen_stoch.squeeze(), label='Vary Z_stoch')
+            axs[k, 1].plot(temperature_gen_stoch.squeeze(), label='Vary Z_stoch')
+            axs[k, 0].plot(density_gen_mach.squeeze(), label='Vary Z_mach')
+            axs[k, 1].plot(temperature_gen_mach.squeeze(), label='Vary Z_mach')
+
+
+        axs[k, 0].legend()
+        plt.show()
+
 
 
     def compare_generate_with_real(self):
@@ -178,7 +275,6 @@ class DIVA_EXP(pl.LightningModule):
         fig.suptitle('DIVA: {}-D Stoch, {}-D Mach'.format(self.model.stoch_latent_dim, self.model.mach_latent_dim))
         plt.setp(axs, xticks=[])
         self.logger.experiment.add_figure('comparison_density', fig)
-        # plt.show()
 
         train_res = train_results['out_profs'][:, 1:, :]
         val_res = val_results['out_profs'][:, 1:, :]
@@ -187,6 +283,19 @@ class DIVA_EXP(pl.LightningModule):
         train_prof=train_prof_og[:, 1:, :]
         val_prof=val_prof_og[:, 1:, :]
         test_prof=test_prof_og[:, 1:, :]
+
+        mu_T, var_T = self.trainer.datamodule.get_data_norms()
+
+        # print(train_res[:, :])
+        train_res = de_standardize(train_res, mu_T, var_T)
+
+        val_res = de_standardize(val_res, mu_T, var_T)
+        test_res = de_standardize(test_res, mu_T, var_T)
+
+        train_prof = de_standardize(train_prof, mu_T, var_T)
+        val_prof = de_standardize(val_prof, mu_T, var_T)
+        test_prof = de_standardize(test_prof, mu_T, var_T)
+
 
         fig, axs = plt.subplots(3, 3, figsize=(18, 18), constrained_layout=True, sharex=True, sharey=True)
 
@@ -208,39 +317,31 @@ class DIVA_EXP(pl.LightningModule):
                 axs[2, k].legend()
 
         fig.supxlabel('R', size='xx-large')
-        fig.supylabel('$n_e \; \; (10^{20}$ m$^{-3})$', size='xx-large')
+        fig.supylabel('$T_e \; \; $', size='xx-large')
         fig.suptitle('DIVA: {}-D Stoch, {}-D Mach'.format(self.model.stoch_latent_dim, self.model.mach_latent_dim))
         plt.setp(axs, xticks=[])
         self.logger.experiment.add_figure('comparison_temperature', fig)
         plt.show()
 
-    """
-    def sample_profiles(self):
+    def compare_correlations(self):
+        train_data_iter = iter(self.trainer.datamodule.train_dataloader())
+        val_data_iter = iter(self.trainer.datamodule.val_dataloader())
         test_data_iter = iter(self.trainer.datamodule.test_dataloader())
-        fig = plt.figure(figsize=(18, 18), constrained_layout=True)
-        gs = GridSpec(4, 3, figure=fig)
-        for k in range(4):
-            test_input, test_label = next(test_data_iter)
-            data = self.model.forward(test_input)
-            avg_loss = self.model.loss_function(*data,  machine_params= test_label,  M_N = self.params['batch_size']/ len(self.trainer.datamodule.test_dataloader()))
-            recons, input, mu, logvar, _, _ = data
-            ax = None
-            for i in range(3):
-                ax = fig.add_subplot(gs[k, i], sharey=ax, sharex=ax)
-                # data = [recons[i], input[i], mu, logvar]
-                # avg_loss = self.model.loss_function(*data, M_N = self.params['batch_size']/ len(self.trainer.datamodule.test_dataloader()))
-                if len(test_input.shape) == 3:
-                    input = input.squeeze()
-                    recons= recons.squeeze()
-                ax.set(ylabel='$n_e$')
-                ax.plot(recons[-i]*self.trainer.datamodule.max_X, label='Generated')
-                ax.plot(input[-i]*self.trainer.datamodule.max_X, label='Real')
-                ax.set_xticks([])
 
-            fig.suptitle('DualVae: {}-Hidden Layers {}-D Z_st'.format(len(self.model.hidden_dims), self.model.stoch_latent_dim))
-        plt.legend()
-        return fig
-    """
+        train_prof, train_mp = next(train_data_iter)
+        mu_stoch, log_var_stoch, mu_mach, log_var_mach = self.model.q_zy(train_prof)
+        z_stoch, z_mach = self.model.reparameterize(mu_stoch, log_var_stoch), self.model.reparameterize(mu_mach, log_var_mach)
+
+        z_mach_all = z_mach
+        in_all = train_mp
+
+        for (train_prof, train_mp) in train_data_iter:
+            mu_stoch, log_var_stoch, mu_mach, log_var_mach = self.model.q_zy(train_prof)
+            z_stoch, z_mach = self.model.reparameterize(mu_stoch, log_var_stoch), self.model.reparameterize(mu_mach, log_var_mach)
+            z_mach_all = torch.vstack((z_mach, z_mach_all))
+            in_all = torch.vstack((train_mp, in_all))
+        self.plot_corr_matrix(z_mach_all, in_all)
+
     def plot_corr_matrix(self, z, val_params, title='Z_machine vs Machine Params'):
         LABEL = ['Q95', 'RGEO', 'CR0', 'VOLM', 'TRIU', 'TRIL', 'XIP', 'ELON', 'POHM', 'BT', 'ELER', 'P_NBI', 'P_ICRH']
 
@@ -263,15 +364,3 @@ class DIVA_EXP(pl.LightningModule):
         plt.title(title)
         self.logger.experiment.add_figure('correlation', fig)
         return fig
-
-
-
-    def configure_optimizers(self):
-
-        optims = []
-        scheds = []
-
-        optimizer = optim.Adam(self.model.parameters(),
-                               lr=self.params['LR'],
-                               weight_decay=self.params['weight_decay'])
-        return optimizer
