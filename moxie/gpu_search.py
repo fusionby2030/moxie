@@ -93,7 +93,7 @@ def tune_asha(num_samples=1, num_epochs=150, gpus_per_trial=0, cpus_per_trial=5,
     reporter = CLIReporter(
         parameter_columns=["mach_latent_dim", "beta_stoch", "beta_mach", "loss_type", "alpha_mach", "alpha_prof"],
         metric_columns=["loss", "loss_mp"],
-        max_report_frequency=20)
+        max_report_frequency=100)
 
 
     train_fn_with_parameters = tune.with_parameters(train_model_on_tune,
@@ -112,7 +112,7 @@ def tune_asha(num_samples=1, num_epochs=150, gpus_per_trial=0, cpus_per_trial=5,
         num_samples=num_samples,
         scheduler=scheduler,
         progress_reporter=reporter,
-        log_to_file=True,
+        log_to_file=False,
         raise_on_failed_trial=False,
         local_dir='./ray_results',
         name="tune_DIVA_beta",

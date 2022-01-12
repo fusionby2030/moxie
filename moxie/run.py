@@ -27,11 +27,11 @@ def train_model(data_dir='/home/adam/ENR_Sven/moxie/data/processed/profile_datab
     STATIC_PARAMS = {'data_dir':data_dir,
                     'num_workers': cpus_per_trial,
                     'pin_memory': pin_memory}
-    HYPERPARAMS = {'LR': 0.0005730566105316398, 'weight_decay': 0.0, 'batch_size': 512}
+    HYPERPARAMS = {'LR': 0.001, 'weight_decay': 0.0, 'batch_size': 512}
 
     model_hyperparams = {'in_ch': 2, 'out_dim':63,
-                            'mach_latent_dim': 30, 'beta_stoch': 0.00335, 'beta_mach':  100.,
-                            'alpha_mach': 1.0, 'alpha_prof': 1000.0,
+                            'mach_latent_dim': 10, 'beta_stoch': 0.01, 'beta_mach':  100.,
+                            'alpha_mach': 25.0, 'alpha_prof': 1.0,
                         'loss_type': 'semi-supervised'}
 # {'LR': 0.002353728769593643, 'mach_latent_dim': 19, 'beta_stoch': 0.000762011535321718, 'beta_mach': 580, 'alpha_prof': 153.1195632076306, 'alpha_mach': 41.73907436207321, 'loss_type': 'supervised'}
 
@@ -55,9 +55,9 @@ def train_model(data_dir='/home/adam/ENR_Sven/moxie/data/processed/profile_datab
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Search for hyperparams using raytune and HPC.')
     parser.add_argument('-gpu', '--gpus_per_trial', default=0, help='# GPUs per trial')
-    parser.add_argument('-cpu', '--cpus_per_trial', default=4, help='# CPUs per trial')
+    parser.add_argument('-cpu', '--cpus_per_trial', default=4, help='# CPUs per trial', type=int)
     parser.add_argument('-name', '--experiment_name', default='STANDALONE', help='What is the name of the experiment? i.e., how will it be logged under')
-    parser.add_argument('-ep', '--num_epochs', default=2000, help='# Epochs to train on')
+    parser.add_argument('-ep', '--num_epochs', default=50, help='# Epochs to train on', type=int)
     parser.add_argument('-pm', '--pin_memory', default=False, help='# Epochs to train on', type=bool)
     args = parser.parse_args()
 

@@ -167,15 +167,15 @@ class PRIORreg(nn.Module):
     """
     A regressor to define the prior for Z_mach
     """
-    def __init__(self):
+    def __init__(self, mach_latent_dim=10):
         super(PRIORreg, self).__init__()
         self.block = nn.ModuleList()
         self.block.append(nn.Linear(13, 32))
         self.block.append(nn.ReLU())
         self.block.append(nn.Linear(32, 16))
         self.block.append(nn.ReLU())
-        self.out_mu = nn.Linear(16, 1)
-        self.out_var = nn.Linear(16, 1)
+        self.out_mu = nn.Linear(16, mach_latent_dim)
+        self.out_var = nn.Linear(16, mach_latent_dim)
         # self.block.append(nn.Linear(16, 2))
         # self.out = nn.Linear(100, 2)
 
@@ -245,7 +245,7 @@ class DIVA_v2(BaseVAE):
 
         # Prior Regressor
 
-        self.prior_reg = PRIORreg()
+        self.prior_reg = PRIORreg(mach_latent_dim)
 
         # Latent Space
 

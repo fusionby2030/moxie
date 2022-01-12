@@ -122,23 +122,29 @@ class DataModuleClass(pl.LightningDataModule):
         self.norm_mu_T, self.norm_var_T = mu_T, var_T
 
         # Normalize the machine parameters
+        self.y_train, self.y_val, self.y_test = self.y_train[:, :13], self.y_val[:, :13], self.y_test[:, :13]
         self.y_train, mu_train, var_train = standardize_simple(self.y_train)
         self.y_val = standardize_simple(self.y_val, mu_train, var_train)
         self.y_test = standardize_simple(self.y_test, mu_train, var_train)
 
         # Nesep is in the machine parameters so we have to take it out (last column)
 
-        self.y_train, self.y_val, self.y_test = self.y_train[:, :13], self.y_val[:, :13], self.y_test[:, :13]
+
         self.y_train, self.y_val, self.y_test = self.y_train.float(), self.y_val.float(), self.y_test.float()
         self.mp_mu_normalizer, self.mp_var_normalizer = mu_train, var_train
+        self.train_set = DS(self.X_train, self.y_train)
+        self.val_set = DS(self.X_val, self.y_val)
+        self.test_set = DS(self.X_test, self.y_test)
 
     def setup(self,stage=None):
         self.train_set = DS(self.X_train, self.y_train)
         self.val_set = DS(self.X_val, self.y_val)
         self.test_set = DS(self.X_test, self.y_test)
-        
-    def get_data_norms(self):
+
+    def get_temperature_norms(self):
         return self.norm_mu_T, self.norm_var_T
+    def get_mp_norms(self):
+        return self.mp_mu_normalizer, self.mp_var_normalizer
 
     def train_dataloader(self):
         return DataLoader(self.train_set, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True, pin_memory=self.pin_memory)
