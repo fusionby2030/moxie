@@ -27,10 +27,10 @@ def train_model(data_dir='/home/adam/ENR_Sven/moxie/data/processed/profile_datab
     STATIC_PARAMS = {'data_dir':data_dir,
                     'num_workers': cpus_per_trial,
                     'pin_memory': pin_memory}
-    HYPERPARAMS = {'LR': 0.001, 'weight_decay': 0.0, 'batch_size': 512}
+    HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size': 512}
 
     model_hyperparams = {'in_ch': 2, 'out_dim':63,
-                            'mach_latent_dim': 10, 'beta_stoch': 0.01, 'beta_mach':  100.,
+                            'mach_latent_dim': 10, 'beta_stoch': 0.001, 'beta_mach':  300.,
                             'alpha_mach': 25.0, 'alpha_prof': 1.0,
                         'loss_type': 'semi-supervised'}
 # {'LR': 0.002353728769593643, 'mach_latent_dim': 19, 'beta_stoch': 0.000762011535321718, 'beta_mach': 580, 'alpha_prof': 153.1195632076306, 'alpha_mach': 41.73907436207321, 'loss_type': 'supervised'}
