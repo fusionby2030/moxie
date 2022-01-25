@@ -8,6 +8,7 @@ from .utils import get_conv_output_size, get_trans_output_size, get_final_output
 
 Tensor = TypeVar('torch.tensor')
 
+
 class Flatten(nn.Module):
     def forward(self, input):
         return input.view(input.size(0), -1)

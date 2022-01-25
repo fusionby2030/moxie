@@ -11,7 +11,6 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 from experiments import DIVA_EXP
 from models import DIVA_v1, DIVA_v2
-from pathlib import Path
 import argparse
 import os
 
@@ -33,7 +32,6 @@ def train_model(data_dir='/home/adam/ENR_Sven/moxie/data/processed/profile_datab
                             'mach_latent_dim': 10, 'beta_stoch': 0.001, 'beta_mach':  300.,
                             'alpha_mach': 25.0, 'alpha_prof': 1.0,
                         'loss_type': 'semi-supervised'}
-# {'LR': 0.002353728769593643, 'mach_latent_dim': 19, 'beta_stoch': 0.000762011535321718, 'beta_mach': 580, 'alpha_prof': 153.1195632076306, 'alpha_mach': 41.73907436207321, 'loss_type': 'supervised'}
 
     params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
     model = DIVA_v2(**model_hyperparams)
