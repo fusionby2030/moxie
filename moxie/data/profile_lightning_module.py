@@ -36,12 +36,15 @@ class PLDATAMODULE_AK(pl.LightningDataModule):
             val_X, val_y, val_mask, val_radii = full_dict['valid'][self.dataset_choice].values()
             test_X, test_y, test_mask, test_radii = full_dict['test'][self.dataset_choice].values()
         
+
         # Convert to torch tensors, although this won't work for the raw datasets!!
         # TODO: Implement a load based on the datset_choice 
         self.X_train, self.y_train = torch.from_numpy(train_X), torch.from_numpy(train_y)
         self.X_val, self.y_val = torch.from_numpy(val_X), torch.from_numpy(val_y)
         self.X_test, self.y_test = torch.from_numpy(test_X), torch.from_numpy(test_y)
-        
+        self.train_mask, self.val_mask, self.test_mask = torch.from_numpy(train_mask) < 1, torch.from_numpy(val_mask) < 1, torch.from_numpy(test_mask) < 1
+        self.train_mask, self.val_mask, self.test_mask = self.train_mask.unsqueeze(1),  self.val_mask.unsqueeze(1), self.test_mask.unsqueeze(1)
+        self.train_mask, self.val_mask, self.test_mask = torch.repeat_interleave(self.train_mask, 2, 1 ), torch.repeat_interleave(self.val_mask, 2, 1), torch.repeat_interleave(self.test_mask, 2, 1)
         assert torch.isnan(self.y_train).any() == False 
         
         # Normalize the profiles 
@@ -62,10 +65,19 @@ class PLDATAMODULE_AK(pl.LightningDataModule):
         # TODO: Convert everything to float? 
         
     def setup(self, stage=None):
-        self.train_set = DATASET_AK(self.X_train, self.y_train)
-        self.val_set = DATASET_AK(self.X_val, self.y_val)
-        self.test_set = DATASET_AK(self.X_test, self.y_test)
-        
+        self.train_set = DATASET_AK(self.X_train, self.y_train, mask = self.train_mask)
+        self.val_set = DATASET_AK(self.X_val, self.y_val, mask = self.val_mask)
+        self.test_set = DATASET_AK(self.X_test, y = self.y_test, mask = self.test_mask)
+    
+    def get_temperature_norms(self): 
+        return self.mu_T, self.var_T 
+
+    def get_density_norms(self): 
+        return self.mu_D, self.var_D 
+
+    def get_machine_norms(self): 
+        return self.mu_MP, self.var_MP
+
     def train_dataloader(self):
         return DataLoader(self.train_set, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True, pin_memory=self.pin_memory)
 

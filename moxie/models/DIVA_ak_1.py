@@ -234,10 +234,14 @@ class DIVAMODEL(Base):
         in_profs = kwargs['in_profs']
         out_mp  =kwargs['out_mp']
         in_mp = kwargs['in_mp']
+        if 'mask' in kwargs: 
+            mask = kwargs['mask']
+            recon_prof_loss = F.mse_loss(out_profs[mask], in_profs[mask])
+        else: 
 
-
+            recon_prof_loss = F.mse_loss(out_profs, in_profs)
         # Reconstruction losses
-        recon_prof_loss = F.mse_loss(out_profs, in_profs)
+        # recon_prof_loss = F.mse_loss(out_profs[mask], in_profs[mask])
         recon_mp_loss = F.mse_loss(out_mp, in_mp)
 
         # Z_stoch latent space losses
