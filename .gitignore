@@ -3,9 +3,9 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,jupyternotebooks
 /docs/source/profiles.rst
 /data/
-/tb_logs/
-/lightning_logs/
-/ray_results/
+tb_logs/
+lightning_logs/
+ray_results/
 ### JupyterNotebooks ###
 # gitignore template for Jupyter Notebooks
 # website: http://jupyter.org/

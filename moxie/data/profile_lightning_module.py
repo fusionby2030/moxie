@@ -6,9 +6,8 @@ import torch
 from torch.utils.data import DataLoader
 class PLDATAMODULE_AK(pl.LightningDataModule): 
     """
-    pl.lightning datamodule calss, which will help with our dataloading needs :--)
-
-
+    pl.lightning datamodule class, which will help with our dataloading needs :--)
+    # TODO: Implement a mask or not mask ask. 
     """
     def __init__(self, data_dir: str = '', num_workers: int = 1, batch_size: int = 512, dataset_choice='padded', **params):
         super().__init__()
@@ -38,7 +37,6 @@ class PLDATAMODULE_AK(pl.LightningDataModule):
         
 
         # Convert to torch tensors, although this won't work for the raw datasets!!
-        # TODO: Implement a load based on the datset_choice 
         self.X_train, self.y_train = torch.from_numpy(train_X), torch.from_numpy(train_y)
         self.X_val, self.y_val = torch.from_numpy(val_X), torch.from_numpy(val_y)
         self.X_test, self.y_test = torch.from_numpy(test_X), torch.from_numpy(test_y)

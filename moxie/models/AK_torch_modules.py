@@ -161,10 +161,10 @@ class PRIORreg(nn.Module):
     """
     A regressor to define the prior for Z_mach
     """
-    def __init__(self, mach_latent_dim=10):
+    def __init__(self, in_dims = 13, mach_latent_dim=10):
         super(PRIORreg, self).__init__()
         self.block = nn.ModuleList()
-        self.block.append(nn.Linear(13, 32))
+        self.block.append(nn.Linear(in_dims, 32))
         self.block.append(nn.ReLU())
         self.block.append(nn.Linear(32, 16))
         self.block.append(nn.ReLU())

@@ -1,0 +1,14 @@
+#!/bin/bash 
+
+#SBATCH --job-name=DIVA_Search
+#SBATCH --acount=Project_2005083
+#SBATCH --partition=gpusmall 
+#SBATCH --time=10:00:00
+#SBATCH --ntasks=1 
+#SBATCH --cpus-per-task=64
+#SBATCH --gres=gpu:a100:2
+
+module purge 
+module load pytorch
+
+srun python3 random_search.py -cpu 8 -gpu 0.25 -ep 50 -pm True

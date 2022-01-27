@@ -80,7 +80,7 @@ class DIVAMODEL(Base):
 
         # Prior Regressor
 
-        self.prior_reg = PRIORreg(mach_latent_dim)
+        self.prior_reg = PRIORreg(in_dims=num_machine_params, mach_latent_dim=self.mach_latent_dim)
 
         # Latent Space
 
