@@ -17,26 +17,40 @@ Long Term Plan
   :width: 200
   :alt: Version 1 of Long term model
 
-1. Generate density (and tempearture) profiles using VAEs
-2. Encode machine control parameters into the inputs and or latent space (dreaming)
 
-  * VAE with two latent spaces, `z_stochastic, z_machine`
+Roadmap
+-------
 
-3. Extent machine control parameters + profile inputs into a time evolving predictor
+Each point is successive, i.e., built upon the previous. 
 
-  * Take previous time step params + profiles to predict next time step profile
-4. Diagnostics as inputs???
-5. Establish physics informed neural networks (PINN)
+1. Working VAE for time-independent pedestal profiles in JET
 
-   * Requiring plasma edge to have 0 temperature and density (in the loss?)
+  * Latent spaces encode relevant information, 
+    
+    * :math:`Z_{mach}` should give a good guess if not the mean of all the time slices with similar machine parameters 
+    * Varying :math:`Z_{stoch}` from above Z_mach samples should cover variation in relative shifts (e.g., vertical) in time slices
+   
+  * Physics checks out, (examples below)
+    
+    * Sweeping :math:`I_P` should linearlly increase density
+    * Pulses with pellets should push :math:`n_{e, ped}` up relative to SOL. 
+    * Scaling laws are 'loosely' followed 
+  
+  * Encode physics 
 
+    * ELM timing as input 
+    * Output of machine parameters follow peeling-balooning limits, e.g., :math:`\beta_N` predicted by model is always 'real' 
 
-This 'meta-model' is comprised of many **modular** sub-models, which can operate independently.
-The current list of sub-models:
+  * Ablation studies of varying levels of complexity in dataset, i.e., dataset with pellets vs without pellets. 
 
-* VAE for single timestep predictions
+2. Establish multi-machine time-independent VAE with gathered AUG data 
 
-  * Determining relevant SOL parameters like :math:`n_{e, sep}, P_{sep}` from latent space or profile of single time step
+  *  Transfer learning
+
+3. Potential next steps
+
+  * Time-dependent
+  * Grid invariant (regardless of # of measurements or points, the output is encoded to machine normalized quantities)
 
 Contents
 --------
@@ -44,8 +58,6 @@ Contents
 .. toctree::
 
    predicting_profiles
-   models
    literature_review
    data
    datasets
-   nesep_problem_statement
