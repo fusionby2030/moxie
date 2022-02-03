@@ -28,18 +28,22 @@ Each point is successive, i.e., built upon the previous.
   * Latent spaces encode relevant information, 
     
     * :math:`Z_{mach}` should give a good guess if not the mean of all the time slices with similar machine parameters 
-    * Varying :math:`Z_{stoch}` from above Z_mach samples should cover variation in relative shifts (e.g., vertical) in time slices
+    * Varying :math:`Z_{stoch}` from above :math:`Z_{mach}` samples should cover variation in relative shifts (e.g., vertical) in time slices
    
   * Physics checks out, (examples below)
     
     * Sweeping :math:`I_P` should linearlly increase density
     * Pulses with pellets should push :math:`n_{e, ped}` up relative to SOL. 
-    * Scaling laws are 'loosely' followed 
+    * predicted :math:`\alpha^*` (and other physical parameters) follow general understanding of SOL/pedestal physics (see EPED)
   
   * Encode physics 
 
     * ELM timing as input 
-    * Output of machine parameters follow peeling-balooning limits, e.g., :math:`\beta_N` predicted by model is always 'real' 
+    * Encode the experimental physics studies above into learning process.   
+
+  * Decode physics 
+    
+    * Predict :math:`n_{e, ped}, P_{SOL}`
 
   * Ablation studies of varying levels of complexity in dataset, i.e., dataset with pellets vs without pellets. 
 
@@ -57,6 +61,7 @@ Contents
 
 .. toctree::
 
+   experiments
    predicting_profiles
    literature_review
    data
