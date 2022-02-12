@@ -31,16 +31,14 @@ class PLDATAMODULE_AK(pl.LightningDataModule):
         # Grab the dataset
         with open(self.file_loc, 'rb') as file:
             full_dict = pickle.load(file)
-            train_X, train_y, train_mask, train_radii = full_dict['train'][self.dataset_choice].values()
-            val_X, val_y, val_mask, val_radii = full_dict['valid'][self.dataset_choice].values()
-            test_X, test_y, test_mask, test_radii = full_dict['test'][self.dataset_choice].values()
-        
-
+            train_X, train_y, train_mask, train_radii = full_dict['train_dict'][self.dataset_choice]['profiles'],  full_dict['train_dict'][self.dataset_choice]['controls'],  full_dict['train_dict'][self.dataset_choice]['masks'], full_dict['train_dict'][self.dataset_choice]['radii']
+            val_X, val_y, val_mask = full_dict['val_dict'][self.dataset_choice]['profiles'],  full_dict['val_dict'][self.dataset_choice]['controls'], full_dict['val_dict'][self.dataset_choice]['masks']
+            test_X, test_y, test_mask = full_dict['test_dict'][self.dataset_choice]['profiles'],  full_dict['test_dict'][self.dataset_choice]['controls'], full_dict['test_dict'][self.dataset_choice]['masks']
         # Convert to torch tensors, although this won't work for the raw datasets!!
-        self.X_train, self.y_train = torch.from_numpy(train_X), torch.from_numpy(train_y)
-        self.X_val, self.y_val = torch.from_numpy(val_X), torch.from_numpy(val_y)
-        self.X_test, self.y_test = torch.from_numpy(test_X), torch.from_numpy(test_y)
-        self.train_mask, self.val_mask, self.test_mask = torch.from_numpy(train_mask) < 1, torch.from_numpy(val_mask) < 1, torch.from_numpy(test_mask) < 1
+        self.X_train, self.y_train = torch.from_numpy(train_X).float(), torch.from_numpy(train_y).float()
+        self.X_val, self.y_val = torch.from_numpy(val_X).float(), torch.from_numpy(val_y).float()
+        self.X_test, self.y_test = torch.from_numpy(test_X).float(), torch.from_numpy(test_y).float()
+        self.train_mask, self.val_mask, self.test_mask = torch.from_numpy(train_mask) > 0, torch.from_numpy(val_mask) > 0, torch.from_numpy(test_mask) > 0
         self.train_mask, self.val_mask, self.test_mask = self.train_mask.unsqueeze(1),  self.val_mask.unsqueeze(1), self.test_mask.unsqueeze(1)
         self.train_mask, self.val_mask, self.test_mask = torch.repeat_interleave(self.train_mask, 2, 1 ), torch.repeat_interleave(self.val_mask, 2, 1), torch.repeat_interleave(self.test_mask, 2, 1)
         assert torch.isnan(self.y_train).any() == False 

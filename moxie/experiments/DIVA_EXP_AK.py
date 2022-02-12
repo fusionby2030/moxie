@@ -121,7 +121,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         train_prof_og, train_mp, train_mask = next(train_data_iter)
         val_prof_og, val_mp, val_mask = next(val_data_iter)
         test_prof_og, test_mp, test_mask = next(test_data_iter)
-
+        
         train_results = self.model.forward(train_prof_og, train_mp) # recons, input, mu, logvar
         val_results = self.model.forward(val_prof_og, val_mp) # recons, input, mu, logvar
         test_results = self.model.forward(test_prof_og, test_mp) # recons, input, mu, logvar
@@ -140,25 +140,29 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         train_res = de_standardize(train_res, mu_D, var_D)
         val_res = de_standardize(val_res, mu_D, var_D)
         test_res = de_standardize(test_res, mu_D, var_D)
+        
+        train_mask = train_mask[:, 0:1, :].squeeze()
+        val_mask = val_mask[:, 0:1, :].squeeze()
+        test_mask = test_mask[:, 0:1, :].squeeze()
 
         train_prof=train_prof_og[:, 0:1,:]
         val_prof=val_prof_og[:, 0:1, :]
         test_prof=test_prof_og[:, 0:1, :]
+        
 
         train_prof = de_standardize(train_prof, mu_D, var_D)
         val_prof = de_standardize(val_prof, mu_D, var_D)
         test_prof = de_standardize(test_prof, mu_D, var_D)
-        
         fig, axs = plt.subplots(3, 3, figsize=(18, 18), constrained_layout=True, sharex=True, sharey=True)
-
+        
         for k in [0, 1, 2]:
 
-            axs[0, k].plot(train_res[k*100].squeeze(), label='Generated', lw=4)
-            axs[0, k].plot(train_prof[k*100].squeeze(), label='Real', lw=4)
-            axs[1, k].plot(val_res[k*100].squeeze(), label='Generated', lw=4)
-            axs[1, k].plot(val_prof[k*100].squeeze(), label='Real', lw=4)
-            axs[2, k].plot(test_res[k*100].squeeze(), label='Generated', lw=4)
-            axs[2, k].plot(test_prof[k*100].squeeze(), label='Real', lw=4)
+            axs[0, k].plot(train_res[k*100].squeeze()[train_mask[k*100]], label='Generated', lw=4)
+            axs[0, k].plot(train_prof[k*100].squeeze()[train_mask[k*100]], label='Real', lw=4)
+            axs[1, k].plot(val_res[k*100].squeeze()[val_mask[k*100]], label='Generated', lw=4)
+            axs[1, k].plot(val_prof[k*100].squeeze()[val_mask[k*100]], label='Real', lw=4)
+            axs[2, k].plot(test_res[k*100].squeeze()[test_mask[k*100]], label='Generated', lw=4)
+            axs[2, k].plot(test_prof[k*100].squeeze()[test_mask[k*100]], label='Real', lw=4)
 
             if k == 0:
                 axs[0, k].set_ylabel('Train: {:.4}'.format(train_loss['Reconstruction_Loss']) , size='x-large')
@@ -244,8 +248,10 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
 
 
     def plot_corr_matrix(self, z, val_params, title='Z_machine'):
-        LABEL = ['Q95', 'RGEO', 'CR0', 'VOLM', 'TRIU', 'TRIL', 'XIP', 'ELON', 'POHM', 'BT', 'ELER', 'P_NBI', 'P_ICRH']
-
+        LABEL = ['Q95', 'RGEO', 'CR0', 'VOLM', 'TRIU', 'TRIL', 'ELON', 'POHM', 'IPLA', 'BVAC', 'NBI', 'ICRH', 'ELER']
+        
+        # LABEL = ['BT', 'CR0', 'ELER', 'ELON', 'POHM', 'P_ICRH', 'P_NBI', 'Q95', 'RGEO', 'TRIL', 'TRIU', 'VOLM', 'XIP'] 
+        
         fig, axs = plt.subplots(figsize=(20,20))
         all_cors = []
         for i in range(z.shape[1]):

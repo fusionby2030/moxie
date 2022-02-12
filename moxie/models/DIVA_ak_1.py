@@ -59,7 +59,7 @@ class DIVAMODEL(Base):
         self.encoder_end_dense_size = 128 # Future versions this would be a variable to test ablations to size of output from encoder. 
         self.hidden_dims = [2, 4] # Future versions would make this a variable to test ablations to amount of conv filtering/channel kerneling, blah blah 
 
-        end_conv_size = get_conv_output_size(24, len(self.hidden_dims)) # TODO: Not implemented yet
+        end_conv_size = get_conv_output_size(out_length, len(self.hidden_dims)) # TODO: Not implemented yet
 
         # Loss hyperparams
         self.alpha_prof = alpha_prof
