@@ -43,7 +43,7 @@ class DIVAMODEL(Base):
     None
     """
     num_iterations = 0 # Trickery for the semi-supervsied loss, 
-    def __init__(self, in_ch: int=2, out_length: int = 24, 
+    def __init__(self, in_ch: int=2, out_length: int = 19, 
                         alpha_prof: float = 1., alpha_mach: float = 1., 
                         beta_stoch: float = 0.01, beta_mach: float = 100., 
                         mach_latent_dim: int = 15, stoch_latent_dim: int = 5, 
