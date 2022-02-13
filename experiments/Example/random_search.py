@@ -17,7 +17,7 @@ from pathlib import Path
 import argparse
 def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='', pin_memory=False):
     model_params = search_space
-    experiment_params ={'LR': 0.001, 'weight_decay': 0.0, 'batch_size': 512}
+    experiment_params ={'LR': 0.003, 'weight_decay': 0.0, 'batch_size': 512}
     if 'LR' in search_space.keys():
         experiment_params['LR'] = search_space['LR']
 
@@ -59,12 +59,12 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
     runner.fit(experiment, datamodule=datacls)
     # runner.test(experiment, datamodule=datacls)
 
-def tune_asha(num_samples=500, num_epochs=150, gpus_per_trial=0, cpus_per_trial=5, data_dir='', pin_memory=False):
+def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5, data_dir='', pin_memory=False):
     search_space = {
-        # 'LR': tune.loguniform(0.00001, 0.01),
-        'mach_latent_dim': tune.randint(10, 51),
+        'LR': 0.003, # tune.loguniform(0.00001, 0.01),
+        'mach_latent_dim': tune.randint(5, 15),
         'beta_stoch': tune.qloguniform(0.0001, 1., 5e-5),
-        'beta_mach': tune.choice([1., 10., 100., 1000.]),
+        'beta_mach': 100, # tune.choice([1., 10., 100., 1000.]),
         "alpha_prof": 1.0, 
         "alpha_mach": 1.0, 
         # 'alpha_prof': tune.choice([0., 1., 10., 100., 1000.]),
@@ -74,11 +74,11 @@ def tune_asha(num_samples=500, num_epochs=150, gpus_per_trial=0, cpus_per_trial=
 
     scheduler = ASHAScheduler(
         max_t=num_epochs,
-        grace_period=50,
+        grace_period=40,
         reduction_factor=2)
 
     reporter = CLIReporter(
-        parameter_columns=["mach_latent_dim", "beta_stoch", "beta_mach", "loss_type", "alpha_mach", "alpha_prof"],
+        parameter_columns=["mach_latent_dim", "beta_stoch", "beta_mach", "alpha_mach", "alpha_prof"],
         metric_columns=["loss", "loss_mp"],
         max_report_frequency=100)
 
@@ -108,12 +108,12 @@ def tune_asha(num_samples=500, num_epochs=150, gpus_per_trial=0, cpus_per_trial=
     print("Best hyperparameters found were: ", analysis.best_config)
 
     df = analysis.results_df
-    df.to_csv(exp_path /'DIVA_TE_gridsearch.csv')
+    df.to_csv(exp_path /'DIVA_LOW_MACHLD.csv')
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Search for hyperparams using raytune and HPC.')
     parser.add_argument('-gpu', '--gpus_per_trial', default=0, help='# GPUs per trial')
     parser.add_argument('-cpu', '--cpus_per_trial', default=1, help='# CPUs per trial')
-    parser.add_argument('-ep', '--num_epochs', default=200, help='# Epochs to train on')
+    parser.add_argument('-ep', '--num_epochs', default=50, help='# Epochs to train on')
     parser.add_argument('-pm', '--pin_memory', default=False, help='# Epochs to train on', type=bool)
 
     args = parser.parse_args()
@@ -121,11 +121,11 @@ if __name__ == '__main__':
     os.environ["SLURM_JOB_NAME"] = "bash"
     os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = '8'
     # desired_path = '/home/kitadam/ENR_Sven/moxie_revisited/data/processed/raw_padded_fitted_datasets.pickle' 
-
+    # pedestal_profiles_ML_READY_ak_09022022
     file_path = Path(__file__).resolve() 
     exp_path = file_path.parent
     home_path = exp_path.parent.parent
-    desired_path = home_path / 'data' / 'processed' / 'raw_padded_fitted_datasets.pickle'
+    desired_path = home_path / 'data' / 'processed' / 'pedestal_profiles_ML_READY_ak_09022022.pickle'
     print('\n# Path to Dataset Exists? {}'.format(desired_path.exists()))
     print(desired_path.resolve())
 

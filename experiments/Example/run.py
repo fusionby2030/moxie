@@ -14,7 +14,7 @@ print("""\
 
 import sys, os, pathlib
 
-from moxie.models.DIVA_ak_1 import DIVAMODEL, ISHERE
+from moxie.models.DIVA_ak_1 import DIVAMODEL
 from moxie.data.profile_lightning_module import PLDATAMODULE_AK
 from moxie.experiments.DIVA_EXP_AK import EXAMPLE_DIVA_EXP_AK
 
@@ -27,7 +27,7 @@ exp_path = file_path.parent
 # Path of moxie stuffs 
 home_path = file_path.parent.parent.parent 
 # Path to data 
-dataset_path = home_path / 'data' / 'processed' / 'raw_padded_fitted_datasets.pickle'
+dataset_path = home_path / 'data' / 'processed' / 'pedestal_profiles_ML_READY_ak_09022022.pickle'
 print('\n# Path to Dataset Exists? {}'.format(dataset_path.exists()))
 print(dataset_path.resolve())
 
@@ -41,11 +41,11 @@ pl.utilities.seed.seed_everything(42)
 # TODO: move to a config file
 STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 4, 'pin_memory': False, 'dataset_choice': 'padded'}
 
-HYPERPARAMS = {'LR': 0.002, 'weight_decay': 0.0, 'batch_size': 512}
+HYPERPARAMS = {'LR': 0.0025, 'weight_decay': 0.0, 'batch_size': 512}
 
-model_hyperparams = {'in_ch': 2, 'out_length':24, 
-                    'mach_latent_dim': 10, 'beta_stoch': 0.0025, 
-                    'beta_mach':  500., 'alpha_mach': 1.0, 'alpha_prof': 25.0, 
+model_hyperparams = {'in_ch': 2, 'out_length':19, 
+                    'mach_latent_dim': 8, 'beta_stoch': 0.00211535, 
+                    'beta_mach':  530., 'alpha_mach': 10.0, 'alpha_prof': 1.0, 
                     'loss_type': 'semi-supervised'}
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
