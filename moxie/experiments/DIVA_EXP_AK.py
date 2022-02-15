@@ -27,7 +27,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         self.current_device = real_profile.device
 
         results = self.forward(real_profile, in_mp=machine_params)
-        train_loss = self.model.loss_function(**results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.train_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks)
+        train_loss = self.model.loss_function(**results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.train_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks, D_norms= self.trainer.datamodule.get_density_norms(), T_norms= self.trainer.datamodule.get_temperature_norms())
         return train_loss
 
     def on_train_start(self):
@@ -42,12 +42,14 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         avg_KLD_stoch = torch.stack([x['KLD_stoch'] for x in outputs]).mean()
         avg_KLD_mach = torch.stack([x['KLD_mach'] for x in outputs]).mean()
         avg_recon_loss_mp = torch.stack([x['Reconstruction_Loss_mp'] for x in outputs]).mean()
+        avg_physics_loss = torch.stack([x['physics_loss'] for x in outputs]).mean()
 
         metrics = {'Loss/Train': avg_loss,
                     'ReconLoss/Train': avg_recon_loss,
                     'ReconLossMP/Train': avg_recon_loss_mp,
                     'KLD_stoch/Train': avg_KLD_stoch,
-                    'KLD_mach/Train': avg_KLD_mach}
+                    'KLD_mach/Train': avg_KLD_mach, 
+                    'physics/Train': avg_physics_loss}
 
         self.log_dict(metrics)
         epoch_dictionary = {'loss': avg_loss}
@@ -59,7 +61,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
 
         results = self.forward(real_profile, in_mp=machine_params)
 
-        val_loss = self.model.loss_function(**results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.val_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks)
+        val_loss = self.model.loss_function(**results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.val_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks, D_norms= self.trainer.datamodule.get_density_norms(), T_norms= self.trainer.datamodule.get_temperature_norms())
         return val_loss
 
     def validation_epoch_end(self, outputs):
@@ -69,12 +71,14 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         avg_KLD_stoch = torch.stack([x['KLD_stoch'] for x in outputs]).mean()
         avg_KLD_mach = torch.stack([x['KLD_mach'] for x in outputs]).mean()
 
+        avg_physics_loss = torch.stack([x['physics_loss'] for x in outputs]).mean()
 
         metrics = {'Loss/Valid': avg_loss,
                     'ReconLoss/Valid': avg_recon_loss,
                     'ReconLossMP/Valid': avg_recon_loss_mp,
                     'KLD_stoch/Valid': avg_KLD_stoch,
-                    'KLD_mach/Valid': avg_KLD_mach}
+                    'KLD_mach/Valid': avg_KLD_mach, 
+                    'physics/Valid': avg_physics_loss}
 
 
         self.log_dict(metrics)
@@ -86,7 +90,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         self.current_device = real_profile.device
 
         results = self.forward(real_profile, in_mp=machine_params)
-        test_loss = self.model.loss_function(**results, machine_params=machine_params, M_N = self.params['batch_size']/ len(self.trainer.datamodule.test_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks)
+        test_loss = self.model.loss_function(**results, machine_params=machine_params, M_N = self.params['batch_size']/ len(self.trainer.datamodule.test_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks, D_norms= self.trainer.datamodule.get_density_norms(), T_norms= self.trainer.datamodule.get_temperature_norms())
         # Log the computational Graph!
         # self.logger.experiment.add_graph(self.model, [real_profile, machine_params], use_strict_trace=False)
 
