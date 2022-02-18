@@ -1,6 +1,6 @@
-import torch 
-import torch.nn as nn 
-from .utils_ import * 
+import torch
+import torch.nn as nn
+from .utils_ import *
 
 class Flatten(nn.Module):
     def forward(self, input):
@@ -168,8 +168,10 @@ class PRIORreg(nn.Module):
         self.block.append(nn.ReLU())
         self.block.append(nn.Linear(32, 16))
         self.block.append(nn.ReLU())
-        self.out_mu = nn.Linear(16, mach_latent_dim)
-        self.out_var = nn.Linear(16, mach_latent_dim)
+        self.block.append(nn.Linear(16, 8))
+        self.block.append(nn.ReLU())
+        self.out_mu = nn.Linear(8, mach_latent_dim)
+        self.out_var = nn.Linear(8, mach_latent_dim)
         # self.block.append(nn.Linear(16, 2))
         # self.out = nn.Linear(100, 2)
 

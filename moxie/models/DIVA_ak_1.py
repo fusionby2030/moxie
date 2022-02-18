@@ -1,18 +1,18 @@
-from .utils_ import * 
-from .base import Base 
+from .utils_ import *
+from .base import Base
 from .AK_torch_modules import PRIORreg, ENCODER, DECODER, AUXreg
 
-import torch 
-import torch.nn as nn 
-from torch.nn import functional as F 
+import torch
+import torch.nn as nn
+from torch.nn import functional as F
 
 # Helper Functions
-def de_standardize(x, mu, var): 
+def de_standardize(x, mu, var):
     return (x*var) + mu
 
-def standardize(x, mu, var): 
+def standardize(x, mu, var):
     return (x - mu) / var
-class DIVAMODEL(Base): 
+class DIVAMODEL(Base):
     """
     A Diva model.
 
@@ -24,14 +24,14 @@ class DIVAMODEL(Base):
     out_length: int
         The output length of the profile. This should always be 63, until I figure out a way to upsample.
     alpha_prof: float
-        Weighting term for reconstruction loss of profile. Higher (>>1) means profile is higher importance. 
+        Weighting term for reconstruction loss of profile. Higher (>>1) means profile is higher importance.
     alpha_mach: float
-        Weighting term for reconstruction of machine parameters. 
+        Weighting term for reconstruction of machine parameters.
     beta_stoch: float
-        Weighting term for KL-Div loss of stochastic latent space. 
+        Weighting term for KL-Div loss of stochastic latent space.
     beta_mach: float
         Weighting term for KL-Div loss of machine latent space (larger latent space, which we assume encodes the machine params)
-        To ensure that Mach latent space encodes more information that stoch latent space, 
+        To ensure that Mach latent space encodes more information that stoch latent space,
         beta_mach = beta_stoch / beta_mach, i.e., we divide beta_stoch by what beta_mach was supplied
     mach_latent_dim: int
         The size of the machine latent space
@@ -40,29 +40,29 @@ class DIVAMODEL(Base):
     loss_type: str
         Three options: 'supervised', 'unsupervised', 'semi-supervised'
         'unsupervised': Prof recon Loss + KLD_stoch(vs N(0, 1)) + KLD_mach(vs N(0, 1))
-        'supervised':  Prof recon Loss + MP recon loss +  KLD_stoch(vs N(0, 1)) + KLD_mach(vs N(conditional_mu, conditional_var)) 
-        'semi-supervised': Alternate between supervsied and unsupervised every epoch 
+        'supervised':  Prof recon Loss + MP recon loss +  KLD_stoch(vs N(0, 1)) + KLD_mach(vs N(conditional_mu, conditional_var))
+        'semi-supervised': Alternate between supervsied and unsupervised every epoch
     Returns
     -------
 
     None
     """
-    num_iterations = 0 # Trickery for the semi-supervsied loss, 
-    def __init__(self, in_ch: int=2, out_length: int = 19, 
-                        alpha_prof: float = 1., alpha_mach: float = 1., 
-                        beta_stoch: float = 0.01, beta_mach: float = 100., 
-                        mach_latent_dim: int = 15, stoch_latent_dim: int = 5, 
-                        loss_type: str = 'semi-supervised', physics= True, **kwargs) -> None: 
+    num_iterations = 0 # Trickery for the semi-supervsied loss,
+    def __init__(self, in_ch: int=2, out_length: int = 19,
+                        alpha_prof: float = 1., alpha_mach: float = 1.,
+                        beta_stoch: float = 0.01, beta_mach: float = 100.,
+                        mach_latent_dim: int = 15, stoch_latent_dim: int = 5,
+                        loss_type: str = 'semi-supervised', physics= True, **kwargs) -> None:
 
         super(DIVAMODEL, self).__init__()
-        
-        # Architecture params 
+
+        # Architecture params
         num_machine_params = 13 # maybe make its own variable? Or try from KWARGS
-        self.stoch_latent_dim = stoch_latent_dim 
+        self.stoch_latent_dim = stoch_latent_dim
         self.stoch_latent_dim = stoch_latent_dim
         self.mach_latent_dim = mach_latent_dim
-        self.encoder_end_dense_size = 128 # Future versions this would be a variable to test ablations to size of output from encoder. 
-        self.hidden_dims = [2, 4] # Future versions would make this a variable to test ablations to amount of conv filtering/channel kerneling, blah blah 
+        self.encoder_end_dense_size = 128 # Future versions this would be a variable to test ablations to size of output from encoder.
+        self.hidden_dims = [2, 4] # Future versions would make this a variable to test ablations to amount of conv filtering/channel kerneling, blah blah
         self.physics = physics
         end_conv_size = get_conv_output_size(out_length, len(self.hidden_dims)) # TODO: Not implemented yet
 
@@ -74,7 +74,7 @@ class DIVAMODEL(Base):
 
 
         self.loss_type = loss_type
-        
+
          # Encoders
 
         self.encoder_n = ENCODER()
@@ -242,13 +242,13 @@ class DIVAMODEL(Base):
         in_mp = kwargs['in_mp']
         D_mu, D_var = kwargs['D_norms']
         T_mu, T_var = kwargs['T_norms']
-        if 'mask' in kwargs: 
+        if 'mask' in kwargs:
             mask = kwargs['mask']
             recon_prof_loss = F.mse_loss(out_profs[mask], in_profs[mask])
             stored_E_in, stored_E_out = torch.zeros(10), torch.zeros(10)
-            if self.physics and self.num_iterations > 500: 
-                  
-                # Apparently not necessary for the static electron pressure energy  
+            if self.physics and self.num_iterations > 500:
+
+                # Apparently not necessary for the static electron pressure energy
                 real_in_profs = torch.clone(in_profs)
                 real_in_profs[:, 0] = de_standardize(real_in_profs[:, 0], D_mu, D_var)
                 real_in_profs[:, 1] = de_standardize(real_in_profs[:, 1], T_mu, T_var)
@@ -256,11 +256,11 @@ class DIVAMODEL(Base):
                 real_out_profs = torch.clone(out_profs)
                 real_out_profs[:, 0] = de_standardize(real_out_profs[:, 0], D_mu, D_var)
                 real_out_profs[:, 1] = de_standardize(real_out_profs[:, 1], T_mu, T_var)
-                
+
                 stored_E_in, stored_E_out =  boltzmann_constant*torch.prod(real_in_profs.masked_fill_(~mask, 0), 1).sum(1), boltzmann_constant*torch.prod(real_out_profs.masked_fill_(~mask, 0), 1).sum(1)
                 # stored_E_in, stored_E_out =  torch.prod(in_profs.masked_fill_(~mask, 0), 1).sum(1), torch.prod(out_profs.masked_fill_(~mask, 0), 1).sum(1)
-        else: 
-            if self.physics: 
+        else:
+            if self.physics:
                 stored_E_in, stored_E_out =  torch.prod(in_profs, 1).sum(1), torch.prod(out_profs, 1).sum(1)
             recon_prof_loss = F.mse_loss(out_profs, in_profs)
         # Reconstruction losses
@@ -276,9 +276,9 @@ class DIVAMODEL(Base):
 
         self.num_iterations += 1
         physics_loss = 0.0
-        if self.physics: 
+        if self.physics:
             physics_loss += F.mse_loss(stored_E_in, stored_E_out)
-        
+
         if self.loss_type=='unsupervised':
         # Z_machine latent space losses
             unsup_kld_loss = torch.distributions.kl.kl_divergence(
@@ -324,6 +324,3 @@ class DIVAMODEL(Base):
         std = torch.exp(0.5*logvar)
         eps = torch.randn_like(std)
         return eps * std + mu
-
-
-

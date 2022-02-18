@@ -1,8 +1,8 @@
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-import pytorch_lightning as pl 
-import torch 
-from torch import optim 
+import pytorch_lightning as pl
+import torch
+from torch import optim
 import numpy as np
 
 def de_standardize(x, mu, var):
@@ -23,7 +23,16 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         return self.model(input, **kwargs)
 
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
-        real_profile, machine_params, masks = batch
+        real_profile, machine_params, masks, ids = batch
+        # Get batch means
+        records_array = np.array([int(x.split('/')[0]) for x in ids])
+        idx_sort = np.argsort(records_array)
+        sorted_records_array = records_array[idx_sort]
+        vals, idx_start, count = np.unique(sorted_records_array, return_counts=True, return_index=True)
+        res = np.split(idx_sort, idx_start[1:])
+        
+
+        print(records_array, idx_sort, sorted_records_array, res)
         self.current_device = real_profile.device
 
         results = self.forward(real_profile, in_mp=machine_params)
@@ -48,7 +57,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
                     'ReconLoss/Train': avg_recon_loss,
                     'ReconLossMP/Train': avg_recon_loss_mp,
                     'KLD_stoch/Train': avg_KLD_stoch,
-                    'KLD_mach/Train': avg_KLD_mach, 
+                    'KLD_mach/Train': avg_KLD_mach,
                     'physics/Train': avg_physics_loss}
 
         self.log_dict(metrics)
@@ -56,7 +65,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
 
 
     def validation_step(self, batch, batch_idx, optimizer_idx=0):
-        real_profile, machine_params, masks = batch
+        real_profile, machine_params, masks, ids = batch
         self.current_device = real_profile.device
 
         results = self.forward(real_profile, in_mp=machine_params)
@@ -77,7 +86,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
                     'ReconLoss/Valid': avg_recon_loss,
                     'ReconLossMP/Valid': avg_recon_loss_mp,
                     'KLD_stoch/Valid': avg_KLD_stoch,
-                    'KLD_mach/Valid': avg_KLD_mach, 
+                    'KLD_mach/Valid': avg_KLD_mach,
                     'physics/Valid': avg_physics_loss}
 
 
@@ -86,7 +95,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
 
     def test_step(self, batch, batch_idx, optimizer_idx=0):
 
-        real_profile, machine_params, masks = batch
+        real_profile, machine_params, masks, ids = batch
         self.current_device = real_profile.device
 
         results = self.forward(real_profile, in_mp=machine_params)
@@ -100,9 +109,6 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
 
         self.compare_generate_with_real()
         self.compare_correlations()
-        # self.sweep_dimension()
-        # self.compare_latent_dims()
-        # self.diversity_of_generation()
 
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
         avg_recon_loss = torch.stack([x['Reconstruction_Loss'] for x in outputs]).mean()
@@ -122,29 +128,32 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         val_data_iter = iter(self.trainer.datamodule.val_dataloader())
         test_data_iter = iter(self.trainer.datamodule.test_dataloader())
 
-        train_prof_og, train_mp, train_mask = next(train_data_iter)
-        val_prof_og, val_mp, val_mask = next(val_data_iter)
-        test_prof_og, test_mp, test_mask = next(test_data_iter)
-        
+        train_prof_og, train_mp, train_mask, ids = next(train_data_iter)
+        val_prof_og, val_mp, val_mask, ids = next(val_data_iter)
+        test_prof_og, test_mp, test_mask, ids = next(test_data_iter)
+
+        mu_D, var_D = self.trainer.datamodule.get_density_norms()
+        mu_T, var_T = self.trainer.datamodule.get_temperature_norms()
+
         train_results = self.model.forward(train_prof_og, train_mp) # recons, input, mu, logvar
         val_results = self.model.forward(val_prof_og, val_mp) # recons, input, mu, logvar
         test_results = self.model.forward(test_prof_og, test_mp) # recons, input, mu, logvar
 
-        train_loss = self.model.loss_function(**train_results, mask=train_mask)
+        train_loss = self.model.loss_function(**train_results, mask=train_mask, D_norms=(mu_D, var_D), T_norms=(mu_T, var_T))
 
-        val_loss = self.model.loss_function(**val_results, mask=val_mask)
-        test_loss = self.model.loss_function(**test_results, mask=test_mask)
+        val_loss = self.model.loss_function(**val_results, mask=val_mask, D_norms=(mu_D, var_D), T_norms=(mu_T, var_T))
+        test_loss = self.model.loss_function(**test_results, mask=test_mask, D_norms=(mu_D, var_D), T_norms=(mu_T, var_T))
 
-        mu_D, var_D = self.trainer.datamodule.get_density_norms()
+
 
         train_res = train_results['out_profs'][:, 0:1,  :]
         val_res = val_results['out_profs'][:, 0:1, :]
         test_res = test_results['out_profs'][:, 0:1, :]
-        
+
         train_res = de_standardize(train_res, mu_D, var_D)
         val_res = de_standardize(val_res, mu_D, var_D)
         test_res = de_standardize(test_res, mu_D, var_D)
-        
+
         train_mask = train_mask[:, 0:1, :].squeeze()
         val_mask = val_mask[:, 0:1, :].squeeze()
         test_mask = test_mask[:, 0:1, :].squeeze()
@@ -152,13 +161,13 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         train_prof=train_prof_og[:, 0:1,:]
         val_prof=val_prof_og[:, 0:1, :]
         test_prof=test_prof_og[:, 0:1, :]
-        
+
 
         train_prof = de_standardize(train_prof, mu_D, var_D)
         val_prof = de_standardize(val_prof, mu_D, var_D)
         test_prof = de_standardize(test_prof, mu_D, var_D)
         fig, axs = plt.subplots(3, 3, figsize=(18, 18), constrained_layout=True, sharex=True, sharey=True)
-        
+
         for k in [0, 1, 2]:
 
             axs[0, k].plot(train_res[k*100].squeeze()[train_mask[k*100]], label='Generated', lw=4)
@@ -190,7 +199,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         val_prof=val_prof_og[:, 1:, :]
         test_prof=test_prof_og[:, 1:, :]
 
-        mu_T, var_T = self.trainer.datamodule.get_temperature_norms()
+
 
         # print(train_res[:, :])
         train_res = de_standardize(train_res, mu_T, var_T)
@@ -253,9 +262,9 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
 
     def plot_corr_matrix(self, z, val_params, title='Z_machine'):
         LABEL = ['Q95', 'RGEO', 'CR0', 'VOLM', 'TRIU', 'TRIL', 'ELON', 'POHM', 'IPLA', 'BVAC', 'NBI', 'ICRH', 'ELER']
-        
-        # LABEL = ['BT', 'CR0', 'ELER', 'ELON', 'POHM', 'P_ICRH', 'P_NBI', 'Q95', 'RGEO', 'TRIL', 'TRIU', 'VOLM', 'XIP'] 
-        
+
+        # LABEL = ['BT', 'CR0', 'ELER', 'ELON', 'POHM', 'P_ICRH', 'P_NBI', 'Q95', 'RGEO', 'TRIL', 'TRIU', 'VOLM', 'XIP']
+
         fig, axs = plt.subplots(figsize=(20,20))
         all_cors = []
         for i in range(z.shape[1]):

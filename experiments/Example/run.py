@@ -44,8 +44,8 @@ STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 4, 'pin_memory': False,
 HYPERPARAMS = {'LR': 0.0025, 'weight_decay': 0.0, 'batch_size': 512}
 
 model_hyperparams = {'in_ch': 2, 'out_length':19, 
-                    'mach_latent_dim': 8, 'beta_stoch': 0.00211535, 
-                    'beta_mach':  530., 'alpha_mach': 10.0, 'alpha_prof': 1.0, 
+                    'mach_latent_dim': 8, 'beta_stoch': 0.00111535, 
+                        'beta_mach':  130., 'alpha_mach': 100.0, 'alpha_prof': 1.0, 
                     'loss_type': 'semi-supervised'}
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
