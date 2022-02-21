@@ -25,14 +25,13 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
         real_profile, machine_params, masks, ids = batch
         # Get batch means
+        """
         records_array = np.array([int(x.split('/')[0]) for x in ids])
         idx_sort = np.argsort(records_array)
         sorted_records_array = records_array[idx_sort]
         vals, idx_start, count = np.unique(sorted_records_array, return_counts=True, return_index=True)
         res = np.split(idx_sort, idx_start[1:])
-        
-
-        print(records_array, idx_sort, sorted_records_array, res)
+        """
         self.current_device = real_profile.device
 
         results = self.forward(real_profile, in_mp=machine_params)
@@ -51,14 +50,18 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         avg_KLD_stoch = torch.stack([x['KLD_stoch'] for x in outputs]).mean()
         avg_KLD_mach = torch.stack([x['KLD_mach'] for x in outputs]).mean()
         avg_recon_loss_mp = torch.stack([x['Reconstruction_Loss_mp'] for x in outputs]).mean()
-        avg_physics_loss = torch.stack([x['physics_loss'] for x in outputs]).mean()
-
+        """
+        if 'physics_loss' in outputs[0].keys():
+            avg_physics_loss = torch.stack([x['physics_loss'] for x in outputs]).mean()
+        else:
+            avg_physics_loss = 0.0
+        """
         metrics = {'Loss/Train': avg_loss,
                     'ReconLoss/Train': avg_recon_loss,
                     'ReconLossMP/Train': avg_recon_loss_mp,
                     'KLD_stoch/Train': avg_KLD_stoch,
-                    'KLD_mach/Train': avg_KLD_mach,
-                    'physics/Train': avg_physics_loss}
+                    'KLD_mach/Train': avg_KLD_mach,}
+                    # 'physics/Train': avg_physics_loss}
 
         self.log_dict(metrics)
         epoch_dictionary = {'loss': avg_loss}
@@ -79,15 +82,18 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         avg_recon_loss_mp = torch.stack([x['Reconstruction_Loss_mp'] for x in outputs]).mean()
         avg_KLD_stoch = torch.stack([x['KLD_stoch'] for x in outputs]).mean()
         avg_KLD_mach = torch.stack([x['KLD_mach'] for x in outputs]).mean()
-
-        avg_physics_loss = torch.stack([x['physics_loss'] for x in outputs]).mean()
-
+        """
+        if 'physics_loss' in outputs[0].keys():
+            avg_physics_loss = torch.stack([x['physics_loss'] for x in outputs]).mean()
+        else:
+            avg_physics_loss = 0.0
+        """
         metrics = {'Loss/Valid': avg_loss,
                     'ReconLoss/Valid': avg_recon_loss,
                     'ReconLossMP/Valid': avg_recon_loss_mp,
                     'KLD_stoch/Valid': avg_KLD_stoch,
-                    'KLD_mach/Valid': avg_KLD_mach,
-                    'physics/Valid': avg_physics_loss}
+                    'KLD_mach/Valid': avg_KLD_mach,}
+                    # 'physics/Valid': avg_physics_loss}
 
 
         self.log_dict(metrics)
@@ -215,13 +221,12 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         fig, axs = plt.subplots(3, 3, figsize=(18, 18), constrained_layout=True, sharex=True, sharey=True)
 
         for k in [0, 1, 2]:
-
-            axs[0, k].plot(train_res[k*100].squeeze(), label='Generated', lw=4)
-            axs[0, k].plot(train_prof[k*100].squeeze(), label='Real', lw=4)
-            axs[1, k].plot(val_res[k*100].squeeze(), label='Generated', lw=4)
-            axs[1, k].plot(val_prof[k*100].squeeze(), label='Real', lw=4)
-            axs[2, k].plot(test_res[k*100].squeeze(), label='Generated', lw=4)
-            axs[2, k].plot(test_prof[k*100].squeeze(), label='Real', lw=4)
+            axs[0, k].plot(train_res[k*100].squeeze()[train_mask[k*100]], label='Generated', lw=4)
+            axs[0, k].plot(train_prof[k*100].squeeze()[train_mask[k*100]], label='Real', lw=4)
+            axs[1, k].plot(val_res[k*100].squeeze()[val_mask[k*100]], label='Generated', lw=4)
+            axs[1, k].plot(val_prof[k*100].squeeze()[val_mask[k*100]], label='Real', lw=4)
+            axs[2, k].plot(test_res[k*100].squeeze()[test_mask[k*100]], label='Generated', lw=4)
+            axs[2, k].plot(test_prof[k*100].squeeze()[test_mask[k*100]], label='Real', lw=4)
 
             if k == 0:
                 axs[0, k].set_ylabel('Train: {:.4}'.format(train_loss['Reconstruction_Loss']) , size='x-large')
@@ -242,7 +247,8 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         val_data_iter = iter(self.trainer.datamodule.val_dataloader())
         test_data_iter = iter(self.trainer.datamodule.test_dataloader())
 
-        train_prof, train_mp, _= next(train_data_iter)
+        # train_prof_og, train_mp, train_mask, ids
+        train_prof, train_mp, _, _, = next(train_data_iter)
         mu_stoch, log_var_stoch, mu_mach, log_var_mach = self.model.q_zy(train_prof)
         z_stoch, z_mach = self.model.reparameterize(mu_stoch, log_var_stoch), self.model.reparameterize(mu_mach, log_var_mach)
 
@@ -250,7 +256,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         z_stoch_all = z_stoch
         in_all = train_mp
 
-        for (train_prof, train_mp, _) in train_data_iter:
+        for (train_prof, train_mp, _, _) in train_data_iter:
             mu_stoch, log_var_stoch, mu_mach, log_var_mach = self.model.q_zy(train_prof)
             z_stoch, z_mach = self.model.reparameterize(mu_stoch, log_var_stoch), self.model.reparameterize(mu_mach, log_var_mach)
             z_mach_all = torch.vstack((z_mach, z_mach_all))

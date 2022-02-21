@@ -2,8 +2,8 @@ print("""\
 
                                        ._ o o
                                        \_`-)|_
-                                    ,""       \ 
-                                  ,"  ## |   ಠ ಠ. 
+                                    ,""       \
+                                  ,"  ## |   ಠ ಠ.
                                 ," ##   ,-\__    `.
                               ,"       /     `--._;)
                             ,"     ## /
@@ -18,22 +18,22 @@ from moxie.models.DIVA_ak_1 import DIVAMODEL
 from moxie.data.profile_lightning_module import PLDATAMODULE_AK
 from moxie.experiments.DIVA_EXP_AK import EXAMPLE_DIVA_EXP_AK
 
-import pytorch_lightning as pl 
+import pytorch_lightning as pl
 
-# Find the curent path of the file 
+# Find the curent path of the file
 file_path = pathlib.Path(__file__).resolve()# .parent.parent
-# Path of experiment 
+# Path of experiment
 exp_path = file_path.parent
-# Path of moxie stuffs 
-home_path = file_path.parent.parent.parent 
-# Path to data 
+# Path of moxie stuffs
+home_path = file_path.parent.parent.parent
+# Path to data
 dataset_path = home_path / 'data' / 'processed' / 'pedestal_profiles_ML_READY_ak_09022022.pickle'
 print('\n# Path to Dataset Exists? {}'.format(dataset_path.exists()))
 print(dataset_path.resolve())
 
 
 
-# SEED EVERYTHING! 
+# SEED EVERYTHING!
 
 pl.utilities.seed.seed_everything(42)
 
@@ -43,15 +43,16 @@ STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 4, 'pin_memory': False,
 
 HYPERPARAMS = {'LR': 0.0025, 'weight_decay': 0.0, 'batch_size': 512}
 
-model_hyperparams = {'in_ch': 2, 'out_length':19, 
-                    'mach_latent_dim': 8, 'beta_stoch': 0.00111535, 
-                        'beta_mach':  130., 'alpha_mach': 100.0, 'alpha_prof': 1.0, 
+model_hyperparams = {'in_ch': 2, 'out_length':19,
+                    'mach_latent_dim': 7, 'stoch_latent_dim': 3,
+                    'beta_stoch': 0.0111535, 'beta_mach':  430., 'alpha_mach': 1.0, 'alpha_prof': 125.0,
+                        'physics': True, 'gamma_stored_energy': 0.001,
                     'loss_type': 'semi-supervised'}
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
 
 datacls = PLDATAMODULE_AK(**params)
-# TODO: Grab Sizes of the input/output datasets 
+# TODO: Grab Sizes of the input/output datasets
 
 
 model = DIVAMODEL(**model_hyperparams)

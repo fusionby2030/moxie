@@ -51,6 +51,7 @@ class DIVAMODEL(Base):
     def __init__(self, in_ch: int=2, out_length: int = 19,
                         alpha_prof: float = 1., alpha_mach: float = 1.,
                         beta_stoch: float = 0.01, beta_mach: float = 100.,
+                        gamma_stored_energy: float=0.01,
                         mach_latent_dim: int = 15, stoch_latent_dim: int = 5,
                         loss_type: str = 'semi-supervised', physics= True, **kwargs) -> None:
 
@@ -58,7 +59,6 @@ class DIVAMODEL(Base):
 
         # Architecture params
         num_machine_params = 13 # maybe make its own variable? Or try from KWARGS
-        self.stoch_latent_dim = stoch_latent_dim
         self.stoch_latent_dim = stoch_latent_dim
         self.mach_latent_dim = mach_latent_dim
         self.encoder_end_dense_size = 128 # Future versions this would be a variable to test ablations to size of output from encoder.
@@ -70,6 +70,7 @@ class DIVAMODEL(Base):
         self.alpha_prof = alpha_prof
         self.alpha_mach = alpha_mach
         self.beta_stoch = beta_stoch
+        self.gamma_stored_energy = gamma_stored_energy
         self.beta_mach = self.beta_stoch / beta_mach
 
 
@@ -245,8 +246,9 @@ class DIVAMODEL(Base):
         if 'mask' in kwargs:
             mask = kwargs['mask']
             recon_prof_loss = F.mse_loss(out_profs[mask], in_profs[mask])
+
             stored_E_in, stored_E_out = torch.zeros(10), torch.zeros(10)
-            if self.physics and self.num_iterations > 500:
+            if self.physics and self.num_iterations > 1000:
 
                 # Apparently not necessary for the static electron pressure energy
                 real_in_profs = torch.clone(in_profs)
@@ -259,12 +261,13 @@ class DIVAMODEL(Base):
 
                 stored_E_in, stored_E_out =  boltzmann_constant*torch.prod(real_in_profs.masked_fill_(~mask, 0), 1).sum(1), boltzmann_constant*torch.prod(real_out_profs.masked_fill_(~mask, 0), 1).sum(1)
                 # stored_E_in, stored_E_out =  torch.prod(in_profs.masked_fill_(~mask, 0), 1).sum(1), torch.prod(out_profs.masked_fill_(~mask, 0), 1).sum(1)
+
         else:
             if self.physics:
                 stored_E_in, stored_E_out =  torch.prod(in_profs, 1).sum(1), torch.prod(out_profs, 1).sum(1)
             recon_prof_loss = F.mse_loss(out_profs, in_profs)
-        # Reconstruction losses
-        # recon_prof_loss = F.mse_loss(out_profs[mask], in_profs[mask])
+
+
         recon_mp_loss = F.mse_loss(out_mp, in_mp)
 
         # Z_stoch latent space losses
@@ -277,7 +280,7 @@ class DIVAMODEL(Base):
         self.num_iterations += 1
         physics_loss = 0.0
         if self.physics:
-            physics_loss += F.mse_loss(stored_E_in, stored_E_out)
+            physics_loss += self.gamma_stored_energy*F.mse_loss(stored_E_in, stored_E_out)
 
         if self.loss_type=='unsupervised':
         # Z_machine latent space losses
@@ -286,8 +289,8 @@ class DIVAMODEL(Base):
                  torch.distributions.normal.Normal(0, 1)
                  ).mean(0).sum()
 
-            unsupervised_loss = self.alpha_prof * recon_prof_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach * unsup_kld_loss + physics_loss
-            return {'loss': unsupervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': unsup_kld_loss, 'Reconstruction_Loss': recon_prof_loss, 'Reconstruction_Loss_mp': recon_mp_loss, 'physics_loss': physics_loss}
+            unsupervised_loss = self.alpha_prof * recon_prof_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach * unsup_kld_loss
+            return {'loss': unsupervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': unsup_kld_loss, 'Reconstruction_Loss': recon_prof_loss, 'Reconstruction_Loss_mp': recon_mp_loss}
         elif self.loss_type == 'supervised':
 
             sup_kld_loss =torch.distributions.kl.kl_divergence(
@@ -295,8 +298,8 @@ class DIVAMODEL(Base):
                  torch.distributions.normal.Normal(prior_mu, torch.exp(0.5*prior_stoch))
                  ).mean(0).sum()
 
-            supervised_loss = self.alpha_prof * recon_prof_loss + self.alpha_mach * recon_mp_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach * sup_kld_loss + physics_loss
-            return {'loss': supervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': supervised_loss, 'Reconstruction_Loss_mp': recon_mp_loss, 'Reconstruction_Loss': recon_prof_loss}
+            supervised_loss = self.alpha_prof * recon_prof_loss + self.alpha_mach * recon_mp_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach * sup_kld_loss#  + physics_loss
+            return {'loss': supervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': supervised_loss, 'Reconstruction_Loss_mp': recon_mp_loss, 'Reconstruction_Loss': recon_prof_loss,}#  'physics_loss': physics_loss}
         elif self.loss_type == 'semi-supervised':
             if self.num_iterations%2 == 0:
                 sup_kld_loss =torch.distributions.kl.kl_divergence(
@@ -306,15 +309,15 @@ class DIVAMODEL(Base):
 
                 supervised_loss = self.alpha_prof * recon_prof_loss + self.alpha_mach * recon_mp_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach * sup_kld_loss + physics_loss
 
-                return {'loss': supervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': supervised_loss, 'Reconstruction_Loss_mp': recon_mp_loss, 'Reconstruction_Loss': recon_prof_loss, 'physics_loss': physics_loss}
+                return {'loss': supervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': supervised_loss, 'Reconstruction_Loss_mp': recon_mp_loss, 'Reconstruction_Loss': recon_prof_loss,}#  'physics_loss': physics_loss}
             else:
                 unsup_kld_loss = torch.distributions.kl.kl_divergence(
                  torch.distributions.normal.Normal(mu_mach, torch.exp(0.5*log_var_mach)),
                  torch.distributions.normal.Normal(0, 1)
                  ).mean(0).sum()
 
-                unsupervised_loss = self.alpha_prof * recon_prof_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach * unsup_kld_loss + physics_loss
-                return {'loss': unsupervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': unsup_kld_loss, 'Reconstruction_Loss': recon_prof_loss, 'Reconstruction_Loss_mp': recon_mp_loss, 'physics_loss': physics_loss}
+                unsupervised_loss = self.alpha_prof * recon_prof_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach * unsup_kld_loss
+                return {'loss': unsupervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': unsup_kld_loss, 'Reconstruction_Loss': recon_prof_loss, 'Reconstruction_Loss_mp': recon_mp_loss}
         else:
             raise ValueError('Undefined Loss type, choose between unsupervised or supervised')
 
