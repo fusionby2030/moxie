@@ -249,15 +249,16 @@ class DIVAMODEL(Base):
 
             stored_E_in, stored_E_out = torch.zeros(10), torch.zeros(10)
             if self.physics and self.num_iterations > 1000:
+                device = in_profs.device
 
                 # Apparently not necessary for the static electron pressure energy
                 real_in_profs = torch.clone(in_profs)
-                real_in_profs[:, 0] = de_standardize(real_in_profs[:, 0], D_mu, D_var)
-                real_in_profs[:, 1] = de_standardize(real_in_profs[:, 1], T_mu, T_var)
+                real_in_profs[:, 0] = de_standardize(real_in_profs[:, 0], D_mu.to(device), D_var.to(device))
+                real_in_profs[:, 1] = de_standardize(real_in_profs[:, 1], T_mu.to(device), T_var.to(device))
 
                 real_out_profs = torch.clone(out_profs)
-                real_out_profs[:, 0] = de_standardize(real_out_profs[:, 0], D_mu, D_var)
-                real_out_profs[:, 1] = de_standardize(real_out_profs[:, 1], T_mu, T_var)
+                real_out_profs[:, 0] = de_standardize(real_out_profs[:, 0], D_mu.to(device), D_var.to(device))
+                real_out_profs[:, 1] = de_standardize(real_out_profs[:, 1], T_mu.to(device), T_var.to(device))
 
                 stored_E_in, stored_E_out =  boltzmann_constant*torch.prod(real_in_profs.masked_fill_(~mask, 0), 1).sum(1), boltzmann_constant*torch.prod(real_out_profs.masked_fill_(~mask, 0), 1).sum(1)
                 # stored_E_in, stored_E_out =  torch.prod(in_profs.masked_fill_(~mask, 0), 1).sum(1), torch.prod(out_profs.masked_fill_(~mask, 0), 1).sum(1)
