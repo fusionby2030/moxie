@@ -1,4 +1,4 @@
-from ray import tune 
+from ray import tune
 from ray.tune import CLIReporter
 from ray.tune.schedulers import ASHAScheduler
 from ray.tune.integration.pytorch_lightning import TuneReportCallback, TuneReportCheckpointCallback
@@ -7,7 +7,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 import torch
-import sys, os 
+import sys, os
 
 from moxie.models.DIVA_ak_1 import DIVAMODEL
 from moxie.data.profile_lightning_module import PLDATAMODULE_AK
@@ -62,11 +62,12 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
 def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5, data_dir='', pin_memory=False):
     search_space = {
         'LR': 0.003, # tune.loguniform(0.00001, 0.01),
-        'mach_latent_dim': tune.randint(5, 15),
+        'mach_latent_dim': tune.randint(4, 12),
+        'stoch_latent_dim': 3,
         'beta_stoch': tune.qloguniform(0.0001, 1., 5e-5),
         'beta_mach': 100, # tune.choice([1., 10., 100., 1000.]),
-        "alpha_prof": 1.0, 
-        "alpha_mach": 1.0, 
+        "alpha_prof": 1.0,
+        "alpha_mach": 1.0,
         # 'alpha_prof': tune.choice([0., 1., 10., 100., 1000.]),
         # 'alpha_mach': tune.choice([0., 1., 10., 100., 1000.]),
         # 'loss_type': tune.choice(['supervised', 'semi-supervised'])
@@ -80,7 +81,7 @@ def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5
     reporter = CLIReporter(
         parameter_columns=["mach_latent_dim", "beta_stoch", "beta_mach", "alpha_mach", "alpha_prof"],
         metric_columns=["loss", "loss_mp"],
-        max_report_frequency=100)
+        max_report_frequency=20)
 
     # dir_path = os.path.dirname(os.path.realpath(__file__))
     train_fn_with_parameters = tune.with_parameters(train_model_on_tune,
@@ -112,7 +113,7 @@ def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Search for hyperparams using raytune and HPC.')
     parser.add_argument('-gpu', '--gpus_per_trial', default=0, help='# GPUs per trial')
-    parser.add_argument('-cpu', '--cpus_per_trial', default=1, help='# CPUs per trial')
+    parser.add_argument('-cpu', '--cpus_per_trial', default=2, help='# CPUs per trial')
     parser.add_argument('-ep', '--num_epochs', default=50, help='# Epochs to train on')
     parser.add_argument('-pm', '--pin_memory', default=False, help='# Epochs to train on', type=bool)
 
@@ -120,9 +121,9 @@ if __name__ == '__main__':
 
     os.environ["SLURM_JOB_NAME"] = "bash"
     os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = '8'
-    # desired_path = '/home/kitadam/ENR_Sven/moxie_revisited/data/processed/raw_padded_fitted_datasets.pickle' 
+    # desired_path = '/home/kitadam/ENR_Sven/moxie_revisited/data/processed/raw_padded_fitted_datasets.pickle'
     # pedestal_profiles_ML_READY_ak_09022022
-    file_path = Path(__file__).resolve() 
+    file_path = Path(__file__).resolve()
     exp_path = file_path.parent
     home_path = exp_path.parent.parent
     desired_path = home_path / 'data' / 'processed' / 'pedestal_profiles_ML_READY_ak_09022022.pickle'

@@ -251,7 +251,8 @@ class DIVAMODEL(Base):
             recon_prof_loss = F.mse_loss(out_profs[mask], in_profs[mask])
 
             stored_E_in, stored_E_out = torch.zeros(10), torch.zeros(10)
-            if self.physics and self.num_iterations > 1000:
+            compare_mp_loss, compare_density_limit = 0.0, 0.0
+            if self.physics and self.num_iterations > 100:
                 # Apparently not necessary for the static electron pressure energy
                 real_in_profs = torch.clone(in_profs)
                 real_in_profs[:, 0] = de_standardize(real_in_profs[:, 0], D_mu, D_var)
@@ -263,6 +264,10 @@ class DIVAMODEL(Base):
 
                 stored_E_in, stored_E_out =  boltzmann_constant*torch.prod(real_in_profs.masked_fill_(~mask, 0), 1).sum(1), boltzmann_constant*torch.prod(real_out_profs.masked_fill_(~mask, 0), 1).sum(1)
                 # stored_E_in, stored_E_out =  torch.prod(in_profs.masked_fill_(~mask, 0), 1).sum(1), torch.prod(out_profs.masked_fill_(~mask, 0), 1).sum(1)
+                if 'physics_dojo_results' in kwargs:
+                    out_profs_comparison, out_profs_cond_stand_clamped, out_mp_encoded, out_mp_cond = kwargs['physics_dojo_results']
+                    compare_mp_loss = F.mse_loss(out_mp_encoded, out_mp_cond)
+                    compare_density_limit = F.mse_loss(out_profs_comparison, out_profs_cond_stand_clamped)
 
         else:
             if self.physics:
@@ -283,6 +288,8 @@ class DIVAMODEL(Base):
         physics_loss = 0.0
         if self.physics:
             physics_loss += self.gamma_stored_energy*F.mse_loss(stored_E_in, stored_E_out)
+            physics_loss += compare_mp_loss
+            physics_loss += compare_density_limit
 
         if self.loss_type=='unsupervised':
         # Z_machine latent space losses

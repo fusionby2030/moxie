@@ -8,6 +8,9 @@ import numpy as np
 def de_standardize(x, mu, var):
     return (x*var) + mu
 
+def standardize(x, mu, var):
+    return (x - mu) / var
+
 
 class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
     def __init__(self, model=None, params: dict = {'LR': 0.001}) -> None:
@@ -22,6 +25,56 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
     def forward(self, input, **kwargs):
         return self.model(input, **kwargs)
 
+    def physics_dojo(self, batch_x, interp_size=100, mp_idx=-5, mp_lims=(-0.5e6, -5e6)):
+        MP_norm, MP_var = self.trainer.datamodule.get_machine_norms()
+        D_norm, D_var= self.trainer.datamodule.get_density_norms()
+        T_norm, T_var= self.trainer.datamodule.get_temperature_norms()
+
+        mp_interp = standardize(torch.linspace(mp_lims[0], mp_lims[1], interp_size), MP_norm[mp_idx], MP_var[mp_idx])
+
+        interp_sample_mp = torch.repeat_interleave(batch_x, interp_size, dim=0)
+        interp_sample_mp[:, mp_idx] = mp_interp
+
+        # Feed to the Prior Reg
+        cond_prior_mu, cond_prior_var = self.model.p_zmachx(interp_sample_mp)
+
+        # The latent space from prior reg
+        cond_z_mach, z_stoch = self.model.reparameterize(cond_prior_mu, cond_prior_var), torch.distributions.normal.Normal(0, 1).sample((interp_size, 3))
+        z_cond = torch.cat((z_stoch, cond_z_mach), 1)
+
+        # Predict the profiles and the machine parameters
+        out_profs_cond, out_mp_cond = self.model.p_yhatz(z_cond), self.model.q_hatxzmach(cond_z_mach)
+
+        # Check the density limit in the out profs  (negative densities)
+        out_profs_cond_destand = torch.clone(out_profs_cond)
+        out_profs_cond_destand[:, 0] = de_standardize(out_profs_cond_destand[:, 0], D_norm, D_var)
+        out_profs_cond_destand[:, 1] = de_standardize(out_profs_cond_destand[:, 1], T_norm, T_var)
+        out_profs_cond_destand_clamped = torch.clamp(out_profs_cond_destand, min=None, max=0.0)
+        out_profs_cond_stand_clamped = torch.clone(out_profs_cond_destand_clamped)
+        out_profs_cond_stand_clamped[:, 0] = standardize(out_profs_cond_stand_clamped[:, 0], D_norm, D_var)
+        out_profs_cond_stand_clamped[:, 1] = standardize(out_profs_cond_stand_clamped[:, 1], D_norm, D_var)
+
+        out_profs_comparison = torch.zeros_like(out_profs_cond_destand)
+        out_profs_comparison[:, 0] = standardize(out_profs_comparison[:, 0], D_norm, D_var)
+        out_profs_comparison[:, 1] = standardize(out_profs_comparison[:, 1], D_norm, D_var)
+
+
+        # compare_density_limit = F.mse_loss(out_profs_comparison, out_profs_cond_stand_clamped)
+
+        # Feed profiles to the encoder
+        mu_stoch, log_var_stoch, mu_mach, log_var_mach = self.model.q_zy(out_profs_cond)
+        encoded_z_stoch, encoded_z_mach = self.model.reparameterize(mu_stoch, log_var_stoch), self.model.reparameterize(mu_mach, log_var_mach)
+        z_encoded = torch.cat((encoded_z_stoch, encoded_z_mach), 1)
+
+        # Grab the predicted machine parameters
+        out_mp_encoded = self.model.q_hatxzmach(encoded_z_mach)
+
+        # Compare two out mps
+        # compare_mp_loss = F.mse_loss(out_mp_encoded, out_mp_cond)
+
+        return out_profs_comparison, out_profs_cond_stand_clamped, out_mp_encoded, out_mp_cond
+
+
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
         real_profile, machine_params, masks, ids = batch
         # Get batch means
@@ -34,8 +87,14 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         """
         self.current_device = real_profile.device
 
+        sample_batch_x, sample_batch_y = machine_params[0:1], real_profile[0:1]
+
+
         results = self.forward(real_profile, in_mp=machine_params)
-        train_loss = self.model.loss_function(**results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.train_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks, D_norms= self.trainer.datamodule.get_density_norms(), T_norms= self.trainer.datamodule.get_temperature_norms())
+        physics_dojo_results = self.physics_dojo(sample_batch_x)
+        train_loss = self.model.loss_function(**results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.train_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks, D_norms= self.trainer.datamodule.get_density_norms(), T_norms= self.trainer.datamodule.get_temperature_norms(), physics_dojo_results=physics_dojo_results)
+
+
         return train_loss
 
     def on_train_start(self):

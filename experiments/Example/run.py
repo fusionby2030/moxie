@@ -18,6 +18,7 @@ from moxie.models.DIVA_ak_1 import DIVAMODEL
 from moxie.data.profile_lightning_module import PLDATAMODULE_AK
 from moxie.experiments.DIVA_EXP_AK import EXAMPLE_DIVA_EXP_AK
 
+import torch
 import pytorch_lightning as pl
 
 # Find the curent path of the file
@@ -41,12 +42,12 @@ pl.utilities.seed.seed_everything(42)
 # TODO: move to a config file
 STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 4, 'pin_memory': False, 'dataset_choice': 'padded'}
 
-HYPERPARAMS = {'LR': 0.0025, 'weight_decay': 0.0, 'batch_size': 512}
+HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size': 512}
 
 model_hyperparams = {'in_ch': 2, 'out_length':19,
                     'mach_latent_dim': 7, 'stoch_latent_dim': 3,
-                    'beta_stoch': 0.0111535, 'beta_mach':  430., 'alpha_mach': 1.0, 'alpha_prof': 125.0,
-                        'physics': True, 'gamma_stored_energy': 0.001,
+                    'beta_stoch': 10e-3, 'beta_mach':  430., 'alpha_mach': 1.0, 'alpha_prof': 1.0,
+                        'physics': True, 'gamma_stored_energy': 0.00,
                     'loss_type': 'semi-supervised'}
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
@@ -57,7 +58,7 @@ datacls = PLDATAMODULE_AK(**params)
 
 model = DIVAMODEL(**model_hyperparams)
 
-trainer_params = {'max_epochs': 150, 'profiler': 'simple', 'gradient_clip_val': 0.5, 'gradient_clip_algorithm': 'value'}
+trainer_params = {'max_epochs': 85, 'profiler': 'simple', 'gradient_clip_val': 0.5, 'gradient_clip_algorithm': 'value'}
 
 logger = pl.loggers.TensorBoardLogger(exp_path / "tb_logs", name='Example')
 
@@ -66,4 +67,21 @@ runner = pl.Trainer(logger=logger, **trainer_params)
 
 runner.fit(experiment, datamodule=datacls)
 runner.test(experiment, datamodule=datacls)
+
+model = runner.model.model
+
+state = {'model': model.state_dict(),
+        'MP_norms': runner.datamodule.get_machine_norms(),
+        'D_norms': runner.datamodule.get_density_norms(),
+        'T_norms': runner.datamodule.get_temperature_norms(),
+        }
+torch.save(state, exp_path / 'samplemodelstatedict.pth')
+
+model = DIVAMODEL(**model_hyperparams)
+model.load_state_dict(state['model'])
+
+
+
+
+
 # Do something with it
