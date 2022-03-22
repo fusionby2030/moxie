@@ -11,7 +11,22 @@ def de_standardize(x, mu, var):
 def standardize(x, mu, var):
     return (x - mu) / var
 
+physics_dojo_dict = {
+    'Q95':{'idx': 0, 'lim': (2, 7)},
+    'RGEO':{'idx': 1, 'lim': (2.8, 3.1)},
+    'CR0':{'idx': 2, 'lim': (0.8, 1.0)},
+    'VOLM':{'idx': 3, 'lim': (60, 90)},
+    'TRIU':{'idx': 4, 'lim': (0.01, 0.6)},
+    'TRIL':{'idx': 5, 'lim': (0.1, 0.6)},
+    'ELON':{'idx': 6, 'lim': (1,2)},
+    'POHM':{'idx': 7, 'lim': (0, 5e6)},
+    'IPLA':{'idx': 8, 'lim': (-0.5e6, -5e6)},
+    'BVAC':{'idx': 9, 'lim': (-0.5, -5)},
+    'NBI':{'idx': 10, 'lim': (0, 40e6)},
+    'ICRH':{'idx': 11, 'lim': (0, 10e6)},
+    'ELER':{'idx': 12, 'lim': (0, 20e22)}
 
+}
 class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
     def __init__(self, model=None, params: dict = {'LR': 0.001}) -> None:
         super(EXAMPLE_DIVA_EXP_AK, self).__init__()
@@ -20,6 +35,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         self.params = params
         self.current_device = None
         self.learning_rate = params["LR"]
+        self.physics = params['physics']
 
 
     def forward(self, input, **kwargs):
@@ -49,7 +65,10 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         out_profs_cond_destand = torch.clone(out_profs_cond)
         out_profs_cond_destand[:, 0] = de_standardize(out_profs_cond_destand[:, 0], D_norm, D_var)
         out_profs_cond_destand[:, 1] = de_standardize(out_profs_cond_destand[:, 1], T_norm, T_var)
+
+
         out_profs_cond_destand_clamped = torch.clamp(out_profs_cond_destand, min=None, max=0.0)
+
         out_profs_cond_stand_clamped = torch.clone(out_profs_cond_destand_clamped)
         out_profs_cond_stand_clamped[:, 0] = standardize(out_profs_cond_stand_clamped[:, 0], D_norm, D_var)
         out_profs_cond_stand_clamped[:, 1] = standardize(out_profs_cond_stand_clamped[:, 1], D_norm, D_var)
@@ -91,7 +110,13 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
 
 
         results = self.forward(real_profile, in_mp=machine_params)
-        physics_dojo_results = self.physics_dojo(sample_batch_x)
+        if self.physics:
+            NAMES = ['Q95', 'RGEO', 'CR0', 'VOLM', 'TRIU', 'TRIL', 'ELON', 'POHM', 'IPLA', 'BVAC', 'NBI', 'ICRH', 'ELER']
+            choice = np.random.choice(NAMES)
+            mp_idx, mp_lims = physics_dojo_dict[choice]['idx'], physics_dojo_dict[choice]['lim']
+            physics_dojo_results = self.physics_dojo(sample_batch_x, mp_idx=mp_idx, mp_lims=mp_lims)
+        else:
+            physics_dojo_results = (0.0, 0.0, 0.0, 0.0)
         train_loss = self.model.loss_function(**results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.train_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks, D_norms= self.trainer.datamodule.get_density_norms(), T_norms= self.trainer.datamodule.get_temperature_norms(), physics_dojo_results=physics_dojo_results)
 
 

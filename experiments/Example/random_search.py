@@ -68,9 +68,8 @@ def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5
         'beta_mach': 100, # tune.choice([1., 10., 100., 1000.]),
         "alpha_prof": 1.0,
         "alpha_mach": 1.0,
-        # 'alpha_prof': tune.choice([0., 1., 10., 100., 1000.]),
-        # 'alpha_mach': tune.choice([0., 1., 10., 100., 1000.]),
-        # 'loss_type': tune.choice(['supervised', 'semi-supervised'])
+        'physics': True,
+        'gamma_stored_energy': 0.0,
     }
 
     scheduler = ASHAScheduler(

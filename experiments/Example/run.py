@@ -46,7 +46,7 @@ HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size': 512}
 
 model_hyperparams = {'in_ch': 2, 'out_length':19,
                     'mach_latent_dim': 7, 'stoch_latent_dim': 3,
-                    'beta_stoch': 10e-3, 'beta_mach':  430., 'alpha_mach': 1.0, 'alpha_prof': 1.0,
+                    'beta_stoch': 10e-3, 'beta_mach':  500., 'alpha_mach': 50.0, 'alpha_prof': 10.0,
                         'physics': True, 'gamma_stored_energy': 0.00,
                     'loss_type': 'semi-supervised'}
 
@@ -58,9 +58,10 @@ datacls = PLDATAMODULE_AK(**params)
 
 model = DIVAMODEL(**model_hyperparams)
 
-trainer_params = {'max_epochs': 85, 'profiler': 'simple', 'gradient_clip_val': 0.5, 'gradient_clip_algorithm': 'value'}
+trainer_params = {'max_epochs': 50, 'gradient_clip_val': 0.5, 'gradient_clip_algorithm': 'value'}
 
-logger = pl.loggers.TensorBoardLogger(exp_path / "tb_logs", name='Example')
+model_name = 'VAE_7MD_3SD_500BM_50AM_10AP'
+logger = pl.loggers.TensorBoardLogger(exp_path / "tb_logs", name=model_name)
 
 experiment = EXAMPLE_DIVA_EXP_AK(model, params)
 runner = pl.Trainer(logger=logger, **trainer_params)
@@ -74,8 +75,10 @@ state = {'model': model.state_dict(),
         'MP_norms': runner.datamodule.get_machine_norms(),
         'D_norms': runner.datamodule.get_density_norms(),
         'T_norms': runner.datamodule.get_temperature_norms(),
+        'hyparams': model_hyperparams,
         }
-torch.save(state, exp_path / 'samplemodelstatedict.pth')
+model_pth_name = 'physicsmodelstatedict_' + model_name + '.pth'
+torch.save(state, exp_path / 'model_results' / model_pth_name)
 
 model = DIVAMODEL(**model_hyperparams)
 model.load_state_dict(state['model'])

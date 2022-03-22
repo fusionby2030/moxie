@@ -6,6 +6,8 @@
 tb_logs/
 lightning_logs/
 ray_results/
+search_results/
+model_results/
 ### JupyterNotebooks ###
 # gitignore template for Jupyter Notebooks
 # website: http://jupyter.org/
