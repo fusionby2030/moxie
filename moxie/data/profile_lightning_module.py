@@ -67,13 +67,19 @@ class PLDATAMODULE_AK(pl.LightningDataModule):
         self.val_set = DATASET_AK(self.X_val, self.y_val, mask = self.val_mask, ids = self.val_ids)
         self.test_set = DATASET_AK(self.X_test, y = self.y_test, mask = self.test_mask, ids = self.test_ids)
 
-    def get_temperature_norms(self,):
+    def get_temperature_norms(self,device=None):
+        if device is not None:
+            return self.mu_T.to(device), self.var_T.to(device)
         return self.mu_T, self.var_T
 
-    def get_density_norms(self):
+    def get_density_norms(self, device=None):
+        if device is not None:
+            return self.mu_D.to(device), self.var_D.to(device)
         return self.mu_D, self.var_D
 
-    def get_machine_norms(self):
+    def get_machine_norms(self, device=None):
+        if device is not None:
+            return self.mu_MP.to(device), self.var_MP.to(device)
         return self.mu_MP, self.var_MP
 
     def train_dataloader(self):

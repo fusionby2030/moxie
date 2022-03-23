@@ -42,10 +42,9 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         return self.model(input, **kwargs)
 
     def physics_dojo(self, batch_x, interp_size=100, mp_idx=-5, mp_lims=(-0.5e6, -5e6)):
-        MP_norm, MP_var = self.trainer.datamodule.get_machine_norms()
-        D_norm, D_var= self.trainer.datamodule.get_density_norms()
-        T_norm, T_var= self.trainer.datamodule.get_temperature_norms()
-
+        MP_norm, MP_var = self.trainer.datamodule.get_machine_norms(device=self.current_device)
+        D_norm, D_var = self.trainer.datamodule.get_density_norms(device=self.current_device)
+        T_norm, T_var = self.trainer.datamodule.get_temperature_norms(device=self.current_device)
         mp_interp = standardize(torch.linspace(mp_lims[0], mp_lims[1], interp_size), MP_norm[mp_idx], MP_var[mp_idx])
 
         interp_sample_mp = torch.repeat_interleave(batch_x, interp_size, dim=0)
@@ -55,7 +54,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         cond_prior_mu, cond_prior_var = self.model.p_zmachx(interp_sample_mp)
 
         # The latent space from prior reg
-        cond_z_mach, z_stoch = self.model.reparameterize(cond_prior_mu, cond_prior_var), torch.distributions.normal.Normal(0, 1).sample((interp_size, 3))
+        cond_z_mach, z_stoch = self.model.reparameterize(cond_prior_mu, cond_prior_var), torch.distributions.normal.Normal(0, 1).sample((interp_size, 3)).to(self.current_device)
         z_cond = torch.cat((z_stoch, cond_z_mach), 1)
 
         # Predict the profiles and the machine parameters
