@@ -45,7 +45,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         MP_norm, MP_var = self.trainer.datamodule.get_machine_norms(device=self.current_device)
         D_norm, D_var = self.trainer.datamodule.get_density_norms(device=self.current_device)
         T_norm, T_var = self.trainer.datamodule.get_temperature_norms(device=self.current_device)
-        mp_interp = standardize(torch.linspace(mp_lims[0], mp_lims[1], interp_size), MP_norm[mp_idx], MP_var[mp_idx])
+        mp_interp = standardize(torch.linspace(mp_lims[0], mp_lims[1], interp_size, device=self.current_device), MP_norm[mp_idx], MP_var[mp_idx])
 
         interp_sample_mp = torch.repeat_interleave(batch_x, interp_size, dim=0)
         interp_sample_mp[:, mp_idx] = mp_interp
