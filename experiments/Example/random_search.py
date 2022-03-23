@@ -20,6 +20,7 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
     experiment_params ={'LR': 0.003, 'weight_decay': 0.0, 'batch_size': 512}
     if 'LR' in search_space.keys():
         experiment_params['LR'] = search_space['LR']
+        experiment_params['physics'] = search_space['physics']
 
     data_params = {'data_dir': data_dir,
                     'num_workers': num_cpus,
@@ -62,13 +63,13 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
 def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5, data_dir='', pin_memory=False):
     search_space = {
         'LR': 0.003, # tune.loguniform(0.00001, 0.01),
-        'mach_latent_dim': tune.randint(4, 12),
+        'mach_latent_dim': 7,
         'stoch_latent_dim': 3,
-        'beta_stoch': tune.qloguniform(0.0001, 1., 5e-5),
-        'beta_mach': 100, # tune.choice([1., 10., 100., 1000.]),
-        "alpha_prof": 1.0,
-        "alpha_mach": 1.0,
-        'physics': True,
+        'beta_stoch': 10e-3,
+        'beta_mach': 500.0,
+        "alpha_prof": tune.qrandint(1, 500, 10),
+        "alpha_mach": tune.qrandint(1, 500, 10),
+        'physics': tune.choice([True, False]),
         'gamma_stored_energy': 0.0,
     }
 
@@ -78,7 +79,7 @@ def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5
         reduction_factor=2)
 
     reporter = CLIReporter(
-        parameter_columns=["mach_latent_dim", "beta_stoch", "beta_mach", "alpha_mach", "alpha_prof"],
+        parameter_columns=["alpha_mach", "alpha_prof", 'physics'],
         metric_columns=["loss", "loss_mp"],
         max_report_frequency=20)
 
@@ -93,7 +94,7 @@ def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5
     resources_per_trial = {"cpu": cpus_per_trial, "gpu": gpus_per_trial}
     analysis = tune.run(train_fn_with_parameters,
         resources_per_trial=resources_per_trial,
-        metric="loss",
+        metric="loss_mp",
         mode="min",
         config=search_space,
         num_samples=num_samples,
@@ -102,13 +103,13 @@ def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5
         log_to_file=False,
         raise_on_failed_trial=False,
         local_dir= exp_path  / 'ray_results',
-        name="tune_DIVA",
-        fail_fast=True)
+        name="PHYSICS_TUNE",
+        fail_fast=False)
 
     print("Best hyperparameters found were: ", analysis.best_config)
 
     df = analysis.results_df
-    df.to_csv(exp_path /'DIVA_LOW_MACHLD.csv')
+    df.to_csv(exp_path /'PHYSICS.csv')
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Search for hyperparams using raytune and HPC.')
     parser.add_argument('-gpu', '--gpus_per_trial', default=0, help='# GPUs per trial')

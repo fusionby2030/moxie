@@ -29,8 +29,8 @@ exp_path = file_path.parent
 home_path = file_path.parent.parent.parent
 # Path to data
 dataset_path = home_path / 'data' / 'processed' / 'pedestal_profiles_ML_READY_ak_09022022.pickle'
-print('\n# Path to Dataset Exists? {}'.format(dataset_path.exists()))
-print(dataset_path.resolve())
+# print('\n# Path to Dataset Exists? {}'.format(dataset_path.exists()))
+# print(dataset_path.resolve())
 
 
 
@@ -59,8 +59,14 @@ datacls = PLDATAMODULE_AK(**params)
 model = DIVAMODEL(**model_hyperparams)
 
 trainer_params = {'max_epochs': 50, 'gradient_clip_val': 0.5, 'gradient_clip_algorithm': 'value'}
+if model_hyperparams['physics']:
+    model_name =  'PHYSICS_{}MD_{}SD_{}BM_{}AM_{}AP'.format(model_hyperparams['mach_latent_dim'], model_hyperparams['stoch_latent_dim'], int(model_hyperparams['beta_mach']), int(model_hyperparams['alpha_mach']), int(model_hyperparams['alpha_prof']))# 'VAE_7MD_3SD_500BM_50AM_10AP'
+    if model_hyperparams['gamma_stored_energy'] > 0.0:
+        model_name += '_GAMMA'
+else:
+    model_name =  'SECULAR_{}MD_{}SD_{}BM_{}AM_{}AP'.format(model_hyperparams['mach_latent_dim'], model_hyperparams['stoch_latent_dim'], int(model_hyperparams['beta_mach']), int(model_hyperparams['alpha_mach']), int(model_hyperparams['alpha_prof']))# 'VAE_7MD_3SD_500BM_50AM_10AP'
 
-model_name = 'VAE_7MD_3SD_500BM_50AM_10AP'
+print(model_name)
 logger = pl.loggers.TensorBoardLogger(exp_path / "tb_logs", name=model_name)
 
 experiment = EXAMPLE_DIVA_EXP_AK(model, params)
@@ -77,7 +83,7 @@ state = {'model': model.state_dict(),
         'T_norms': runner.datamodule.get_temperature_norms(),
         'hyparams': model_hyperparams,
         }
-model_pth_name = 'physicsmodelstatedict_' + model_name + '.pth'
+model_pth_name = 'modelstatedict_' + model_name + '.pth'
 torch.save(state, exp_path / 'model_results' / model_pth_name)
 
 model = DIVAMODEL(**model_hyperparams)

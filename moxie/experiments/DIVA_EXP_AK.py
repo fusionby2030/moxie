@@ -355,7 +355,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
 
         # LABEL = ['BT', 'CR0', 'ELER', 'ELON', 'POHM', 'P_ICRH', 'P_NBI', 'Q95', 'RGEO', 'TRIL', 'TRIU', 'VOLM', 'XIP']
 
-        fig, axs = plt.subplots(figsize=(20,20))
+        fig, axs = plt.subplots(figsize=(10,10))
         all_cors = []
         for i in range(z.shape[1]):
             # val_params[np.isnan(val_params)] = 0
