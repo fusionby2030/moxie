@@ -113,7 +113,7 @@ def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Search for hyperparams using raytune and HPC.')
     parser.add_argument('-gpu', '--gpus_per_trial', default=0, help='# GPUs per trial')
-    parser.add_argument('-cpu', '--cpus_per_trial', default=2, help='# CPUs per trial')
+    parser.add_argument('-cpu', '--cpus_per_trial', default=4, help='# CPUs per trial')
     parser.add_argument('-ep', '--num_epochs', default=50, help='# Epochs to train on')
     parser.add_argument('-pm', '--pin_memory', default=False, help='# Epochs to train on', type=bool)
 
