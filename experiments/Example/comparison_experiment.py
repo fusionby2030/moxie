@@ -144,7 +144,7 @@ def plot_profile_comparisons(mp_dim, latex_name, PULSE_1, PULSE_2, annotation=''
     axs[0].annotate(**annotation)
     plt.show()
 
-def plot_latent_space(z, mps, mp_dim=-1, ls_dims=[1,3,7], MP_NAME='Something'):
+def plot_latent_space(z, mps, mp_dim=-1, ls_dims=[1,3,7], MP_NAME='Something', LS_LIMS=None):
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(projection='3d')
     if mp_dim == 4 or mp_dim == 5:
@@ -164,19 +164,29 @@ def plot_latent_space(z, mps, mp_dim=-1, ls_dims=[1,3,7], MP_NAME='Something'):
     ax.set_xlabel('Z: {}'.format(ls_dims[0]))
     ax.set_ylabel('Z: {}'.format(ls_dims[1]))
     ax.set_zlabel('Z: {}'.format(ls_dims[2]))
-    LS_XLIM, LS_YLIM, LS_ZLIM = ax.get_xlim(), ax.get_ylim(), ax.get_zlim()
+    if LS_LIMS:
+        LS_XLIM, LS_YLIM, LS_ZLIM = LS_LIMS
+        ax.set_xlim(LS_XLIM)
+        ax.set_ylim(LS_YLIM)
+        ax.set_zlim(LS_ZLIM)
+    else:
+        LS_XLIM, LS_YLIM, LS_ZLIM = ax.get_xlim(), ax.get_ylim(), ax.get_zlim()
     cax = fig.add_axes([0.15, .87, 0.75, 0.031])
     fig.colorbar(ALL_MAPPER, label=MP_NAME, cax=cax, orientation='horizontal', pad=0.6)
     # RETURN norm, mapper
     plt.show()
+    return LS_XLIM, LS_YLIM, LS_ZLIM
 
 def main(experiment_name="TRIANGULARITY"):
 
-    model_hyperparams = {'in_ch': 2, 'out_length':19,
+    """physics_model_hyperparams = {'in_ch': 2, 'out_length':19,
     'mach_latent_dim': 7, 'stoch_latent_dim': 3,
     'beta_stoch': 10e-3,
     'beta_mach':  250., 'alpha_mach': 1.0, 'alpha_prof': 1.0,
     'loss_type': 'semi-supervised'}
+    model_physics = DIVAMODEL(**physics_model_hyperparams)
+    state_dict_physics = torch.load('./model_results/modelstatedict_PHYSICS_7MD_3SD_500BM_50AM_10AP.pth')
+    model_physics.load_state_dict(state_dict_physics['model'])"""
 
 
     experiment = experiment_dict[experiment_name]
@@ -203,13 +213,18 @@ def main(experiment_name="TRIANGULARITY"):
     plot_profile_comparisons(mp_dim, LATEX_MP_NAME, PULSE_1, PULSE_2, ANNOTATION, T_LIM=experiment['profile_lims']['T_LIM'])
 
 
-    # get the model and prepare data for passing (i.e., tensors)
-    model = DIVAMODEL(**model_hyperparams)
-    state_dict = torch.load('./samplemodelstatedict.pth')
-    model.load_state_dict(state_dict['model'])
-    MP_norm, MP_var= state_dict['MP_norms']
-    D_norm, D_var= state_dict['D_norms']
-    T_norm, T_var= state_dict['T_norms']
+    physics_model_hyperparams = {'in_ch': 2, 'out_length':19,
+    'mach_latent_dim': 7, 'stoch_latent_dim': 3,
+    'beta_stoch': 10e-3,
+    'beta_mach':  250., 'alpha_mach': 1.0, 'alpha_prof': 1.0,
+    'loss_type': 'semi-supervised'}
+    model_physics = DIVAMODEL(**physics_model_hyperparams)
+    state_dict_physics = torch.load('./model_results/modelstatedict_PHYSICS_7MD_3SD_500BM_50AM_10AP.pth')
+    model_physics.load_state_dict(state_dict_physics['model'])
+
+    MP_norm, MP_var = state_dict_physics['MP_norms']
+    D_norm, D_var= state_dict_physics['D_norms']
+    T_norm, T_var= state_dict_physics['T_norms']
 
     train_mp_tensors = torch.tensor(train_y).float()
     train_mp_normalized = standardize(train_mp_tensors, MP_norm, MP_var)
@@ -220,10 +235,11 @@ def main(experiment_name="TRIANGULARITY"):
     train_profiles_normalized[:, 0] = standardize(train_profiles_normalized[:, 0], D_norm, D_var)
     train_profiles_normalized[:, 1] = standardize(train_profiles_normalized[:, 1], T_norm, T_var)
 
-    Z_MACH_TRAINING, Z_STOCH_TRAINING, Z_TRAINING = get_latent_space(train_profiles_normalized, model)
+    Z_MACH_TRAINING, Z_STOCH_TRAINING, Z_TRAINING = get_latent_space(train_profiles_normalized, model_physics)
 
-    plot_latent_space(Z_MACH_TRAINING, train_mp_tensors, mp_dim=mp_dim, ls_dims=LS_DIMS, MP_NAME=LATEX_MP_NAME)
-
+    LS_XLIM, LS_YLIM, LS_ZLIM = plot_latent_space(Z_MACH_TRAINING, train_mp_tensors, mp_dim=mp_dim, ls_dims=LS_DIMS, MP_NAME=LATEX_MP_NAME)
+    plot_latent_space(Z_MACH_TRAINING[pulse_1_idxs + pulse_2_idxs], train_mp_tensors[pulse_1_idxs + pulse_2_idxs], mp_dim=mp_dim, ls_dims=LS_DIMS, MP_NAME=LATEX_MP_NAME, LS_LIMS=(LS_XLIM, LS_YLIM, LS_ZLIM))
+    plt.show()
 
 experiment_dict =    {
         "TRIANGULARITY":

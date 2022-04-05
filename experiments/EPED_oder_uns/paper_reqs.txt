@@ -1,0 +1,11 @@
+## Comparisons for EPED/EUROPED like model 
+
+1.) Determine a minimum model size for good MP prof recon! 
+
+2.) Profiles generated from machine parameters (from conditional priors, sampling N times to get uncert?)
+	- Compare RMSE of EUROPED database preds with our preds 
+		1.) Pedestal height of T and Ne 
+		2.) Pedestal width
+	- Compare EPED database? 
+
+3.) 

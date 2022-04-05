@@ -65,11 +65,11 @@ def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5
         'LR': 0.003, # tune.loguniform(0.00001, 0.01),
         'mach_latent_dim': 7,
         'stoch_latent_dim': 3,
-        'beta_stoch': 10e-3,
-        'beta_mach': 500.0,
+        'beta_stoch': tune.choice([10e-5,10e-4, 10e-3]),
+        'beta_mach': tune.qrandint(100, 1000, 50),
         "alpha_prof": tune.qrandint(1, 500, 10),
         "alpha_mach": tune.qrandint(1, 500, 10),
-        'physics': tune.choice([True, False]),
+        'physics': True,
         'gamma_stored_energy': 0.0,
     }
 
