@@ -65,12 +65,13 @@ def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5
         'LR': 0.003, # tune.loguniform(0.00001, 0.01),
         'mach_latent_dim': tune.randint(6, 15),
         'stoch_latent_dim': 3,
-        'beta_stoch': tune.loguniform(10e-4,10),
-        'beta_mach': 10, # tune.qrandint(100, 1000, 50),
+        'beta_stoch': 10e-3,# tune.loguniform(10e-7,10e-2),
+        'beta_mach': tune.randint(10, 1001),
         "alpha_prof": 1, # tune.qrandint(1, 500, 10),
         "alpha_mach": 1, # tune.qrandint(1, 500, 10),
         'physics': False,
         'gamma_stored_energy': 0.0,
+        'encoder_end_dense_size': 128,
     }
 
     scheduler = ASHAScheduler(
@@ -109,7 +110,7 @@ def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5
     print("Best hyperparameters found were: ", analysis.best_config)
 
     df = analysis.results_df
-    df.to_csv(exp_path /'PHYSICS.csv')
+    df.to_csv(exp_path /'SHIT_ENCODER_SIZE.csv')
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Search for hyperparams using raytune and HPC.')
     parser.add_argument('-gpu', '--gpus_per_trial', default=0, help='# GPUs per trial')

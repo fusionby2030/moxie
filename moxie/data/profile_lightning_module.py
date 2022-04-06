@@ -4,6 +4,12 @@ from .utils_ import *
 import pickle  # data loading issues
 import torch
 from torch.utils.data import DataLoader
+
+def replace_q95_with_qcly(mp_set):
+    mu_0 = 1.25663706e-6 # magnetic constant
+    mp_set[:, 0] = ((1 + 2*mp_set[:, 6]**2) / 2.0) * (2*mp_set[:, 9]*torch.pi*mp_set[:, 2]**2) / (mp_set[:, 1] * mp_set[:, 8] * mu_0)
+    return mp_set
+
 class PLDATAMODULE_AK(pl.LightningDataModule):
     """
     pl.lightning datamodule class, which will help with our dataloading needs :--)
@@ -53,7 +59,7 @@ class PLDATAMODULE_AK(pl.LightningDataModule):
         self.X_test[:, 1] = standardize_simple(self.X_test[:, 1], mu=self.mu_T, var=self.var_T)
 
         # Normalize the machine parameters
-
+        self.y_train, self.y_val, self.y_test = replace_q95_with_qcly(self.y_train), replace_q95_with_qcly(self.y_val), replace_q95_with_qcly(self.y_test)
         self.y_train, self.mu_MP, self.var_MP = standardize_simple(self.y_train)
         self.y_val = standardize_simple(self.y_val, self.mu_MP, self.var_MP)
         self.y_test =  standardize_simple(self.y_test, self.mu_MP, self.var_MP)

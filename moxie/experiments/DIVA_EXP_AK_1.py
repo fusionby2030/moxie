@@ -11,6 +11,12 @@ def de_standardize(x, mu, var):
 def standardize(x, mu, var):
     return (x - mu) / var
 
+def replace_q95_with_qcly(mp_set):
+    mu_0 = 1.25663706e-6 # magnetic constant
+    mp_set[:, 0] = ((1 + 2*mp_set[:, 6]**2) / 2.0) * (2*mp_set[:, 9]*torch.pi*mp_set[:, 2]**2) / (mp_set[:, 1] * mp_set[:, 8] * mu_0)
+    return mp_set
+
+
 physics_dojo_dict = {
     'Q95':{'idx': 0, 'lim': (2, 7)},
     'RGEO':{'idx': 1, 'lim': (2.8, 3.1)},
@@ -46,10 +52,14 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         MP_norm, MP_var = self.trainer.datamodule.get_machine_norms(device=self.current_device)
         D_norm, D_var = self.trainer.datamodule.get_density_norms(device=self.current_device)
         T_norm, T_var = self.trainer.datamodule.get_temperature_norms(device=self.current_device)
+
         mp_interp = standardize(torch.linspace(mp_lims[0], mp_lims[1], interp_size, device=self.current_device), MP_norm[mp_idx], MP_var[mp_idx])
 
         interp_sample_mp = torch.repeat_interleave(batch_x, interp_size, dim=0)
         interp_sample_mp[:, mp_idx] = mp_interp
+
+        # calculate new Q!
+        interp_sample_mp = replace_q95_with_qcly(interp_sample_mp)
 
         # Feed to the Prior Reg
         cond_prior_mu, cond_prior_var = self.model.p_zmachx(interp_sample_mp)
@@ -201,7 +211,8 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
 
     def test_epoch_end(self, outputs):
 
-        self.compare_generate_with_real()
+        # self.compare_generate_with_real()
+        self.compare_cond_with_real()
         self.compare_correlations()
 
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
@@ -217,6 +228,163 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
                                lr=self.params['LR'],
                                weight_decay=self.params['weight_decay'])
         return optimizer
+
+    def compare_cond_with_real(self):
+        train_data_iter = iter(self.trainer.datamodule.train_dataloader())
+        val_data_iter = iter(self.trainer.datamodule.val_dataloader())
+        test_data_iter = iter(self.trainer.datamodule.test_dataloader())
+
+        train_prof_og, train_mp, train_mask, ids = next(train_data_iter)
+        val_prof_og, val_mp, val_mask, ids = next(val_data_iter)
+        test_prof_og, test_mp, test_mask, ids = next(test_data_iter)
+
+        mu_D, var_D = self.trainer.datamodule.get_density_norms()
+        mu_T, var_T = self.trainer.datamodule.get_temperature_norms()
+
+        with torch.no_grad():
+            c_mu, c_var = self.model.p_zmachx(train_mp)
+            z_mach_train = self.model.reparameterize(c_mu, c_var)
+            z_stoch_train = torch.distributions.normal.Normal(0,1).sample((z_mach_train.shape[0], 3))
+            z_train = torch.cat((z_stoch_train, z_mach_train), 1)
+            out_profs_train = self.model.p_yhatz(z_train)
+            out_mp_train = self.model.q_hatxzmach(z_mach_train)
+
+            c_mu, c_var = self.model.p_zmachx(val_mp)
+            z_mach_val = self.model.reparameterize(c_mu, c_var)
+            z_stoch_val = torch.distributions.normal.Normal(0,1).sample((z_mach_val.shape[0], 3))
+            z_val = torch.cat((z_stoch_val, z_mach_val), 1)
+            out_profs_val = self.model.p_yhatz(z_val)
+            out_mp_val = self.model.q_hatxzmach(z_mach_val)
+
+            c_mu, c_var = self.model.p_zmachx(test_mp)
+            z_mach_test = self.model.reparameterize(c_mu, c_var)
+            z_stoch_test = torch.distributions.normal.Normal(0,1).sample((z_mach_test.shape[0], 3))
+            z_test = torch.cat((z_stoch_test, z_mach_test), 1)
+            out_profs_test = self.model.p_yhatz(z_test)
+            out_mp_test = self.model.q_hatxzmach(z_mach_test)
+
+            train_results_enc = self.model.forward(train_prof_og, train_mp) # recons, input, mu, logvar
+            val_results_enc = self.model.forward(val_prof_og, val_mp) # recons, input, mu, logvar
+            test_results_enc = self.model.forward(test_prof_og, test_mp)
+
+        # Density from conditional
+        train_density_cond = out_profs_train[:, 0:1, :]
+        val_density_cond = out_profs_val[:, 0:1, :]
+        test_density_cond = out_profs_test[:, 0:1, :]
+
+        train_density_cond = de_standardize(train_density_cond, mu_D, var_D)
+        val_density_cond = de_standardize(val_density_cond, mu_D, var_D)
+        test_density_cond = de_standardize(test_density_cond, mu_D, var_D)
+
+        # Density from encoder
+        train_density_enc = train_results_enc['out_profs'][:, 0:1,  :]
+        val_density_enc = val_results_enc['out_profs'][:, 0:1, :]
+        test_density_enc = test_results_enc['out_profs'][:, 0:1, :]
+
+        train_density_enc = de_standardize(train_density_enc, mu_D, var_D)
+        val_density_enc = de_standardize(val_density_enc, mu_D, var_D)
+        test_density_enc = de_standardize(test_density_enc, mu_D, var_D)
+
+        # Real Density
+        train_density_real = train_prof_og[:, 0:1,:]
+        val_density_real = val_prof_og[:, 0:1, :]
+        test_density_real = test_prof_og[:, 0:1, :]
+
+        train_density_real = de_standardize(train_density_real, mu_D, var_D)
+        val_density_real = de_standardize(val_density_real, mu_D, var_D)
+        test_density_real = de_standardize(test_density_real, mu_D, var_D)
+
+        # Temperature from conditional
+        train_temperature_cond = out_profs_train[:, 1:, :]
+        val_temperature_cond = out_profs_val[:, 1:, :]
+        test_temperature_cond = out_profs_test[:, 1:, :]
+
+        train_temperature_cond = de_standardize(train_temperature_cond, mu_T, var_T)
+        val_temperature_cond = de_standardize(val_temperature_cond, mu_T, var_T)
+        test_temperature_cond = de_standardize(test_temperature_cond, mu_T, var_T)
+
+        # Temperature from encoder
+        train_temperature_enc = train_results_enc['out_profs'][:, 1:,  :]
+        val_temperature_enc = val_results_enc['out_profs'][:, 1:, :]
+        test_temperature_enc = test_results_enc['out_profs'][:, 1:, :]
+
+        train_temperature_enc = de_standardize(train_temperature_enc, mu_T, var_T)
+        val_temperature_enc = de_standardize(val_temperature_enc, mu_T, var_T)
+        test_temperature_enc = de_standardize(test_temperature_enc, mu_T, var_T)
+
+        # Real Temperature
+        train_temperature_real = train_prof_og[:, 1:,:]
+        val_temperature_real = val_prof_og[:, 1:, :]
+        test_temperature_real = test_prof_og[:, 1:, :]
+
+
+        train_temperature_real = de_standardize(train_temperature_real, mu_T, var_T)
+        val_temperature_real = de_standardize(val_temperature_real, mu_T, var_T)
+        test_temperature_real = de_standardize(test_temperature_real, mu_T, var_T)
+
+
+        fig, axs = plt.subplots(3, 3, figsize=(10, 10), constrained_layout=True, sharex=True, sharey=True)
+
+        for k in [0, 1, 2]:
+
+            axs[0, k].plot(train_temperature_cond[k*100].squeeze(), label='Conditional', lw=4)
+            axs[0, k].plot(train_temperature_real[k*100].squeeze(), label='Real', lw=4)
+            axs[0, k].plot(train_temperature_enc[k*100].squeeze(), label='Encoder', lw=4)
+
+            axs[1, k].plot(val_temperature_cond[k*100].squeeze(), label='Conditional', lw=4)
+            axs[1, k].plot(val_temperature_real[k*100].squeeze(), label='Real', lw=4)
+            axs[1, k].plot(val_temperature_enc[k*100].squeeze(), label='Encoder', lw=4)
+
+            axs[2, k].plot(test_temperature_cond[k*100].squeeze(), label='Conditional', lw=4)
+            axs[2, k].plot(test_temperature_real[k*100].squeeze(), label='Real', lw=4)
+            axs[2, k].plot(test_temperature_enc[k*100].squeeze(), label='Encoder', lw=4)
+
+            if k == 0:
+                axs[0, k].set_ylabel('Train:') # {:.4}'.format(train_loss['Reconstruction_Loss']) , size='x-large')
+                axs[1, k].set_ylabel('Valid')#  {:.4}'.format(val_loss['Reconstruction_Loss']), size='x-large')
+                axs[2, k].set_ylabel('Test')#  {:.4}'.format(test_loss['Reconstruction_Loss']), size='x-large')
+                axs[0, k].legend()
+                axs[1, k].legend()
+                axs[2, k].legend()
+
+        fig.supxlabel('R', size='xx-large')
+        fig.supylabel('$n_e \; \; (10^{20}$ m$^{-3})$', size='xx-large')
+        fig.suptitle('DIVA From Conditional Priors'.format(self.model.stoch_latent_dim, self.model.mach_latent_dim))
+        plt.setp(axs, xticks=[])
+        self.logger.experiment.add_figure('temperature_from_cond', fig)
+
+        fig, axs = plt.subplots(3, 3, figsize=(10, 10), constrained_layout=True, sharex=True, sharey=True)
+
+        for k in [0, 1, 2]:
+
+            axs[0, k].plot(train_density_cond[k*100].squeeze(), label='Conditional', lw=4)
+            axs[0, k].plot(train_density_real[k*100].squeeze(), label='Real', lw=4)
+            axs[0, k].plot(train_density_enc[k*100].squeeze(), label='Encoder', lw=4)
+
+            axs[1, k].plot(val_density_real[k*100].squeeze(), label='Conditional', lw=4)
+            axs[1, k].plot(val_density_cond[k*100].squeeze(), label='Real', lw=4)
+            axs[1, k].plot(val_density_enc[k*100].squeeze(), label='Encoder', lw=4)
+
+            axs[2, k].plot(test_density_real[k*100].squeeze(), label='Conditional', lw=4)
+            axs[2, k].plot(test_density_cond[k*100].squeeze(), label='Real', lw=4)
+            axs[2, k].plot(test_density_enc[k*100].squeeze(), label='Encoder', lw=4)
+
+            if k == 0:
+                axs[0, k].set_ylabel('Train:') # {:.4}'.format(train_loss['Reconstruction_Loss']) , size='x-large')
+                axs[1, k].set_ylabel('Valid')#  {:.4}'.format(val_loss['Reconstruction_Loss']), size='x-large')
+                axs[2, k].set_ylabel('Test')#  {:.4}'.format(test_loss['Reconstruction_Loss']), size='x-large')
+                axs[0, k].legend()
+                axs[1, k].legend()
+                axs[2, k].legend()
+
+        fig.supxlabel('R', size='xx-large')
+        fig.supylabel('$n_e \; \; (10^{20}$ m$^{-3})$', size='xx-large')
+        fig.suptitle('DIVA From Conditional Priors'.format(self.model.stoch_latent_dim, self.model.mach_latent_dim))
+        plt.setp(axs, xticks=[])
+        self.logger.experiment.add_figure('density_from_cond', fig)
+
+
+
     def compare_generate_with_real(self):
         train_data_iter = iter(self.trainer.datamodule.train_dataloader())
         val_data_iter = iter(self.trainer.datamodule.val_dataloader())
