@@ -63,12 +63,13 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
 def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5, data_dir='', pin_memory=False):
     search_space = {
         'LR': 0.003, # tune.loguniform(0.00001, 0.01),
-        'mach_latent_dim': tune.randint(6, 15),
+        'mach_latent_dim': tune.randint(7, 20),
         'stoch_latent_dim': 3,
-        'beta_stoch': 10e-3,# tune.loguniform(10e-7,10e-2),
-        'beta_mach': tune.randint(10, 1001),
-        "alpha_prof": 1, # tune.qrandint(1, 500, 10),
-        "alpha_mach": 1, # tune.qrandint(1, 500, 10),
+        'beta_stoch': tune.loguniform(10e-4,10),
+        'beta_mach_unsup':  tune.qrandint(10, 500, 10),
+        'beta_mach_sup':  1.,
+        "alpha_prof": 100.,
+        "alpha_mach": 100.,
         'physics': False,
         'gamma_stored_energy': 0.0,
         'encoder_end_dense_size': 128,
@@ -80,7 +81,7 @@ def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5
         reduction_factor=2)
 
     reporter = CLIReporter(
-        parameter_columns=["beta_stoch", "mach_latent_dim"],
+        parameter_columns=["beta_mach_unsup", "beta_mach_sup", 'mach_latent_dim'],
         metric_columns=["loss", "loss_mp"],
         max_report_frequency=20)
 

@@ -239,7 +239,7 @@ class DIVAMODEL_DOJO(Base):
         log_var_mach = kwargs['log_var_mach']
         out_profs = kwargs['out_profs']
         in_profs = kwargs['in_profs']
-        out_mp  =kwargs['out_mp']
+        out_mp = kwargs['out_mp']
         in_mp = kwargs['in_mp']
         D_mu, D_var = kwargs['D_norms']
         T_mu, T_var = kwargs['T_norms']

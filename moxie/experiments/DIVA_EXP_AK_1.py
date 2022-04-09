@@ -11,9 +11,11 @@ def de_standardize(x, mu, var):
 def standardize(x, mu, var):
     return (x - mu) / var
 
-def replace_q95_with_qcly(mp_set):
+def replace_q95_with_qcly(mp_set, mu, var):
+    mp_set = de_standardize(mp_set, mu, var)
     mu_0 = 1.25663706e-6 # magnetic constant
     mp_set[:, 0] = ((1 + 2*mp_set[:, 6]**2) / 2.0) * (2*mp_set[:, 9]*torch.pi*mp_set[:, 2]**2) / (mp_set[:, 1] * mp_set[:, 8] * mu_0)
+    mp_set = standardize(mp_set, mu, var)
     return mp_set
 
 
@@ -32,6 +34,11 @@ physics_dojo_dict = {
     'ICRH':{'idx': 11, 'lim': (0, 10e6)},
     'ELER':{'idx': 12, 'lim': (0, 20e22)}
 }
+
+def replace_q95_with_qcly(mp_set):
+    mu_0 = 1.25663706e-6 # magnetic constant
+    mp_set[:, 0] = ((1 + 2*mp_set[:, 6]**2) / 2.0) * (2*mp_set[:, 9]*torch.pi*mp_set[:, 2]**2) / (mp_set[:, 1] * mp_set[:, 8] * mu_0)
+    return mp_set
 
 class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
     def __init__(self, model=None, params: dict = {'LR': 0.001}) -> None:
@@ -121,9 +128,9 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
 
         results = self.forward(real_profile, in_mp=machine_params)
 
-        if self.physics and batch_idx%3==0 and self.model.num_iterations > self.cutoff:
+        if self.physics: # and batch_idx%3==0 and self.model.num_iterations > self.cutoff:
             NAMES = ['Q95', 'RGEO', 'CR0', 'VOLM', 'TRIU', 'TRIL', 'ELON', 'POHM', 'IPLA', 'BVAC', 'NBI', 'ICRH', 'ELER']
-            REDUCED_NAMES = ['POHM', 'NBI', 'ICRH', 'ELER']
+            REDUCED_NAMES = ['POHM', 'NBI', 'ICRH', 'ELER', 'IPLA', 'BVAC']
             choice = np.random.choice(REDUCED_NAMES)
             # Q_cyc= ((1+2kappa^2) / 2 ) * (2pia^2 Bt) / (R IP  mu_0)
             # Here we need to implement something that scales everything related to q95.
@@ -212,7 +219,10 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
     def test_epoch_end(self, outputs):
 
         # self.compare_generate_with_real()
-        self.compare_cond_with_real()
+        all_components = self.get_cond_enc_real_for_comparison()
+
+        self.compare_pressures(all_components)
+        self.compare_cond_with_real(all_components)
         self.compare_correlations()
 
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
@@ -229,7 +239,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
                                weight_decay=self.params['weight_decay'])
         return optimizer
 
-    def compare_cond_with_real(self):
+    def get_cond_enc_real_for_comparison(self):
         train_data_iter = iter(self.trainer.datamodule.train_dataloader())
         val_data_iter = iter(self.trainer.datamodule.val_dataloader())
         test_data_iter = iter(self.trainer.datamodule.test_dataloader())
@@ -322,6 +332,171 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         val_temperature_real = de_standardize(val_temperature_real, mu_T, var_T)
         test_temperature_real = de_standardize(test_temperature_real, mu_T, var_T)
 
+        return (train_density_cond, val_density_cond, test_density_cond), (train_density_enc, val_density_enc, test_density_enc), (train_density_real, val_density_real, test_density_real),(train_temperature_cond, val_temperature_cond, test_temperature_cond), (train_temperature_enc, val_temperature_enc, test_temperature_enc), (train_temperature_real, val_temperature_real, test_temperature_real)
+
+    def compare_pressures(self, all_components):
+        (train_density_cond, val_density_cond, test_density_cond), (train_density_enc, val_density_enc, test_density_enc), (train_density_real, val_density_real, test_density_real),(train_temperature_cond, val_temperature_cond, test_temperature_cond), (train_temperature_enc, val_temperature_enc, test_temperature_enc), (train_temperature_real, val_temperature_real, test_temperature_real) = all_components
+
+        # Train plot
+        fig, axs = plt.subplots(3, 3, figsize=(10, 10), constrained_layout=True, sharey='col',  sharex=True)
+
+        k = 50
+        axs[0, 0].plot(train_temperature_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[0, 1].plot(train_density_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[0, 2].plot(train_density_cond[k].squeeze() * train_temperature_cond[k].squeeze(), label='Conditional', lw=4)
+
+        axs[0, 0].plot(train_temperature_real[k].squeeze(), label='Real', lw=4)
+        axs[0, 1].plot(train_density_real[k].squeeze(), label='Real', lw=4)
+        axs[0, 2].plot(train_density_real[k].squeeze() * train_temperature_real[k].squeeze(), label='Real', lw=4)
+
+        axs[0, 0].plot(train_temperature_enc[k].squeeze(), label='Real', lw=4)
+        axs[0, 1].plot(train_density_enc[k].squeeze(), label='Real', lw=4)
+        axs[0, 2].plot(train_density_enc[k].squeeze() * train_temperature_enc[k].squeeze(), label='Real', lw=4)
+
+        k = 150
+        axs[1, 0].plot(train_temperature_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[1, 1].plot(train_density_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[1, 2].plot(train_density_cond[k].squeeze() * train_temperature_cond[k].squeeze(), label='Conditional', lw=4)
+
+        axs[1, 0].plot(train_temperature_real[k].squeeze(), label='Real', lw=4)
+        axs[1, 1].plot(train_density_real[k].squeeze(), label='Real', lw=4)
+        axs[1, 2].plot(train_density_real[k].squeeze() * train_temperature_real[k].squeeze(), label='Real', lw=4)
+
+        axs[1, 0].plot(train_temperature_enc[k].squeeze(), label='Real', lw=4)
+        axs[1, 1].plot(train_density_enc[k].squeeze(), label='Real', lw=4)
+        axs[1, 2].plot(train_density_enc[k].squeeze() * train_temperature_enc[k].squeeze(), label='Real', lw=4)
+
+
+        k = 250
+        axs[2, 0].plot(train_temperature_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[2, 1].plot(train_density_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[2, 2].plot(train_density_cond[k].squeeze() * train_temperature_cond[k].squeeze(), label='Conditional', lw=4)
+
+        axs[2, 0].plot(train_temperature_real[k].squeeze(), label='Real', lw=4)
+        axs[2, 1].plot(train_density_real[k].squeeze(), label='Real', lw=4)
+        axs[2, 2].plot(train_density_real[k].squeeze() * train_temperature_real[k].squeeze(), label='Real', lw=4)
+
+        axs[2, 0].plot(train_temperature_enc[k].squeeze(), label='Real', lw=4)
+        axs[2, 1].plot(train_density_enc[k].squeeze(), label='Real', lw=4)
+        axs[2, 2].plot(train_density_enc[k].squeeze() * train_temperature_enc[k].squeeze(), label='Real', lw=4)
+
+        axs[0, 0].legend()
+        axs[0, 1].set_ylabel('$n_e \; \;$ m$^{-3})$')
+        axs[0, 0].set_ylabel('$T_e \; \; (eV)$', size='xx-large')
+        axs[0, 2].set_ylabel('$p_e \; \;$ (Pa)')
+
+        fig.suptitle('Training Profiles Reconstruction')
+        plt.setp(axs, xticks=[])
+        self.logger.experiment.add_figure('pressure_profs/training', fig)
+
+        # Validation
+        fig, axs = plt.subplots(3, 3, figsize=(10, 10), constrained_layout=True, sharey='col',  sharex=True)
+
+        k = 75
+        axs[0, 0].plot(val_temperature_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[0, 1].plot(val_density_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[0, 2].plot(val_density_cond[k].squeeze() * val_temperature_cond[k].squeeze(), label='Conditional', lw=4)
+
+        axs[0, 0].plot(val_temperature_real[k].squeeze(), label='Real', lw=4)
+        axs[0, 1].plot(val_density_real[k].squeeze(), label='Real', lw=4)
+        axs[0, 2].plot(val_density_real[k].squeeze() * val_temperature_real[k].squeeze(), label='Real', lw=4)
+
+        axs[0, 0].plot(val_temperature_enc[k].squeeze(), label='Encoder', lw=4)
+        axs[0, 1].plot(val_density_enc[k].squeeze(), label='Encoder', lw=4)
+        axs[0, 2].plot(val_density_enc[k].squeeze() * val_temperature_enc[k].squeeze(), label='Encoder', lw=4)
+
+        k = 126
+        axs[1, 0].plot(val_temperature_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[1, 1].plot(val_density_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[1, 2].plot(val_density_cond[k].squeeze() * val_temperature_cond[k].squeeze(), label='Conditional', lw=4)
+
+        axs[1, 0].plot(val_temperature_real[k].squeeze(), label='Real', lw=4)
+        axs[1, 1].plot(val_density_real[k].squeeze(), label='Real', lw=4)
+        axs[1, 2].plot(val_density_real[k].squeeze() * val_temperature_real[k].squeeze(), label='Real', lw=4)
+
+        axs[1, 0].plot(val_temperature_enc[k].squeeze(), label='Encoder', lw=4)
+        axs[1, 1].plot(val_density_enc[k].squeeze(), label='Encoder', lw=4)
+        axs[1, 2].plot(val_density_enc[k].squeeze() * val_temperature_enc[k].squeeze(), label='Encoder', lw=4)
+
+
+        k = 322
+        axs[2, 0].plot(val_temperature_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[2, 1].plot(val_density_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[2, 2].plot(val_density_cond[k].squeeze() * val_temperature_cond[k].squeeze(), label='Conditional', lw=4)
+
+        axs[2, 0].plot(val_temperature_real[k].squeeze(), label='Real', lw=4)
+        axs[2, 1].plot(val_density_real[k].squeeze(), label='Real', lw=4)
+        axs[2, 2].plot(val_density_real[k].squeeze() * val_temperature_real[k].squeeze(), label='Real', lw=4)
+
+        axs[2, 0].plot(val_temperature_enc[k].squeeze(), label='Encoder', lw=4)
+        axs[2, 1].plot(val_density_enc[k].squeeze(), label='Encoder', lw=4)
+        axs[2, 2].plot(val_density_enc[k].squeeze() * val_temperature_enc[k].squeeze(), label='Encoder', lw=4)
+
+        axs[0, 1].set_ylabel('$n_e \; \;$ m$^{-3})$', size='xx-large')
+        axs[0, 0].set_ylabel('$T_e \; \; (eV)$', size='xx-large')
+        axs[0, 2].set_ylabel('$p_e \; \;$ (Pa)', size='xx-large')
+
+        axs[0, 0].legend()
+        fig.suptitle('Val Profiles Reconstruction')
+        plt.setp(axs, xticks=[])
+        self.logger.experiment.add_figure('pressure_profs/val', fig)
+
+        # Test
+        fig, axs = plt.subplots(3, 3, figsize=(10, 10), constrained_layout=True, sharey='col',  sharex=True)
+
+        k = 43
+        axs[0, 0].plot(test_temperature_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[0, 1].plot(test_density_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[0, 2].plot(test_density_cond[k].squeeze() * test_temperature_cond[k].squeeze(), label='Conditional', lw=4)
+
+        axs[0, 0].plot(test_temperature_real[k].squeeze(), label='Real', lw=4)
+        axs[0, 1].plot(test_density_real[k].squeeze(), label='Real', lw=4)
+        axs[0, 2].plot(test_density_real[k].squeeze() * test_temperature_real[k].squeeze(), label='Real', lw=4)
+
+        axs[0, 0].plot(test_temperature_enc[k].squeeze(), label='Encoder', lw=4)
+        axs[0, 1].plot(test_density_enc[k].squeeze(), label='Encoder', lw=4)
+        axs[0, 2].plot(test_density_enc[k].squeeze() * test_temperature_enc[k].squeeze(), label='Encoder', lw=4)
+
+        k = 124
+        axs[1, 0].plot(test_temperature_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[1, 1].plot(test_density_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[1, 2].plot(test_density_cond[k].squeeze() * test_temperature_cond[k].squeeze(), label='Conditional', lw=4)
+
+        axs[1, 0].plot(test_temperature_real[k].squeeze(), label='Real', lw=4)
+        axs[1, 1].plot(test_density_real[k].squeeze(), label='Real', lw=4)
+        axs[1, 2].plot(test_density_real[k].squeeze() * test_temperature_real[k].squeeze(), label='Real', lw=4)
+
+        axs[1, 0].plot(test_temperature_enc[k].squeeze(), label='Encoder', lw=4)
+        axs[1, 1].plot(test_density_enc[k].squeeze(), label='Encoder', lw=4)
+        axs[1, 2].plot(test_density_enc[k].squeeze() * test_temperature_enc[k].squeeze(), label='Encoder', lw=4)
+
+
+        k = 233
+        axs[2, 0].plot(test_temperature_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[2, 1].plot(test_density_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[2, 2].plot(test_density_cond[k].squeeze() * test_temperature_cond[k].squeeze(), label='Conditional', lw=4)
+
+        axs[2, 0].plot(test_temperature_real[k].squeeze(), label='Real', lw=4)
+        axs[2, 1].plot(test_density_real[k].squeeze(), label='Real', lw=4)
+        axs[2, 2].plot(test_density_real[k].squeeze() * test_temperature_real[k].squeeze(), label='Real', lw=4)
+
+        axs[2, 0].plot(test_temperature_enc[k].squeeze(), label='Encoder', lw=4)
+        axs[2, 1].plot(test_density_enc[k].squeeze(), label='Encoder', lw=4)
+        axs[2, 2].plot(test_density_enc[k].squeeze() * test_temperature_enc[k].squeeze(), label='Encoder', lw=4)
+
+        axs[0, 0].legend()
+        axs[0, 1].set_ylabel('$n_e \; \;$ m$^{-3})$')
+        axs[0, 0].set_ylabel('$T_e \; \; (eV)$', size='xx-large')
+        axs[0, 2].set_ylabel('$p_e \; \;$ (Pa)')
+
+        fig.suptitle('test Profiles Reconstruction')
+        plt.setp(axs, xticks=[])
+        self.logger.experiment.add_figure('pressure_profs/test', fig)
+
+
+    def compare_cond_with_real(self, all_components):
+
+        (train_density_cond, val_density_cond, test_density_cond), (train_density_enc, val_density_enc, test_density_enc), (train_density_real, val_density_real, test_density_real),(train_temperature_cond, val_temperature_cond, test_temperature_cond), (train_temperature_enc, val_temperature_enc, test_temperature_enc), (train_temperature_real, val_temperature_real, test_temperature_real) = all_components
 
         fig, axs = plt.subplots(3, 3, figsize=(10, 10), constrained_layout=True, sharex=True, sharey=True)
 
@@ -348,7 +523,8 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
                 axs[2, k].legend()
 
         fig.supxlabel('R', size='xx-large')
-        fig.supylabel('$n_e \; \; (10^{20}$ m$^{-3})$', size='xx-large')
+        fig.supylabel('$T_e \; \; $', size='xx-large')
+
         fig.suptitle('DIVA From Conditional Priors'.format(self.model.stoch_latent_dim, self.model.mach_latent_dim))
         plt.setp(axs, xticks=[])
         self.logger.experiment.add_figure('temperature_from_cond', fig)
