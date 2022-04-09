@@ -127,7 +127,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
 
 
         results = self.forward(real_profile, in_mp=machine_params)
-
+        """
         if self.physics: # and batch_idx%3==0 and self.model.num_iterations > self.cutoff:
             NAMES = ['Q95', 'RGEO', 'CR0', 'VOLM', 'TRIU', 'TRIL', 'ELON', 'POHM', 'IPLA', 'BVAC', 'NBI', 'ICRH', 'ELER']
             REDUCED_NAMES = ['POHM', 'NBI', 'ICRH', 'ELER', 'IPLA', 'BVAC']
@@ -138,6 +138,8 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
             physics_dojo_results = self.physics_dojo(sample_batch_x, mp_idx=mp_idx, mp_lims=mp_lims)
         else:
             physics_dojo_results = (0.0, 0.0, 0.0, 0.0)
+        """
+        physics_dojo_results = (0.0, 0.0, 0.0, 0.0)
         train_loss = self.model.loss_function(**results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.train_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks, D_norms= self.trainer.datamodule.get_density_norms(), T_norms= self.trainer.datamodule.get_temperature_norms(), physics_dojo_results=physics_dojo_results, cutoff=self.cutoff)
 
 

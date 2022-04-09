@@ -67,9 +67,9 @@ def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5
         'stoch_latent_dim': 3,
         'beta_stoch': tune.loguniform(10e-4,10),
         'beta_mach_unsup':  tune.qrandint(10, 500, 10),
-        'beta_mach_sup':  1.,
-        "alpha_prof": 100.,
-        "alpha_mach": 100.,
+        'beta_mach_sup':  tune.loguniform(1e-1,2),
+        "alpha_prof": tune.qrandint(10, 500, 10),
+        "alpha_mach": tune.qrandint(10, 500, 10),
         'physics': False,
         'gamma_stored_energy': 0.0,
         'encoder_end_dense_size': 128,
@@ -81,7 +81,7 @@ def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5
         reduction_factor=2)
 
     reporter = CLIReporter(
-        parameter_columns=["beta_mach_unsup", "beta_mach_sup", 'mach_latent_dim'],
+        parameter_columns=["beta_mach_unsup", "beta_mach_sup", 'mach_latent_dim', 'alpha_prof', 'alpha_mach'],
         metric_columns=["loss", "loss_mp"],
         max_report_frequency=20)
 
