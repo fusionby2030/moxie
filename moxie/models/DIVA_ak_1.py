@@ -252,7 +252,7 @@ class DIVAMODEL(Base):
         out_mp = kwargs['out_mp']
         in_mp = kwargs['in_mp']
         device = in_profs.device
-
+        start_sup_time = kwargs['start_sup_time']
         # This is really sub optimal, should cache these before.
         D_mu, D_var = kwargs['D_norms']
         T_mu, T_var = kwargs['T_norms']
@@ -313,7 +313,7 @@ class DIVAMODEL(Base):
             return {'loss': supervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': supervised_loss, 'Reconstruction_Loss_mp': recon_mp_loss, 'Reconstruction_Loss': recon_prof_loss,}#  'physics_loss': physics_loss}
 
         elif self.loss_type == 'semi-supervised':
-            if self.num_iterations%2 == 1: #s and self.num_iterations > 50:
+            if self.num_iterations%2 == 1 and self.num_iterations > start_sup_time:
                 sup_kld_loss =torch.distributions.kl.kl_divergence(
                  torch.distributions.normal.Normal(mu_mach, torch.exp(0.5*log_var_mach)),
                  torch.distributions.normal.Normal(prior_mu, torch.exp(0.5*prior_stoch))

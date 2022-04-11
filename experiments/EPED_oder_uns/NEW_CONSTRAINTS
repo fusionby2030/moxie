@@ -1,0 +1,10 @@
+trial_id,loss,KLD_mach,KLD_stoch,loss_mp,time_this_iter_s,done,timesteps_total,episodes_total,training_iteration,experiment_id,date,timestamp,time_total_s,pid,hostname,node_ip,time_since_restore,timesteps_since_restore,iterations_since_restore,experiment_tag,config.LR,config.mach_latent_dim,config.stoch_latent_dim,config.beta_stoch,config.beta_mach_unsup,config.beta_mach_sup,config.alpha_prof,config.alpha_mach,config.physics,config.gamma_stored_energy,config.encoder_end_dense_size
+d0a60_00000,0.18171042203903198,16.479888916015625,0.0009142870549112558,0.5915816426277161,4.952065706253052,False,,,5.0,5a2b05305bd0455bacf3acd03dbba748,2022-04-11_17-01-30,1649685690.0,28.85659408569336,1152772.0,dx6-mat-32,128.214.72.230,28.85659408569336,0.0,5.0,"0_alpha_mach=307,alpha_prof=291,beta_mach_sup=1.0,beta_mach_unsup=0.069375,beta_stoch=7.042,mach_latent_dim=8,stoch_latent_dim=3",0.003,8.0,3.0,7.042,0.06937506759146515,1.0,291.0,307.0,False,0.0,128.0
+d0a60_00001,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+d0a60_00002,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+d0a60_00003,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+d0a60_00004,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+d0a60_00005,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+d0a60_00006,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+d0a60_00007,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+d0a60_00008,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,

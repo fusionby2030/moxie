@@ -49,7 +49,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         self.current_device = None
         self.learning_rate = params["LR"]
         self.physics = params['physics']
-        self.cutoff = 500
+        self.start_sup_time = params['start_sup_time']
 
 
     def forward(self, input, **kwargs):
@@ -140,7 +140,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
             physics_dojo_results = (0.0, 0.0, 0.0, 0.0)
         """
         physics_dojo_results = (0.0, 0.0, 0.0, 0.0)
-        train_loss = self.model.loss_function(**results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.train_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks, D_norms= self.trainer.datamodule.get_density_norms(), T_norms= self.trainer.datamodule.get_temperature_norms(), physics_dojo_results=physics_dojo_results, cutoff=self.cutoff)
+        train_loss = self.model.loss_function(**results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.train_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks, D_norms= self.trainer.datamodule.get_density_norms(), T_norms= self.trainer.datamodule.get_temperature_norms(), physics_dojo_results=physics_dojo_results, start_sup_time=self.start_sup_time)
 
 
         return train_loss
@@ -180,7 +180,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
 
         results = self.forward(real_profile, in_mp=machine_params)
 
-        val_loss = self.model.loss_function(**results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.val_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks, D_norms= self.trainer.datamodule.get_density_norms(), T_norms= self.trainer.datamodule.get_temperature_norms(),cutoff=self.cutoff)
+        val_loss = self.model.loss_function(**results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.val_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks, D_norms= self.trainer.datamodule.get_density_norms(), T_norms= self.trainer.datamodule.get_temperature_norms(),start_sup_time=self.start_sup_time)
         return val_loss
 
     def validation_epoch_end(self, outputs):
@@ -212,7 +212,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         self.current_device = real_profile.device
 
         results = self.forward(real_profile, in_mp=machine_params)
-        test_loss = self.model.loss_function(**results, machine_params=machine_params, M_N = self.params['batch_size']/ len(self.trainer.datamodule.test_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks, D_norms= self.trainer.datamodule.get_density_norms(), T_norms= self.trainer.datamodule.get_temperature_norms(), cutoff=self.cutoff)
+        test_loss = self.model.loss_function(**results, machine_params=machine_params, M_N = self.params['batch_size']/ len(self.trainer.datamodule.test_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks, D_norms= self.trainer.datamodule.get_density_norms(), T_norms= self.trainer.datamodule.get_temperature_norms(), start_sup_time=self.start_sup_time)
         # Log the computational Graph!
         # self.logger.experiment.add_graph(self.model, [real_profile, machine_params], use_strict_trace=False)
 

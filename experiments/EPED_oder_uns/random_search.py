@@ -21,6 +21,8 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
     if 'LR' in search_space.keys():
         experiment_params['LR'] = search_space['LR']
         experiment_params['physics'] = search_space['physics']
+        experiment_params['start_sup_time'] = search_space['start_sup_time']
+        
 
     data_params = {'data_dir': data_dir,
                     'num_workers': num_cpus,
@@ -68,8 +70,9 @@ def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5
         'beta_stoch': tune.qloguniform(0.005,10, 0.001),
         'beta_mach_unsup':  tune.loguniform(0.005, 10, 0.001),
         'beta_mach_sup':  tune.choice([0.0, 1.0]) , #tune.loguniform(0.01, 1.01, 0.01),
-        "alpha_prof": tune.qrandint(1, 500, 1),
-        "alpha_mach": tune.qrandint(1, 500, 1),
+        "alpha_prof": tune.randint(1, 500),
+        "alpha_mach": tune.randint(1, 500),
+        "start_sup_time": tune.randint(0, 1000),
         'physics': False,
         'gamma_stored_energy': 0.0,
         'encoder_end_dense_size': 128,
@@ -77,7 +80,7 @@ def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5
 
     scheduler = ASHAScheduler(
         max_t=num_epochs,
-        grace_period=40,
+        grace_period=20,
         reduction_factor=2)
 
     reporter = CLIReporter(
