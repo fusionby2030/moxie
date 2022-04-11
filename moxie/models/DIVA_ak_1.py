@@ -79,8 +79,10 @@ class DIVAMODEL(Base):
 
 
         self.beta_mach_unsup =   self.beta_stoch / beta_mach_unsup
-
-        self.beta_mach_sup = beta_mach_sup
+        if beta_mach_sup == 0.0:
+            self.beta_mach_sup = self.beta_mach_unsup
+        else:
+            self.beta_mach_sup = beta_mach_sup
 
         self.physics = physics
         self.gamma_stored_energy = gamma_stored_energy
@@ -309,7 +311,7 @@ class DIVAMODEL(Base):
             return {'loss': supervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': supervised_loss, 'Reconstruction_Loss_mp': recon_mp_loss, 'Reconstruction_Loss': recon_prof_loss,}#  'physics_loss': physics_loss}
 
         elif self.loss_type == 'semi-supervised':
-            if self.num_iterations%2 == 1 and self.num_iterations > 50:
+            if self.num_iterations%2 == 1: #s and self.num_iterations > 50:
                 sup_kld_loss =torch.distributions.kl.kl_divergence(
                  torch.distributions.normal.Normal(mu_mach, torch.exp(0.5*log_var_mach)),
                  torch.distributions.normal.Normal(prior_mu, torch.exp(0.5*prior_stoch))
