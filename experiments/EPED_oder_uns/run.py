@@ -45,12 +45,13 @@ STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 4, 'pin_memory': False,
 HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size': 512}
 
 model_hyperparams = {'in_ch': 2, 'out_length':19,
-                    'mach_latent_dim': 11, 'stoch_latent_dim': 3,
+                    'mach_latent_dim': 8, 'stoch_latent_dim': 3,
                     'beta_stoch': 0.01,
-                    'beta_mach_unsup':  100.,'beta_mach_sup':  1.0,
-                    'alpha_mach': 100.0, 'alpha_prof': 100.0,
-                    'encoder_end_dense_size': 128, 'hidden_dims': [2, 4],
-                    'physics': False, 'gamma_stored_energy': 0.01,
+                    'beta_mach_unsup':  0.001,'beta_mach_sup':  0.0,
+                    'alpha_mach': 5.0, 'alpha_prof': 25.0,
+                    'encoder_end_dense_size': 128, 
+                    'hidden_dims': [2, 4], 'mp_hdims': [64, 32], 
+                    'physics': False, 'gamma_stored_energy': 0.1,
                     'loss_type': 'semi-supervised'}
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
@@ -69,7 +70,7 @@ if model_hyperparams['physics']:
 else:
     model_name =  'REDUCED_SECULAR_{}MD_{}SD_{}BMUN_{}BMSUP_{}BS_{}AM_{}AP_{}ENCDENSE_{}EP'.format(model_hyperparams['mach_latent_dim'], model_hyperparams['stoch_latent_dim'], int(model_hyperparams['beta_mach_unsup']), model_hyperparams['beta_mach_sup'], model_hyperparams['beta_stoch'], int(model_hyperparams['alpha_mach']), int(model_hyperparams['alpha_prof']), model_hyperparams['encoder_end_dense_size'], trainer_params['max_epochs'])# 'VAE_7MD_3SD_500BM_50AM_10AP'
 # model_name = 'DIVA_W_PHYSICS_1'
-model_name =  'SEARCH_RESULTS{}MD_{}SD_{}BMUN_{}BMSUP_{}BS_{}AM_{}AP_{}ENCDENSE_{}EP'.format(model_hyperparams['mach_latent_dim'], model_hyperparams['stoch_latent_dim'], int(model_hyperparams['beta_mach_unsup']), model_hyperparams['beta_mach_sup'], model_hyperparams['beta_stoch'], int(model_hyperparams['alpha_mach']), int(model_hyperparams['alpha_prof']), model_hyperparams['encoder_end_dense_size'], trainer_params['max_epochs'])# 'VAE_7MD_3SD_500BM_50AM_10AP'
+# model_name =  'SEARCH_RESULTS{}MD_{}SD_{}BMUN_{}BMSUP_{}BS_{}AM_{}AP_{}ENCDENSE_{}EP'.format(model_hyperparams['mach_latent_dim'], model_hyperparams['stoch_latent_dim'], int(model_hyperparams['beta_mach_unsup']), model_hyperparams['beta_mach_sup'], model_hyperparams['beta_stoch'], int(model_hyperparams['alpha_mach']), int(model_hyperparams['alpha_prof']), model_hyperparams['encoder_end_dense_size'], trainer_params['max_epochs'])# 'VAE_7MD_3SD_500BM_50AM_10AP'
 print(model_name)
 
 logger = pl.loggers.TensorBoardLogger(exp_path / "tb_logs", name=model_name)

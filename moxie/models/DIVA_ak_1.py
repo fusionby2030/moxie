@@ -53,9 +53,10 @@ class DIVAMODEL(Base):
     def __init__(self, in_ch: int=2, out_length: int = 19,
                         alpha_prof: float = 1., alpha_mach: float = 1.,
                         beta_stoch: float = 0.01,
-                        beta_mach_unsup: float = 100., beta_mach_sup: float = 1.,
+                        beta_mach_unsup: float = 0.01, beta_mach_sup: float = 1.,
                         mach_latent_dim: int = 15, stoch_latent_dim: int = 5,
-                        encoder_end_dense_size: int = 128, hidden_dims = [2,4],
+                        encoder_end_dense_size: int = 128, 
+                        hidden_dims = [2,4], mp_hdims = [64, 32],
                         physics: bool = False, gamma_stored_energy: float = 0.0,
                         loss_type: str = 'semi-supervised', **kwargs) -> None:
 
@@ -67,8 +68,9 @@ class DIVAMODEL(Base):
         self.mach_latent_dim = mach_latent_dim
         self.encoder_end_dense_size = encoder_end_dense_size
         self.hidden_dims = hidden_dims
+        self.mp_hdims = mp_hdims
 
-        end_conv_size = get_conv_output_size(out_length, len(self.hidden_dims)) # TODO: Not implemented yet
+        end_conv_size = get_conv_output_size(out_length, len(self.hidden_dims)) 
 
         # Loss hyperparams
         self.alpha_prof = alpha_prof
@@ -78,7 +80,7 @@ class DIVAMODEL(Base):
         self.beta_stoch = beta_stoch
 
 
-        self.beta_mach_unsup =   self.beta_stoch / beta_mach_unsup
+        self.beta_mach_unsup = beta_mach_unsup
         if beta_mach_sup == 0.0:
             self.beta_mach_sup = self.beta_mach_unsup
         else:
@@ -98,7 +100,7 @@ class DIVAMODEL(Base):
 
         # Prior Regressor
 
-        self.prior_reg = PRIORreg(in_dims=num_machine_params, mach_latent_dim=self.mach_latent_dim)
+        self.prior_reg = PRIORreg(in_dims=num_machine_params, mach_latent_dim=self.mach_latent_dim, hidden_dims=self.mp_hdims)
 
         # Latent Space
 
@@ -120,7 +122,7 @@ class DIVAMODEL(Base):
 
         # Auxiliarly Regressor
 
-        self.aux_reg = AUXreg(z_mach_dim=self.mach_latent_dim, mp_size=num_machine_params)
+        self.aux_reg = AUXreg(z_mach_dim=self.mach_latent_dim, mp_size=num_machine_params, hidden_dims=self.mp_hdims)
 
     def q_zy(self, profile: Tensor) -> List[Tensor]:
         """

@@ -60,16 +60,16 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
     runner.fit(experiment, datamodule=datacls)
     # runner.test(experiment, datamodule=datacls)
 
-def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5, data_dir='', pin_memory=False):
+def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5, data_dir='', pin_memory=False, experiment_name='NEW_CONSTRAINTS'):
     search_space = {
         'LR': 0.003, # tune.loguniform(0.00001, 0.01),
-        'mach_latent_dim': tune.randint(7, 20),
-        'stoch_latent_dim': 3,
-        'beta_stoch': tune.loguniform(10e-4,10),
-        'beta_mach_unsup':  tune.qrandint(10, 500, 10),
-        'beta_mach_sup':  tune.loguniform(1e-1,2),
-        "alpha_prof": tune.qrandint(10, 500, 10),
-        "alpha_mach": tune.qrandint(10, 500, 10),
+        'mach_latent_dim': tune.randint(5, 11),
+        'stoch_latent_dim': tune.randint(3, 6),
+        'beta_stoch': tune.qloguniform(0.005,10, 0.001),
+        'beta_mach_unsup':  tune.loguniform(0.005, 10, 0.001),
+        'beta_mach_sup':  tune.choice([0.0, 1.0]) , #tune.loguniform(0.01, 1.01, 0.01),
+        "alpha_prof": tune.qrandint(1, 500, 1),
+        "alpha_mach": tune.qrandint(1, 500, 1),
         'physics': False,
         'gamma_stored_energy': 0.0,
         'encoder_end_dense_size': 128,
@@ -81,7 +81,7 @@ def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5
         reduction_factor=2)
 
     reporter = CLIReporter(
-        parameter_columns=["beta_mach_unsup", "beta_mach_sup", 'mach_latent_dim', 'alpha_prof', 'alpha_mach'],
+        parameter_columns=['stoch_latent_dim', "beta_mach_unsup", 'beta_stoch', 'mach_latent_dim', 'alpha_prof', 'alpha_mach'],
         metric_columns=["loss", "loss_mp"],
         max_report_frequency=20)
 
@@ -105,20 +105,20 @@ def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5
         log_to_file=False,
         raise_on_failed_trial=False,
         local_dir= exp_path  / 'ray_results',
-        name="PHYSICS_TUNE",
+        name=experiment_name,
         fail_fast=False)
 
     print("Best hyperparameters found were: ", analysis.best_config)
 
     df = analysis.results_df
-    df.to_csv(exp_path /'SHIT_ENCODER_SIZE.csv')
+    df.to_csv(exp_path / experiment_name)
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Search for hyperparams using raytune and HPC.')
     parser.add_argument('-gpu', '--gpus_per_trial', default=0, help='# GPUs per trial')
     parser.add_argument('-cpu', '--cpus_per_trial', default=4, help='# CPUs per trial')
     parser.add_argument('-ep', '--num_epochs', default=50, help='# Epochs to train on')
-    parser.add_argument('-pm', '--pin_memory', default=False, help='# Epochs to train on', type=bool)
-
+    parser.add_argument('-pm', '--pin_memory', default=False, help='If using GPUs, should try to set this to True', type=bool)
+    parser.add_argument('-en', '--experiment_name', default="NEW_CONSTRAINTS", help='Name Experiments')
     args = parser.parse_args()
 
     os.environ["SLURM_JOB_NAME"] = "bash"
@@ -133,4 +133,4 @@ if __name__ == '__main__':
     print(desired_path.resolve())
 
 
-    tune_asha(cpus_per_trial=int(args.cpus_per_trial), gpus_per_trial=float(args.gpus_per_trial),  num_epochs=int(args.num_epochs), data_dir=desired_path.resolve(), pin_memory=args.pin_memory)
+    tune_asha(cpus_per_trial=int(args.cpus_per_trial), gpus_per_trial=float(args.gpus_per_trial),  num_epochs=int(args.num_epochs), data_dir=desired_path.resolve(), pin_memory=args.pin_memory, experiment_name=args.experiment_name)
