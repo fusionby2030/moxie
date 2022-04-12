@@ -56,7 +56,7 @@ class DIVAMODEL(Base):
                         beta_mach_unsup: float = 0.01, beta_mach_sup: float = 1.,
                         mach_latent_dim: int = 15, stoch_latent_dim: int = 5,
                         encoder_end_dense_size: int = 128, 
-                        hidden_dims = [2,4], mp_hdims = [64, 32],
+                        hidden_dims = [2,4],  mp_hdims_cond = [64, 32],mp_hdims_aux = [64, 32],
                         physics: bool = False, gamma_stored_energy: float = 0.0,
                         loss_type: str = 'semi-supervised', **kwargs) -> None:
 
@@ -68,7 +68,8 @@ class DIVAMODEL(Base):
         self.mach_latent_dim = mach_latent_dim
         self.encoder_end_dense_size = encoder_end_dense_size
         self.hidden_dims = hidden_dims
-        self.mp_hdims = mp_hdims
+        self.mp_hdims_cond = mp_hdims_cond
+        self.mp_hdims_aux = mp_hdims_aux
 
         end_conv_size = get_conv_output_size(out_length, len(self.hidden_dims)) 
 
@@ -100,7 +101,7 @@ class DIVAMODEL(Base):
 
         # Prior Regressor
 
-        self.prior_reg = PRIORreg(in_dims=num_machine_params, mach_latent_dim=self.mach_latent_dim, hidden_dims=self.mp_hdims)
+        self.prior_reg = PRIORreg(in_dims=num_machine_params, mach_latent_dim=self.mach_latent_dim, hidden_dims=self.mp_hdims_cond)
 
         # Latent Space
 
@@ -122,7 +123,7 @@ class DIVAMODEL(Base):
 
         # Auxiliarly Regressor
 
-        self.aux_reg = AUXreg(z_mach_dim=self.mach_latent_dim, mp_size=num_machine_params, hidden_dims=self.mp_hdims)
+        self.aux_reg = AUXreg(z_mach_dim=self.mach_latent_dim, mp_size=num_machine_params, hidden_dims=self.mp_hdims_aux)
 
     def q_zy(self, profile: Tensor) -> List[Tensor]:
         """

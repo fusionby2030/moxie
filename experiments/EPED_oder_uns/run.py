@@ -37,21 +37,22 @@ dataset_path = home_path / 'data' / 'processed' / 'pedestal_profiles_ML_READY_ak
 # SEED EVERYTHING!
 
 pl.utilities.seed.seed_everything(42)
-
+# generator=torch.Generator().manual_seed(42)
+# torch.manual_seed(42)
 
 # TODO: move to a config file
-STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 4, 'pin_memory': False, 'dataset_choice': 'padded'}
+STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 3, 'pin_memory': False, 'dataset_choice': 'padded'}
 
 HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size': 512}
 
 model_hyperparams = {'in_ch': 2, 'out_length':19,
-                    'mach_latent_dim': 8, 'stoch_latent_dim': 3,
-                    'beta_stoch': 0.01,
-                    'beta_mach_unsup':  0.001,'beta_mach_sup':  0.0,
-                    'alpha_mach': 5.0, 'alpha_prof': 25.0,
+                    'mach_latent_dim': 9, 'stoch_latent_dim': 3,
+                    'beta_stoch': 6.021, 'beta_mach_unsup':  0.245,'beta_mach_sup':  0.0,
+                    'alpha_mach': 1595.0, 'alpha_prof': 1623.0,
                     'encoder_end_dense_size': 128, 
-                    'hidden_dims': [2, 4], 'mp_hdims': [64, 32], 
-                    'physics': False, 'gamma_stored_energy': 0.1,
+                    'hidden_dims': [2, 4], 'mp_hdims_cond': [70, 85], 'mp_hdims_aux': [70, 128, 240, 360], 
+                    'physics': True, 'gamma_stored_energy': 0.36,
+                    'start_sup_time': 50, 
                     'loss_type': 'semi-supervised'}
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}

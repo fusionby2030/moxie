@@ -46,9 +46,10 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
             on="validation_end")
         ]
         }
-
-    generator=torch.Generator().manual_seed(42)
-    torch.manual_seed(42)
+    
+    pl.utilities.seed.seed_everything(42)
+    # generator=torch.Generator().manual_seed(42)
+    # torch.manual_seed(42)
 
     datacls = PLDATAMODULE_AK(**data_params)
 
@@ -62,25 +63,33 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
     runner.fit(experiment, datamodule=datacls)
     # runner.test(experiment, datamodule=datacls)
 
-def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5, data_dir='', pin_memory=False, experiment_name='NEW_CONSTRAINTS'):
+def tune_asha(num_samples=2000, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5, data_dir='', pin_memory=False, experiment_name='NEW_CONSTRAINTS'):
     search_space = {
         'LR': 0.003, # tune.loguniform(0.00001, 0.01),
         'mach_latent_dim': tune.randint(5, 11),
         'stoch_latent_dim': tune.randint(3, 6),
         'beta_stoch': tune.qloguniform(0.005,10, 0.001),
-        'beta_mach_unsup':  tune.loguniform(0.005, 10, 0.001),
-        'beta_mach_sup':  tune.choice([0.0, 1.0]) , #tune.loguniform(0.01, 1.01, 0.01),
+        'beta_mach_unsup':  tune.qloguniform(0.005, 10, 0.001),
+        'beta_mach_sup':  tune.choice([0.0, 1.0, tune.qloguniform(0.01, 2.01, 0.01)]),
         "alpha_prof": tune.randint(1, 500),
         "alpha_mach": tune.randint(1, 500),
-        "start_sup_time": tune.randint(0, 1000),
-        'physics': False,
-        'gamma_stored_energy': 0.0,
+        "start_sup_time": tune.randint(0, 2000),
+        'physics': tune.choice([True, False]),
+        'gamma_stored_energy': tune.qloguniform(0.01, 2, 0.01),
         'encoder_end_dense_size': 128,
+        'mp_hdims_aux': tune.choice([[tune.randint(16, 500), tune.randint(16, 500), tune.randint(16, 500), tune.randint(16, 500), tune.randint(16, 500), tune.randint(16, 500)], 
+                                    [tune.randint(16, 500), tune.randint(16, 500), tune.randint(16, 500), tune.randint(16, 500), tune.randint(16, 500)], 
+                                    [tune.randint(16, 500), tune.randint(16, 500), tune.randint(16, 500), tune.randint(16, 500)],
+                                    [tune.randint(16, 500), tune.randint(16, 500), tune.randint(16, 500)],]),
+        'mp_hdims_cond': tune.choice([[tune.randint(16, 500), tune.randint(16, 500), tune.randint(16, 500), tune.randint(16, 500), tune.randint(16, 500), tune.randint(16, 500)], 
+                                    [tune.randint(16, 500), tune.randint(16, 500), tune.randint(16, 500), tune.randint(16, 500), tune.randint(16, 500)], 
+                                    [tune.randint(16, 500), tune.randint(16, 500), tune.randint(16, 500), tune.randint(16, 500)],
+                                    [tune.randint(16, 500), tune.randint(16, 500), tune.randint(16, 500)],])
     }
 
     scheduler = ASHAScheduler(
         max_t=num_epochs,
-        grace_period=20,
+        grace_period=35,
         reduction_factor=2)
 
     reporter = CLIReporter(
@@ -114,7 +123,7 @@ def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5
     print("Best hyperparameters found were: ", analysis.best_config)
 
     df = analysis.results_df
-    df.to_csv(exp_path / experiment_name)
+    df.to_csv(exp_path / experiment_name / '.csv')
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Search for hyperparams using raytune and HPC.')
     parser.add_argument('-gpu', '--gpus_per_trial', default=0, help='# GPUs per trial')
