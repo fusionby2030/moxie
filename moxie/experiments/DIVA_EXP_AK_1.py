@@ -48,6 +48,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         self.params = params
         self.current_device = None
         self.learning_rate = params["LR"]
+        self.scheduler_step_size = params["scheduler_step"]
         self.physics = params['physics']
         self.start_sup_time = params['start_sup_time']
 
@@ -150,6 +151,8 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
             self.logger.log_hyperparams(self.hparams, {"hp/final_loss": 0, "hp/recon": 0})
 
     def training_epoch_end(self, outputs):
+        sch = self.lr_schedulers() 
+        sch.step()
         # Outputs is whatever that is returned from training_step
 
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
@@ -239,7 +242,12 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         optimizer = optim.Adam(self.model.parameters(),
                                lr=self.params['LR'],
                                weight_decay=self.params['weight_decay'])
-        return optimizer
+
+        lr_scheduler = {
+                'scheduler': torch.optim.lr_scheduler.StepLR(optimizer, step_size=self.scheduler_step_size, gamma=0.5), 
+                'name': 'StepLR'
+                }
+        return [optimizer], [lr_scheduler]
 
     def get_cond_enc_real_for_comparison(self):
         train_data_iter = iter(self.trainer.datamodule.train_dataloader())

@@ -130,7 +130,7 @@ if __name__ == '__main__':
     parser.add_argument('-cpu', '--cpus_per_trial', default=4, help='# CPUs per trial')
     parser.add_argument('-ep', '--num_epochs', default=50, help='# Epochs to train on')
     parser.add_argument('-pm', '--pin_memory', default=False, help='If using GPUs, should try to set this to True', type=bool)
-    parser.add_argument('-en', '--experiment_name', default="NEW_CONSTRAINTS", help='Name Experiments')
+    parser.add_argument('-en', '--experiment_name', default="DEFAULT", help='Name Experiments')
     args = parser.parse_args()
 
     os.environ["SLURM_JOB_NAME"] = "bash"
