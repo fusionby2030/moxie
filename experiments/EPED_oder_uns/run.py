@@ -41,19 +41,18 @@ pl.utilities.seed.seed_everything(42)
 # torch.manual_seed(42)
 
 # TODO: move to a config file
-STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 3, 'pin_memory': False, 'dataset_choice': 'padded'}
+STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 6, 'pin_memory': False, 'dataset_choice': 'padded'}
 
-HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size': 512, 'scheduler_step': 50}
+HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size': 512, 'scheduler_step': 75}
 
 model_hyperparams = {'in_ch': 2, 'out_length':19,
                     'mach_latent_dim': 10, 'stoch_latent_dim': 3,
-                    'beta_stoch': 2.403, 'beta_mach_unsup':  0.008,'beta_mach_sup':  0.0,
-                    'alpha_mach': 11.0, 'alpha_prof': 356.0,  # 212, 306, 26, 295, 263, 336] 	[485, 499, 352, 432]
-                    'mp_hdims_aux': [212, 306, 26, 295, 263, 336], 'mp_hdims_cond':[485, 499, 352, 432], # 'mp_hdims_cond': [397, 369, 29, 113, 284], 'mp_hdims_aux': [122, 398, 463, 354, 399], 
-                    'physics': True, 'gamma_stored_energy': 0.6,
-                    'start_sup_time': 910, 
-                    'loss_type': 'semi-supervised',
-                    'hidden_dims': [2, 4], }
+                    'beta_stoch': 8.350, 'beta_mach_unsup':  0.06,'beta_mach_sup':  0.0,
+                    'alpha_mach': 42.0, 'alpha_prof': 289.0,  # 212, 306, 26, 295, 263, 336] 	[485, 499, 352, 432]
+                    'start_sup_time': 1330,
+                     'physics': False, 'gamma_stored_energy': 0.6,
+                    'mp_hdims_aux': [263, 469, 284], 'mp_hdims_cond':[20, 136, 54, 205, 154, 408], # 'mp_hdims_cond': [397, 369, 29, 113, 284], 'mp_hdims_aux': [122, 398, 463, 354, 399], 
+                    'hidden_dims': [2, 4], 'loss_type': 'semi-supervised',}
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
 
@@ -70,6 +69,8 @@ if model_hyperparams['physics']:
         model_name += '_{}GAMMA'.format(model_hyperparams['gamma_stored_energy'])
 else:
     model_name =  'SCHEDULER_SECULAR_{}MD_{}SD_{}BMUN_{}BMSUP_{}BS_{}AM_{}AP_{}EP'.format(model_hyperparams['mach_latent_dim'], model_hyperparams['stoch_latent_dim'],                   int(model_hyperparams['beta_mach_unsup']), model_hyperparams['beta_mach_sup'], model_hyperparams['beta_stoch'], int(model_hyperparams['alpha_mach']), int(model_hyperparams['alpha_prof']),trainer_params['max_epochs'])# 'VAE_7MD_3SD_500BM_50AM_10AP'
+    
+model_name = 'no_physics_decent'
 # model_name = 'DIVA_W_PHYSICS_1'
 # model_name =  'SEARCH_RESULTS{}MD_{}SD_{}BMUN_{}BMSUP_{}BS_{}AM_{}AP_{}ENCDENSE_{}EP'.format(model_hyperparams['mach_latent_dim'], model_hyperparams['stoch_latent_dim'], int(model_hyperparams['beta_mach_unsup']), model_hyperparams['beta_mach_sup'], model_hyperparams['beta_stoch'], int(model_hyperparams['alpha_mach']), int(model_hyperparams['alpha_prof']), model_hyperparams['encoder_end_dense_size'], trainer_params['max_epochs'])# 'VAE_7MD_3SD_500BM_50AM_10AP'
 print(model_name)
