@@ -267,7 +267,7 @@ class DIVAMODEL(Base):
             recon_prof_loss = F.mse_loss(out_profs, in_profs)
 
         if self.physics:
-            # start with stored energy
+            # Static pressure stored energy
             real_in_profs = torch.clone(in_profs)
             real_in_profs[:, 0] = de_standardize(real_in_profs[:, 0], D_mu, D_var)
             real_in_profs[:, 1] = de_standardize(real_in_profs[:, 1], T_mu, T_var)
@@ -278,6 +278,10 @@ class DIVAMODEL(Base):
 
             stored_E_in, stored_E_out =  boltzmann_constant*torch.prod(real_in_profs.masked_fill_(~mask, 0), 1).sum(1), boltzmann_constant*torch.prod(real_out_profs.masked_fill_(~mask, 0), 1).sum(1)
             stored_energy_loss = F.mse_loss(stored_E_in, stored_E_out)
+            
+            # Poloidal Field approximation 
+            
+            # Beta approximation
 
         physics_loss = 0.0
 

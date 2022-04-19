@@ -28,7 +28,7 @@ exp_path = file_path.parent
 # Path of moxie stuffs
 home_path = file_path.parent.parent.parent
 # Path to data
-dataset_path = home_path / 'data' / 'processed' / 'pedestal_profiles_ML_READY_ak_09022022.pickle'
+dataset_path = home_path / 'data' / 'processed' / 'pedestal_profiles_ML_READY_ak_19042022.pickle'
 # print('\n# Path to Dataset Exists? {}'.format(dataset_path.exists()))
 # print(dataset_path.resolve())
 
@@ -41,7 +41,8 @@ pl.utilities.seed.seed_everything(42)
 # torch.manual_seed(42)
 
 # TODO: move to a config file
-STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 6, 'pin_memory': False, 'dataset_choice': 'padded'}
+# dataset_choice = 'ALL', 'ALL_NO_VARIATIONS', 'SANDBOX_ALL', 'SANDBOX_NO_VARIATIONS'
+STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 4, 'pin_memory': False, 'dataset_choice': 'SANDBOX_ALL'}
 
 HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size': 512, 'scheduler_step': 75}
 
@@ -51,7 +52,7 @@ model_hyperparams = {'in_ch': 2, 'out_length':19,
                     'alpha_mach': 42.0, 'alpha_prof': 289.0,  # 212, 306, 26, 295, 263, 336] 	[485, 499, 352, 432]
                     'start_sup_time': 1330,
                      'physics': False, 'gamma_stored_energy': 0.6,
-                    'mp_hdims_aux': [263, 469, 284], 'mp_hdims_cond':[20, 136, 54, 205, 154, 408], # 'mp_hdims_cond': [397, 369, 29, 113, 284], 'mp_hdims_aux': [122, 398, 463, 354, 399], 
+                    'mp_hdims_aux': [263, 469, 284], 'mp_hdims_cond':[200,200,200, 200], # 'mp_hdims_aux': [263, 469, 284], 'mp_hdims_cond':[20, 136, 54, 205, 154, 408], # 'mp_hdims_cond': [397, 369, 29, 113, 284], 'mp_hdims_aux': [122, 398, 463, 354, 399], 
                     'hidden_dims': [2, 4], 'loss_type': 'semi-supervised',}
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}

@@ -15,7 +15,7 @@ class PLDATAMODULE_AK(pl.LightningDataModule):
     pl.lightning datamodule class, which will help with our dataloading needs :--)
     # TODO: Implement a mask or not mask ask.
     """
-    def __init__(self, data_dir: str = '', num_workers: int = 1, batch_size: int = 512, dataset_choice='padded', **params):
+    def __init__(self, data_dir: str = '', num_workers: int = 1, batch_size: int = 512, dataset_choice='ALL', **params):
         super().__init__()
 
         self.batch_size = batch_size
@@ -36,10 +36,12 @@ class PLDATAMODULE_AK(pl.LightningDataModule):
     def prepare_data(self):
         # Grab the dataset
         with open(self.file_loc, 'rb') as file:
-            full_dict = pickle.load(file)
-            train_X, train_y, train_mask, train_radii, train_ids = full_dict['train_dict'][self.dataset_choice]['profiles'],  full_dict['train_dict'][self.dataset_choice]['controls'],  full_dict['train_dict'][self.dataset_choice]['masks'], full_dict['train_dict'][self.dataset_choice]['radii'], full_dict['train_dict'][self.dataset_choice]['pulse_time_ids']
-            val_X, val_y, val_mask, val_ids = full_dict['val_dict'][self.dataset_choice]['profiles'],  full_dict['val_dict'][self.dataset_choice]['controls'], full_dict['val_dict'][self.dataset_choice]['masks'], full_dict['val_dict'][self.dataset_choice]['pulse_time_ids']
-            test_X, test_y, test_mask, test_ids = full_dict['test_dict'][self.dataset_choice]['profiles'],  full_dict['test_dict'][self.dataset_choice]['controls'], full_dict['test_dict'][self.dataset_choice]['masks'], full_dict['test_dict'][self.dataset_choice]['pulse_time_ids']
+            massive_dict = pickle.load(file)
+            full_dict = massive_dict[self.dataset_choice]
+            massive_dict = {}
+            train_X, train_y, train_mask, train_radii, train_ids = full_dict['train_dict']['padded']['profiles'],  full_dict['train_dict']['padded']['controls'],  full_dict['train_dict']['padded']['masks'], full_dict['train_dict']['padded']['radii'], full_dict['train_dict']['padded']['pulse_time_ids']
+            val_X, val_y, val_mask, val_ids = full_dict['val_dict']['padded']['profiles'],  full_dict['val_dict']['padded']['controls'], full_dict['val_dict']['padded']['masks'], full_dict['val_dict']['padded']['pulse_time_ids']
+            test_X, test_y, test_mask, test_ids = full_dict['test_dict']['padded']['profiles'],  full_dict['test_dict']['padded']['controls'], full_dict['test_dict']['padded']['masks'], full_dict['test_dict']['padded']['pulse_time_ids']
         # Convert to torch tensors, although this won't work for the raw datasets!!
         self.X_train, self.y_train = torch.from_numpy(train_X).float(), torch.from_numpy(train_y).float()
         self.X_val, self.y_val = torch.from_numpy(val_X).float(), torch.from_numpy(val_y).float()
