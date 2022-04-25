@@ -18,13 +18,13 @@ class PLDATAMODULE_AK(pl.LightningDataModule):
     def __init__(self, data_dir: str = '', num_workers: int = 1, batch_size: int = 512, dataset_choice='ALL', **params):
         super().__init__()
 
-        self.batch_size = batch_size
-        self.file_loc = data_dir
-        self.num_workers = num_workers
+        self.batch_size = batch_size # batch size of dataloaders 
+        self.file_loc = data_dir # Location of massive dict
+        self.num_workers = num_workers # CPU's to use in dataloaders
         self.mu_T, self.var_T = None, None # We are normalizing shit here you dig.
         self.mu_D, self.var_D = None, None # Density normailizing constants
         self.mu_MP, self.var_MP = None, None # Machine params normailizing constant
-        self.dataset_choice = dataset_choice
+        self.dataset_choice = dataset_choice # Which dataset to use, normally three options
 
 
         # Sometimes we want to pin the memory to a GPU so this can get passed as a kwarg.
@@ -42,32 +42,37 @@ class PLDATAMODULE_AK(pl.LightningDataModule):
             train_X, train_y, train_mask, train_radii, train_ids = full_dict['train_dict']['padded']['profiles'],  full_dict['train_dict']['padded']['controls'],  full_dict['train_dict']['padded']['masks'], full_dict['train_dict']['padded']['radii'], full_dict['train_dict']['padded']['pulse_time_ids']
             val_X, val_y, val_mask, val_ids = full_dict['val_dict']['padded']['profiles'],  full_dict['val_dict']['padded']['controls'], full_dict['val_dict']['padded']['masks'], full_dict['val_dict']['padded']['pulse_time_ids']
             test_X, test_y, test_mask, test_ids = full_dict['test_dict']['padded']['profiles'],  full_dict['test_dict']['padded']['controls'], full_dict['test_dict']['padded']['masks'], full_dict['test_dict']['padded']['pulse_time_ids']
-        # Convert to torch tensors, although this won't work for the raw datasets!!
+        
+        # Convert to float torch tensors
         self.X_train, self.y_train = torch.from_numpy(train_X).float(), torch.from_numpy(train_y).float()
         self.X_val, self.y_val = torch.from_numpy(val_X).float(), torch.from_numpy(val_y).float()
         self.X_test, self.y_test = torch.from_numpy(test_X).float(), torch.from_numpy(test_y).float()
+
+        # The mask is tricky, as it is originally a bool list, which is True for all vals to be masked. 
+        # Then is is converted into numpy (through the padding procedure), which results in a 0 for all vals to be masked, then 1 for vals not to be masked. 
+        # here we convert them to torch bool tensors again
+        # and unsqueeze them to match the same dimensionality as the profiles [#datapoints, 2, #spatial resoultion]
+        # This is necesary for the mask_fill functions. 
         self.train_mask, self.val_mask, self.test_mask = torch.from_numpy(train_mask) > 0, torch.from_numpy(val_mask) > 0, torch.from_numpy(test_mask) > 0
         self.train_mask, self.val_mask, self.test_mask = self.train_mask.unsqueeze(1),  self.val_mask.unsqueeze(1), self.test_mask.unsqueeze(1)
         self.train_mask, self.val_mask, self.test_mask = torch.repeat_interleave(self.train_mask, 2, 1 ), torch.repeat_interleave(self.val_mask, 2, 1), torch.repeat_interleave(self.test_mask, 2, 1)
+
+        # Sanity check(s)
         assert torch.isnan(self.y_train).any() == False
-
+        
         # Normalize the profiles
-        self.X_train[:, 0], self.mu_D, self.var_D = standardize_simple(self.X_train[:, 0])
-        self.X_val[:, 0] = standardize_simple(self.X_val[:, 0], mu=self.mu_D, var=self.var_D)
-        self.X_test[:, 0] = standardize_simple(self.X_test[:, 0], mu=self.mu_D, var=self.var_D)
 
-        self.X_train[:, 1], self.mu_T, self.var_T = standardize_simple(self.X_train[:, 1])
-        self.X_val[:, 1] = standardize_simple(self.X_val[:, 1], mu=self.mu_T, var=self.var_T)
-        self.X_test[:, 1] = standardize_simple(self.X_test[:, 1], mu=self.mu_T, var=self.var_T)
+        self.X_train, self.mu_D, self.var_D, self.mu_T, self.var_T = normalize_profiles(self.X_train)
+        self.X_val = normalize_profiles(self.X_val, self.mu_T, self.var_T, self.mu_D, self.var_D)
+        self.X_test = normalize_profiles(self.X_test, self.mu_T, self.var_T, self.mu_D, self.var_D)
 
         # Normalize the machine parameters
         self.y_train, self.y_val, self.y_test = replace_q95_with_qcly(self.y_train), replace_q95_with_qcly(self.y_val), replace_q95_with_qcly(self.y_test)
         self.y_train, self.mu_MP, self.var_MP = standardize_simple(self.y_train)
         self.y_val = standardize_simple(self.y_val, self.mu_MP, self.var_MP)
         self.y_test =  standardize_simple(self.y_test, self.mu_MP, self.var_MP)
-
-        # TODO: Convert everything to float?
-
+        
+        # make sure the ids are there
         self.train_ids, self.val_ids, self.test_ids = train_ids, val_ids, test_ids
 
     def setup(self, stage=None):

@@ -14,6 +14,7 @@ def standardize(x, mu, var):
 def replace_q95_with_qcly(mp_set, mu, var):
     mp_set = de_standardize(mp_set, mu, var)
     mu_0 = 1.25663706e-6 # magnetic constant
+    
     mp_set[:, 0] = ((1 + 2*mp_set[:, 6]**2) / 2.0) * (2*mp_set[:, 9]*torch.pi*mp_set[:, 2]**2) / (mp_set[:, 1] * mp_set[:, 8] * mu_0)
     mp_set = standardize(mp_set, mu, var)
     return mp_set
@@ -141,7 +142,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
             physics_dojo_results = (0.0, 0.0, 0.0, 0.0)
         """
         physics_dojo_results = (0.0, 0.0, 0.0, 0.0)
-        train_loss = self.model.loss_function(**results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.train_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks, D_norms= self.trainer.datamodule.get_density_norms(), T_norms= self.trainer.datamodule.get_temperature_norms(), physics_dojo_results=physics_dojo_results, start_sup_time=self.start_sup_time)
+        train_loss = self.model.loss_function(**results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.train_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks, D_norms= self.trainer.datamodule.get_density_norms(), T_norms= self.trainer.datamodule.get_temperature_norms(), MP_norms = self.trainer.datamodule.get_machine_norms(), physics_dojo_results=physics_dojo_results, start_sup_time=self.start_sup_time)
 
 
         return train_loss
@@ -160,18 +161,24 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         avg_KLD_stoch = torch.stack([x['KLD_stoch'] for x in outputs]).mean()
         avg_KLD_mach = torch.stack([x['KLD_mach'] for x in outputs]).mean()
         avg_recon_loss_mp = torch.stack([x['Reconstruction_Loss_mp'] for x in outputs]).mean()
-        """
-        if 'physics_loss' in outputs[0].keys():
-            avg_physics_loss = torch.stack([x['physics_loss'] for x in outputs]).mean()
-        else:
-            avg_physics_loss = 0.0
-        """
+        
+        avg_physics_loss = torch.stack([x['Physics_all'] for x in outputs]).mean()
+        avg_sse_loss = torch.stack([x['static_stored_energy'] for x in outputs]).mean()
+        avg_bpol_loss = torch.stack([x['poloidal_field_approximation'] for x in outputs]).mean()
+        avg_beta_loss = torch.stack([x['beta_approx'] for x in outputs]).mean() 
+        
+        # else:
+        #     avg_physics_loss = 0.0
+        
         metrics = {'Loss/Train': avg_loss,
                     'ReconLoss/Train': avg_recon_loss,
                     'ReconLossMP/Train': avg_recon_loss_mp,
                     'KLD_stoch/Train': avg_KLD_stoch,
-                    'KLD_mach/Train': avg_KLD_mach,}
-                    # 'physics/Train': avg_physics_loss}
+                    'KLD_mach/Train': avg_KLD_mach,
+                    'physics/all/Train': avg_physics_loss, 
+                    'physics/sse/Train': avg_sse_loss, 
+                    'physics/bpol/Train': avg_bpol_loss, 
+                    'physics/beta/Train': avg_beta_loss}
 
         self.log_dict(metrics)
         epoch_dictionary = {'loss': avg_loss}
@@ -183,7 +190,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
 
         results = self.forward(real_profile, in_mp=machine_params)
 
-        val_loss = self.model.loss_function(**results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.val_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks, D_norms= self.trainer.datamodule.get_density_norms(), T_norms= self.trainer.datamodule.get_temperature_norms(),start_sup_time=self.start_sup_time)
+        val_loss = self.model.loss_function(**results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.val_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks, D_norms= self.trainer.datamodule.get_density_norms(), T_norms= self.trainer.datamodule.get_temperature_norms(), MP_norms = self.trainer.datamodule.get_machine_norms(), start_sup_time=self.start_sup_time)
         return val_loss
 
     def validation_epoch_end(self, outputs):
@@ -192,18 +199,22 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         avg_recon_loss_mp = torch.stack([x['Reconstruction_Loss_mp'] for x in outputs]).mean()
         avg_KLD_stoch = torch.stack([x['KLD_stoch'] for x in outputs]).mean()
         avg_KLD_mach = torch.stack([x['KLD_mach'] for x in outputs]).mean()
-        """
-        if 'physics_loss' in outputs[0].keys():
-            avg_physics_loss = torch.stack([x['physics_loss'] for x in outputs]).mean()
-        else:
-            avg_physics_loss = 0.0
-        """
+        avg_bpol_loss = torch.stack([x['poloidal_field_approximation'] for x in outputs]).mean()
+        
+        # Physics losses
+        avg_physics_loss = torch.stack([x['Physics_all'] for x in outputs]).mean()
+        avg_sse_loss = torch.stack([x['static_stored_energy'] for x in outputs]).mean()
+        avg_beta_loss = torch.stack([x['beta_approx'] for x in outputs]).mean() 
+        
         metrics = {'Loss/Valid': avg_loss,
                     'ReconLoss/Valid': avg_recon_loss,
                     'ReconLossMP/Valid': avg_recon_loss_mp,
                     'KLD_stoch/Valid': avg_KLD_stoch,
-                    'KLD_mach/Valid': avg_KLD_mach,}
-                    # 'physics/Valid': avg_physics_loss}
+                    'KLD_mach/Valid': avg_KLD_mach,
+                    'physics/all/Valid': avg_physics_loss, 
+                    'physics/sse/Valid': avg_sse_loss, 
+                    'physics/bpol/Valid': avg_bpol_loss, 
+                    'physics/beta/Valid': avg_beta_loss}
 
 
         self.log_dict(metrics)
@@ -215,7 +226,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         self.current_device = real_profile.device
 
         results = self.forward(real_profile, in_mp=machine_params)
-        test_loss = self.model.loss_function(**results, machine_params=machine_params, M_N = self.params['batch_size']/ len(self.trainer.datamodule.test_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks, D_norms= self.trainer.datamodule.get_density_norms(), T_norms= self.trainer.datamodule.get_temperature_norms(), start_sup_time=self.start_sup_time)
+        test_loss = self.model.loss_function(**results, machine_params=machine_params, M_N = self.params['batch_size']/ len(self.trainer.datamodule.test_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks, D_norms= self.trainer.datamodule.get_density_norms(), T_norms= self.trainer.datamodule.get_temperature_norms(), start_sup_time=self.start_sup_time, MP_norms = self.trainer.datamodule.get_machine_norms(), )
         # Log the computational Graph!
         # self.logger.experiment.add_graph(self.model, [real_profile, machine_params], use_strict_trace=False)
 

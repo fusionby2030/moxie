@@ -1,3 +1,5 @@
+# DIVA 2 AK 
+
 from .utils_ import *
 from .base import Base
 from .AK_torch_modules import PRIORreg, ENCODER, DECODER, AUXreg
@@ -6,15 +8,11 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-# Helper Functions
-def de_standardize(x, mu, var):
-    return (x*var) + mu
 
-def standardize(x, mu, var):
-    return (x - mu) / var
-class DIVAMODEL_DOJO(Base):
+class DIVAMODEL(Base):
     """
-    A Diva model, with physics capabilities.
+    A Diva model. It is vanilla, since it only has the unsupervised + supervised loss capabilities.
+    This is without any physics contraints, and just the basic model.
 
     Parameters
     ----------
@@ -37,6 +35,14 @@ class DIVAMODEL_DOJO(Base):
         The size of the machine latent space
     stoch_latent_dim: int
         The size of the stoch latent space. Should always be smaller than mach_latent_dim
+    physics: bool
+        If True, then propogate the three physics losses
+    gamma_stored_energy: float 
+        If physics is True, this is the weighting term on the static pressure stored energy loss 
+    gamma_bpol: float 
+        If physics is True, this is the weighting term on the approximated poloidal field loss 
+    gamma_beta: float 
+        If physics is True, this is the weighting term on the beta approximation 
     loss_type: str
         Three options: 'supervised', 'unsupervised', 'semi-supervised'
         'unsupervised': Prof recon Loss + KLD_stoch(vs N(0, 1)) + KLD_mach(vs N(0, 1))
@@ -50,43 +56,55 @@ class DIVAMODEL_DOJO(Base):
     num_iterations = 0 # Trickery for the semi-supervsied loss,
     def __init__(self, in_ch: int=2, out_length: int = 19,
                         alpha_prof: float = 1., alpha_mach: float = 1.,
-                        beta_stoch: float = 0.01, beta_mach: float = 100.,
-                        gamma_stored_energy: float=0.01,
+                        beta_stoch: float = 0.01,
+                        beta_mach_unsup: float = 0.01, beta_mach_sup: float = 1.,
                         mach_latent_dim: int = 15, stoch_latent_dim: int = 5,
-                        loss_type: str = 'semi-supervised', physics= True, **kwargs) -> None:
+                        encoder_end_dense_size: int = 128, 
+                        hidden_dims = [2,4],  mp_hdims_cond = [64, 32],mp_hdims_aux = [64, 32],
+                        physics: bool = False, gamma_stored_energy: float = 0.0,gamma_bpol: float = 0.0, gamma_beta:float = 0.0, 
+                        loss_type: str = 'semi-supervised', **kwargs) -> None:
 
-        super(DIVAMODEL_DOJO, self).__init__()
+        super(DIVAMODEL, self).__init__()
 
         # Architecture params
         num_machine_params = 13 # maybe make its own variable? Or try from KWARGS
         self.stoch_latent_dim = stoch_latent_dim
         self.mach_latent_dim = mach_latent_dim
-        self.encoder_end_dense_size = 128 # Future versions this would be a variable to test ablations to size of output from encoder.
-        self.hidden_dims = [2, 4] # Future versions would make this a variable to test ablations to amount of conv filtering/channel kerneling, blah blah
-        self.physics = physics
-        end_conv_size = get_conv_output_size(out_length, len(self.hidden_dims)) # TODO: Not implemented yet
+        self.encoder_end_dense_size = encoder_end_dense_size
+        self.hidden_dims = hidden_dims
+        self.mp_hdims_cond = mp_hdims_cond
+        self.mp_hdims_aux = mp_hdims_aux
+
+        end_conv_size = get_conv_output_size(out_length, len(self.hidden_dims)) 
 
         # Loss hyperparams
+
         self.alpha_prof = alpha_prof
         self.alpha_mach = alpha_mach
         self.beta_stoch = beta_stoch
+        self.beta_mach_unsup = beta_mach_unsup
+        if beta_mach_sup == 0.0:
+            self.beta_mach_sup = self.beta_mach_unsup
+        else:
+            self.beta_mach_sup = beta_mach_sup
+
+        self.physics = physics
         self.gamma_stored_energy = gamma_stored_energy
-        self.beta_mach = self.beta_stoch / beta_mach
-
-
+        self.gamma_bpol = gamma_bpol
+        self.gamma_beta = gamma_beta
         self.loss_type = loss_type
 
          # Encoders
 
-        self.encoder_n = ENCODER()
-        self.encoder_t = ENCODER()
+        self.encoder_n = ENCODER() # ENCODER(hidden_dims=self.hidden_dims)
+        self.encoder_t = ENCODER()# ENCODER(hidden_dims=self.hidden_dims)
 
         self.encoder_end = nn.Linear(2*(self.hidden_dims[-1] * end_conv_size), self.encoder_end_dense_size)
 
 
         # Prior Regressor
 
-        self.prior_reg = PRIORreg(in_dims=num_machine_params, mach_latent_dim=self.mach_latent_dim)
+        self.prior_reg = PRIORreg(in_dims=num_machine_params, mach_latent_dim=self.mach_latent_dim, hidden_dims=self.mp_hdims_cond)
 
         # Latent Space
 
@@ -100,15 +118,15 @@ class DIVAMODEL_DOJO(Base):
         # Decoder
 
         self.decoder_input = nn.Linear(self.stoch_latent_dim + self.mach_latent_dim, self.hidden_dims[-1]*end_conv_size)
-        self.decoder_n = DECODER(end_conv_size=end_conv_size)
-        self.decoder_t = DECODER(end_conv_size=end_conv_size)
+        self.decoder_t = DECODER(end_conv_size=end_conv_size) # DECODER(hidden_dims = self.hidden_dims[::-1], end_conv_size=end_conv_size)
+        self.decoder_n = DECODER(end_conv_size=end_conv_size) # DECODER(hidden_dims = self.hidden_dims[::-1], end_conv_size=end_conv_size)
         final_size = self.decoder_n.final_size
         self.final_layer_n = nn.Linear(final_size, out_length)
         self.final_layer_t = nn.Linear(final_size, out_length)
 
         # Auxiliarly Regressor
 
-        self.aux_reg = AUXreg(z_mach_dim=self.mach_latent_dim, mp_size=num_machine_params)
+        self.aux_reg = AUXreg(z_mach_dim=self.mach_latent_dim, mp_size=num_machine_params, hidden_dims=self.mp_hdims_aux)
 
     def q_zy(self, profile: Tensor) -> List[Tensor]:
         """
@@ -128,15 +146,14 @@ class DIVAMODEL_DOJO(Base):
             The latent space is parameterized by mean and logvar of the stoch and mach subspaces
             i.e., [mu_stoch, var_stoch, mu_mach, var_mach]
         """
-        # print(profile[0, :])
-        # print(profile[:, :, 0])
-        # print(profile[:, : ,0].shape)
-        # print(profile[0, :])
+        # Propogate density and temperature profiles through respective encoders 
         encoded_prof_n = self.encoder_n(profile[:, 0:1, :])
         encoded_prof_t = self.encoder_t(profile[:, 1:, :])
+        # concat the output 
         concat = torch.cat((encoded_prof_n, encoded_prof_t), 1)
+        # Feed concat output into one last dense layer 
         encoded_prof = self.encoder_end(concat)
-
+        # Determine the latent variables 
         mu_stoch = self.fc_mu_stoch(encoded_prof)
         var_stoch = self.fc_var_stoch(encoded_prof)
         mu_mach = self.fc_mu_mach(encoded_prof)
@@ -163,7 +180,6 @@ class DIVAMODEL_DOJO(Base):
             i.e., [c_mu_mach, c_var_mach] with shapes???
         """
 
-        # conditional_priors
         c_mu_mach, c_var_mach = self.prior_reg(machine_params)
 
         return [c_mu_mach, c_var_mach]
@@ -229,7 +245,6 @@ class DIVAMODEL_DOJO(Base):
                 'out_mp': out_mp, 'in_mp': in_mp}
 
     def loss_function(self, *args, **kwargs) -> Tensor:
-        boltzmann_constant = 1.380e-23
         # Assumes that the above dictionary is sent
         prior_mu = kwargs['prior_mu']
         prior_stoch = kwargs['prior_stoch']
@@ -241,43 +256,62 @@ class DIVAMODEL_DOJO(Base):
         in_profs = kwargs['in_profs']
         out_mp = kwargs['out_mp']
         in_mp = kwargs['in_mp']
+        device = in_profs.device
+        start_sup_time = kwargs['start_sup_time']
+        # This is really sub optimal, should cache these before.
         D_mu, D_var = kwargs['D_norms']
         T_mu, T_var = kwargs['T_norms']
-        device = in_profs.device
+        MP_mu, MP_var = kwargs['MP_norms']
+        
         D_mu, D_var= D_mu.to(device), D_var.to(device)
         T_mu, T_var = T_mu.to(device), T_var.to(device)
-        if 'cutoff' in kwargs:
-            cutoff= kwargs['cutoff']
-        else:
-            cutoff =0
+        MP_mu, MP_var = MP_mu.to(device), MP_var.to(device)
+        
         if 'mask' in kwargs:
             mask = kwargs['mask']
             recon_prof_loss = F.mse_loss(out_profs[mask], in_profs[mask])
-
-            stored_E_in, stored_E_out = torch.zeros(10), torch.zeros(10)
-            compare_mp_loss, compare_density_limit = 0.0, 0.0
-            if self.physics and self.num_iterations > cutoff:
-                # Apparently not necessary for the static electron pressure energy
-                real_in_profs = torch.clone(in_profs)
-                real_in_profs[:, 0] = de_standardize(real_in_profs[:, 0], D_mu, D_var)
-                real_in_profs[:, 1] = de_standardize(real_in_profs[:, 1], T_mu, T_var)
-
-                real_out_profs = torch.clone(out_profs)
-                real_out_profs[:, 0] = de_standardize(real_out_profs[:, 0], D_mu, D_var)
-                real_out_profs[:, 1] = de_standardize(real_out_profs[:, 1], T_mu, T_var)
-
-                stored_E_in, stored_E_out =  boltzmann_constant*torch.prod(real_in_profs.masked_fill_(~mask, 0), 1).sum(1), boltzmann_constant*torch.prod(real_out_profs.masked_fill_(~mask, 0), 1).sum(1)
-                # stored_E_in, stored_E_out =  torch.prod(in_profs.masked_fill_(~mask, 0), 1).sum(1), torch.prod(out_profs.masked_fill_(~mask, 0), 1).sum(1)
-                if 'physics_dojo_results' in kwargs and kwargs['batch_idx']%3 == 0:
-                    out_profs_comparison, out_profs_cond_stand_clamped, out_mp_encoded, out_mp_cond = kwargs['physics_dojo_results']
-                    compare_mp_loss = F.mse_loss(out_mp_encoded, out_mp_cond)
-                    compare_density_limit = F.mse_loss(out_profs_comparison, out_profs_cond_stand_clamped)
-
         else:
-            if self.physics:
-                stored_E_in, stored_E_out =  torch.prod(in_profs, 1).sum(1), torch.prod(out_profs, 1).sum(1)
             recon_prof_loss = F.mse_loss(out_profs, in_profs)
 
+        
+        real_in_mps = torch.clone(in_mp)
+        real_out_mps = torch.clone(out_mp)
+        
+        real_in_mps = de_standardize(real_in_mps, MP_mu, MP_var)
+        real_out_mps = de_standardize(real_out_mps, MP_mu, MP_var)
+        
+        # Bpol approximation 
+        
+        approx_bpol_in = bpol_approx(real_in_mps)
+        approx_bpol_out = bpol_approx(real_out_mps)
+        
+        bpol_loss = F.mse_loss(approx_bpol_in, approx_bpol_out)
+        
+        # Static pressure stored energy
+        real_in_profs = torch.clone(in_profs)
+        real_in_profs = normalize_profiles(real_in_profs, T_mu, T_var, D_mu, D_var, de_norm=True)
+
+        real_out_profs = torch.clone(out_profs)
+        real_out_profs = normalize_profiles(real_out_profs, T_mu, T_var, D_mu, D_var, de_norm=True)
+
+        stored_E_in = static_pressure_stored_energy_approximation(real_in_profs, mask)
+        stored_E_out = static_pressure_stored_energy_approximation(real_out_profs, mask)
+
+        # stored_E_in, stored_E_out =  boltzmann_constant*torch.prod(real_in_profs.masked_fill_(~mask, 0), 1).sum(1), boltzmann_constant*torch.prod(real_out_profs.masked_fill_(~mask, 0), 1).sum(1)
+        stored_energy_loss = F.mse_loss(stored_E_in, stored_E_out)
+
+        # Beta approximation
+        approx_beta_in = beta_approximation(real_in_profs, real_in_mps)
+        approx_beta_out = beta_approximation(real_out_profs, real_out_mps)
+        
+        beta_loss = F.mse_loss(approx_beta_in, approx_beta_out)
+        
+        physics_loss = 0.0
+
+        if self.physics:
+            physics_loss += self.gamma_stored_energy*stored_energy_loss
+            physics_loss += self.gamma_bpol*bpol_loss
+            physics_loss += self.gamma_beta*beta_loss        
 
         recon_mp_loss = F.mse_loss(out_mp, in_mp)
 
@@ -289,23 +323,17 @@ class DIVAMODEL_DOJO(Base):
             ).mean(0).sum()
 
         self.num_iterations += 1
-        physics_loss = 0.0
-        if self.physics:
-            physics_loss += self.gamma_stored_energy*F.mse_loss(stored_E_in, stored_E_out)
-            physics_loss += compare_mp_loss
-            physics_loss += compare_density_limit
 
         if self.loss_type=='unsupervised':
-        # Z_machine latent space losses
+            # Z_machine latent space losses
             unsup_kld_loss = torch.distributions.kl.kl_divergence(
                  torch.distributions.normal.Normal(mu_mach, torch.exp(0.5*log_var_mach)),
                  torch.distributions.normal.Normal(0, 1)
                  ).mean(0).sum()
 
-            unsupervised_loss = self.alpha_prof * recon_prof_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach * unsup_kld_loss
+            unsupervised_loss = self.alpha_prof * recon_prof_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach_unsup * unsup_kld_loss
             return {'loss': unsupervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': unsup_kld_loss, 'Reconstruction_Loss': recon_prof_loss, 'Reconstruction_Loss_mp': recon_mp_loss}
         elif self.loss_type == 'supervised':
-
             sup_kld_loss =torch.distributions.kl.kl_divergence(
                  torch.distributions.normal.Normal(mu_mach, torch.exp(0.5*log_var_mach)),
                  torch.distributions.normal.Normal(prior_mu, torch.exp(0.5*prior_stoch))
@@ -313,24 +341,25 @@ class DIVAMODEL_DOJO(Base):
 
             supervised_loss = self.alpha_prof * recon_prof_loss + self.alpha_mach * recon_mp_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach * sup_kld_loss#  + physics_loss
             return {'loss': supervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': supervised_loss, 'Reconstruction_Loss_mp': recon_mp_loss, 'Reconstruction_Loss': recon_prof_loss,}#  'physics_loss': physics_loss}
+
         elif self.loss_type == 'semi-supervised':
-            if self.num_iterations%2 == 1:
+            if self.num_iterations%2 == 1 and self.num_iterations > start_sup_time:
                 sup_kld_loss =torch.distributions.kl.kl_divergence(
                  torch.distributions.normal.Normal(mu_mach, torch.exp(0.5*log_var_mach)),
                  torch.distributions.normal.Normal(prior_mu, torch.exp(0.5*prior_stoch))
                  ).mean(0).sum()
 
-                supervised_loss = self.alpha_prof * recon_prof_loss + self.alpha_mach * recon_mp_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach * sup_kld_loss + physics_loss
+                supervised_loss = self.alpha_prof * recon_prof_loss + self.alpha_mach * recon_mp_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach_sup * sup_kld_loss + physics_loss
 
-                return {'loss': supervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': supervised_loss, 'Reconstruction_Loss_mp': recon_mp_loss, 'Reconstruction_Loss': recon_prof_loss,}#  'physics_loss': physics_loss}
+                return {'loss': supervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': sup_kld_loss, 'Reconstruction_Loss_mp': recon_mp_loss, 'Reconstruction_Loss': recon_prof_loss, 'Physics_all': physics_loss, 'static_stored_energy': stored_energy_loss, 'poloidal_field_approximation': bpol_loss, 'beta_approx': beta_loss}
             else:
                 unsup_kld_loss = torch.distributions.kl.kl_divergence(
                  torch.distributions.normal.Normal(mu_mach, torch.exp(0.5*log_var_mach)),
                  torch.distributions.normal.Normal(0, 1)
                  ).mean(0).sum()
 
-                unsupervised_loss = self.alpha_prof * recon_prof_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach * unsup_kld_loss
-                return {'loss': unsupervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': unsup_kld_loss, 'Reconstruction_Loss': recon_prof_loss, 'Reconstruction_Loss_mp': recon_mp_loss}
+                unsupervised_loss = self.alpha_prof * recon_prof_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach_unsup * unsup_kld_loss
+                return {'loss': unsupervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': unsup_kld_loss, 'Reconstruction_Loss': recon_prof_loss, 'Reconstruction_Loss_mp': recon_mp_loss, 'Physics_all': physics_loss, 'static_stored_energy': stored_energy_loss, 'poloidal_field_approximation': bpol_loss, 'beta_approx': beta_loss}
         else:
             raise ValueError('Undefined Loss type, choose between unsupervised or supervised')
 

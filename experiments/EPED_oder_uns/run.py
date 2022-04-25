@@ -14,7 +14,7 @@ print("""\
 
 import sys, os, pathlib
 
-from moxie.models.DIVA_ak_1 import DIVAMODEL
+from moxie.models.DIVA_ak_2 import DIVAMODEL
 from moxie.data.profile_lightning_module import PLDATAMODULE_AK
 from moxie.experiments.DIVA_EXP_AK_1 import EXAMPLE_DIVA_EXP_AK
 
@@ -42,7 +42,7 @@ pl.utilities.seed.seed_everything(42)
 
 # TODO: move to a config file
 # dataset_choice = 'ALL', 'ALL_NO_VARIATIONS', 'SANDBOX_ALL', 'SANDBOX_NO_VARIATIONS'
-STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 4, 'pin_memory': False, 'dataset_choice': 'SANDBOX_ALL'}
+STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 4, 'pin_memory': False, 'dataset_choice': 'ALL'}
 
 HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size': 512, 'scheduler_step': 75}
 
@@ -51,8 +51,8 @@ model_hyperparams = {'in_ch': 2, 'out_length':19,
                     'beta_stoch': 8.350, 'beta_mach_unsup':  0.06,'beta_mach_sup':  0.0,
                     'alpha_mach': 42.0, 'alpha_prof': 289.0,  # 212, 306, 26, 295, 263, 336] 	[485, 499, 352, 432]
                     'start_sup_time': 1330,
-                     'physics': False, 'gamma_stored_energy': 0.6,
-                    'mp_hdims_aux': [263, 469, 284], 'mp_hdims_cond':[200,200,200, 200], # 'mp_hdims_aux': [263, 469, 284], 'mp_hdims_cond':[20, 136, 54, 205, 154, 408], # 'mp_hdims_cond': [397, 369, 29, 113, 284], 'mp_hdims_aux': [122, 398, 463, 354, 399], 
+                     'physics': True, 'gamma_stored_energy': 20.0, 'gamma_bpol': 20.0, 'gamma_beta': 1000.0, 
+                    'mp_hdims_aux': [263, 469, 284], 'mp_hdims_cond':[20, 136, 54, 205, 154, 408], # 'mp_hdims_aux': [263, 469, 284], 'mp_hdims_cond':[20, 136, 54, 205, 154, 408], # 'mp_hdims_cond': [397, 369, 29, 113, 284], 'mp_hdims_aux': [122, 398, 463, 354, 399], 
                     'hidden_dims': [2, 4], 'loss_type': 'semi-supervised',}
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
@@ -71,9 +71,9 @@ if model_hyperparams['physics']:
 else:
     model_name =  'SCHEDULER_SECULAR_{}MD_{}SD_{}BMUN_{}BMSUP_{}BS_{}AM_{}AP_{}EP'.format(model_hyperparams['mach_latent_dim'], model_hyperparams['stoch_latent_dim'],                   int(model_hyperparams['beta_mach_unsup']), model_hyperparams['beta_mach_sup'], model_hyperparams['beta_stoch'], int(model_hyperparams['alpha_mach']), int(model_hyperparams['alpha_prof']),trainer_params['max_epochs'])# 'VAE_7MD_3SD_500BM_50AM_10AP'
     
-model_name = 'no_physics_decent'
+# model_name = 'no_physics_decent'
 # model_name = 'DIVA_W_PHYSICS_1'
-# model_name =  'SEARCH_RESULTS{}MD_{}SD_{}BMUN_{}BMSUP_{}BS_{}AM_{}AP_{}ENCDENSE_{}EP'.format(model_hyperparams['mach_latent_dim'], model_hyperparams['stoch_latent_dim'], int(model_hyperparams['beta_mach_unsup']), model_hyperparams['beta_mach_sup'], model_hyperparams['beta_stoch'], int(model_hyperparams['alpha_mach']), int(model_hyperparams['alpha_prof']), model_hyperparams['encoder_end_dense_size'], trainer_params['max_epochs'])# 'VAE_7MD_3SD_500BM_50AM_10AP'
+
 print(model_name)
 
 logger = pl.loggers.TensorBoardLogger(exp_path / "tb_logs", name=model_name)
