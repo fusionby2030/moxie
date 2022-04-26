@@ -42,17 +42,17 @@ pl.utilities.seed.seed_everything(42)
 
 # TODO: move to a config file
 # dataset_choice = 'ALL', 'ALL_NO_VARIATIONS', 'SANDBOX_ALL', 'SANDBOX_NO_VARIATIONS'
-STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 4, 'pin_memory': False, 'dataset_choice': 'ALL'}
+STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 4, 'pin_memory': False, 'dataset_choice': 'SANDBOX_NO_VARIATIONS'}
 
-HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size': 512, 'scheduler_step': 75}
+HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size':256, 'scheduler_step': 10000}
 
 model_hyperparams = {'in_ch': 2, 'out_length':19,
-                    'mach_latent_dim': 10, 'stoch_latent_dim': 3,
-                    'beta_stoch': 8.350, 'beta_mach_unsup':  0.06,'beta_mach_sup':  0.0,
-                    'alpha_mach': 42.0, 'alpha_prof': 289.0,  # 212, 306, 26, 295, 263, 336] 	[485, 499, 352, 432]
-                    'start_sup_time': 1330,
-                     'physics': True, 'gamma_stored_energy': 20.0, 'gamma_bpol': 20.0, 'gamma_beta': 1000.0, 
-                    'mp_hdims_aux': [263, 469, 284], 'mp_hdims_cond':[20, 136, 54, 205, 154, 408], # 'mp_hdims_aux': [263, 469, 284], 'mp_hdims_cond':[20, 136, 54, 205, 154, 408], # 'mp_hdims_cond': [397, 369, 29, 113, 284], 'mp_hdims_aux': [122, 398, 463, 354, 399], 
+                    'mach_latent_dim': 13, 'stoch_latent_dim': 3,
+                    'beta_stoch': 1.1, 'beta_mach_unsup':  0.0001,'beta_mach_sup':  1.0,
+                    'alpha_mach': 150.0, 'alpha_prof': 500.0,  # 212, 306, 26, 295, 263, 336] 	[485, 499, 352, 432]
+                    'start_sup_time': 1000,
+                    'physics': True, 'gamma_stored_energy': 20.0, 'gamma_bpol': 1.0, 'gamma_beta': 1.0, 
+                    'mp_hdims_aux': [256, 128, 64], 'mp_hdims_cond':[256, 128, 64], # 'mp_hdims_aux': [263, 469, 284], 'mp_hdims_cond':[20, 136, 54, 205, 154, 408], # 'mp_hdims_cond': [397, 369, 29, 113, 284], 'mp_hdims_aux': [122, 398, 463, 354, 399], 
                     'hidden_dims': [2, 4], 'loss_type': 'semi-supervised',}
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
@@ -63,7 +63,7 @@ datacls = PLDATAMODULE_AK(**params)
 
 model = DIVAMODEL(**model_hyperparams)
 
-trainer_params = {'max_epochs': 100, 'gradient_clip_val': 0.5, 'gradient_clip_algorithm': 'value'}
+trainer_params = {'max_epochs': 50, 'gradient_clip_val': 0.5, 'gradient_clip_algorithm': 'value'}
 if model_hyperparams['physics']:
     model_name =  'SCHEDULER_PHYSICS_{}MD_{}SD_{}BMUN_{}BMSUP_{}BS_{}AM_{}AP_{}EP'.format(model_hyperparams['mach_latent_dim'], model_hyperparams['stoch_latent_dim'], int(model_hyperparams['beta_mach_unsup']), model_hyperparams['beta_mach_sup'], model_hyperparams['beta_stoch'], int(model_hyperparams['alpha_mach']), int(model_hyperparams['alpha_prof']), trainer_params['max_epochs'])# 'VAE_7MD_3SD_500BM_50AM_10AP'
     if model_hyperparams['gamma_stored_energy'] > 0.0:
