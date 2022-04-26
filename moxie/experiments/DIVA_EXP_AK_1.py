@@ -52,6 +52,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         self.scheduler_step_size = params["scheduler_step"]
         self.physics = params['physics']
         self.start_sup_time = params['start_sup_time']
+        self.save_hyperparameters()
 
 
     def forward(self, input, **kwargs):
@@ -153,7 +154,8 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
 
     def training_epoch_end(self, outputs):
         sch = self.lr_schedulers() 
-        sch.step()
+        if sch is not None: 
+            sch.step()
         # Outputs is whatever that is returned from training_step
 
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
@@ -253,11 +255,13 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         optimizer = optim.Adam(self.model.parameters(),
                                lr=self.params['LR'],
                                weight_decay=self.params['weight_decay'])
-
-        lr_scheduler = {
+        if self.scheduler_step_size > 0.0: 
+            lr_scheduler = {
                 'scheduler': torch.optim.lr_scheduler.StepLR(optimizer, step_size=self.scheduler_step_size, gamma=0.5), 
                 'name': 'StepLR'
                 }
+        else: 
+            return [optimizer]
         return [optimizer], [lr_scheduler]
 
     def get_cond_enc_real_for_comparison(self):
@@ -440,7 +444,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         axs[1, 2].plot(val_density_enc[k].squeeze() * val_temperature_enc[k].squeeze(), label='Encoder', lw=4)
 
 
-        k = 322
+        k = 250
         axs[2, 0].plot(val_temperature_cond[k].squeeze(), label='Conditional', lw=4)
         axs[2, 1].plot(val_density_cond[k].squeeze(), label='Conditional', lw=4)
         axs[2, 2].plot(val_density_cond[k].squeeze() * val_temperature_cond[k].squeeze(), label='Conditional', lw=4)

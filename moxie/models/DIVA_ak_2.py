@@ -306,7 +306,7 @@ class DIVAMODEL(Base):
         
         beta_loss = F.mse_loss(approx_beta_in, approx_beta_out)
         
-        physics_loss = 0.0
+        physics_loss = torch.zeros_like(recon_prof_loss)
 
         if self.physics:
             physics_loss += self.gamma_stored_energy*stored_energy_loss
@@ -348,7 +348,6 @@ class DIVAMODEL(Base):
                  torch.distributions.normal.Normal(mu_mach, torch.exp(0.5*log_var_mach)),
                  torch.distributions.normal.Normal(prior_mu, torch.exp(0.5*prior_stoch))
                  ).mean(0).sum()
-
                 supervised_loss = self.alpha_prof * recon_prof_loss + self.alpha_mach * recon_mp_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach_sup * sup_kld_loss + physics_loss
 
                 return {'loss': supervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': sup_kld_loss, 'Reconstruction_Loss_mp': recon_mp_loss, 'Reconstruction_Loss': recon_prof_loss, 'Physics_all': physics_loss, 'static_stored_energy': stored_energy_loss, 'poloidal_field_approximation': bpol_loss, 'beta_approx': beta_loss}
