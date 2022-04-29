@@ -28,7 +28,7 @@ exp_path = file_path.parent
 # Path of moxie stuffs
 home_path = file_path.parent.parent.parent
 # Path to data
-dataset_path = home_path / 'data' / 'processed' / 'pedestal_profiles_ML_READY_ak_19042022.pickle'
+dataset_path = home_path / 'data' / 'processed' / 'pedestal_profiles_ML_READY_ak_19042022_final.pickle'
 # print('\n# Path to Dataset Exists? {}'.format(dataset_path.exists()))
 # print(dataset_path.resolve())
 
@@ -44,15 +44,16 @@ pl.utilities.seed.seed_everything(42)
 # dataset_choice = 'ALL', 'ALL_NO_VARIATIONS', 'SANDBOX_ALL', 'SANDBOX_NO_VARIATIONS'
 STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 4, 'pin_memory': False, 'dataset_choice': 'SANDBOX_NO_VARIATIONS'}
 
-HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size':256, 'scheduler_step': 10000}
+HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size':512, 'scheduler_step': 0}
+
 
 model_hyperparams = {'in_ch': 2, 'out_length':19,
-                    'mach_latent_dim': 6, 'stoch_latent_dim': 3,
-                    'beta_stoch': 1.0, 'beta_mach_unsup':  0.0013,'beta_mach_sup':  2.0,
-                    'alpha_mach': 500.0, 'alpha_prof': 500.0,  # 212, 306, 26, 295, 263, 336] 	[485, 499, 352, 432]
-                    'start_sup_time': 1000,
-                    'physics': False, 'gamma_stored_energy': 20.0, 'gamma_bpol': 1.0, 'gamma_beta': 1.0, 
-                    'mp_hdims_aux': [256, 128, 64], 'mp_hdims_cond':[256, 128, 64], # 'mp_hdims_aux': [263, 469, 284], 'mp_hdims_cond':[20, 136, 54, 205, 154, 408], # 'mp_hdims_cond': [397, 369, 29, 113, 284], 'mp_hdims_aux': [122, 398, 463, 354, 399], 
+                    'mach_latent_dim': 9, 'stoch_latent_dim': 3,
+                    'beta_stoch': 1.0, 'beta_mach_unsup': 0.0273,'beta_mach_sup':  10.00,
+                    'alpha_mach': 500, 'alpha_prof': 379.0,  
+                    'start_sup_time': 1500,
+                    'physics': False, 'gamma_stored_energy': 500.0, 'gamma_bpol': 0.0, 'gamma_beta': 0.0, 
+                    'mp_hdims_aux': [64, 32], 'mp_hdims_cond':[64, 32], 
                     'hidden_dims': [2, 4], 'loss_type': 'semi-supervised',}
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}

@@ -48,15 +48,15 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
         'callbacks': [
         TuneReportCallback(
             metrics={
-                "loss": "ReconLoss/Valid",
-                "KLD_mach": "KLD_mach/Valid",
-                "KLD_stoch": "KLD_stoch/Valid",
-                'loss_mp': 'ReconLossMP/Valid'
-            },
-            on="validation_end")
-        ]
-        }
-    
+                        "loss": "ReconLoss/Valid",
+                        "KLD_mach": "KLD_mach/Valid",
+                        "KLD_stoch": "KLD_stoch/Valid",
+                        'loss_mp': 'ReconLossMP/Valid'
+                    },
+                    on="validation_end")
+                ]
+                }
+            
     pl.utilities.seed.seed_everything(42)
     # generator=torch.Generator().manual_seed(42)
     # torch.manual_seed(42)
@@ -76,21 +76,21 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
 def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5, data_dir='', pin_memory=False, experiment_name='NEW_CONSTRAINTS'):
     search_space = {
         'LR': 0.003, # tune.loguniform(0.00001, 0.01),
-        'mach_latent_dim': tune.choice([6, 7, 8, 9]),
-        'stoch_latent_dim': tune.choice([3, 4, 5]),
+        'mach_latent_dim': 9, # tune.choice([6, 7, 8, 9]),
+        'stoch_latent_dim': 3, # tune.choice([3, 4, 5]),
         'beta_stoch': 1.0, # tune.qloguniform(0.005,10, 0.001),
-        'beta_mach_unsup': tune.qloguniform(0.0001, 0.1, 0.0001),  # tune.qloguniform(0.005, 10, 0.001),
-        'beta_mach_sup':  2.0, # tune.choice([0.0, 1.0, tune.qloguniform(0.01, 2.01, 0.01)]),
-        "alpha_prof": 500., # tune.randint(1, 500),
-        "alpha_mach": 500, # tune.randint(1, 500),
+        'beta_mach_unsup': tune.qloguniform(0.0001, 0.01, 0.0001),  # tune.qloguniform(0.005, 10, 0.001),
+        'beta_mach_sup':  10.0, # tune.choice([0.0, 1.0, tune.qloguniform(0.01, 2.01, 0.01)]),
+        "alpha_prof": tune.randint(100, 1000),
+        "alpha_mach": 500., # tune.randint(100, 500),
         "start_sup_time": 1000., # tune.randint(0, 2000),
         'physics': False, # tune.choice([True, False]),
         'gamma_stored_energy': 0.0, # tune.qloguniform(0.01, 2, 0.01),
         'encoder_end_dense_size': 128, # 128,
         'dataset_choice': 'SANDBOX_NO_VARIATIONS',
         'scheduler_step': 0.0,
-        'mp_hdmis_aux': [256, 128, 64], 
-        'mp_hdmis_cond': [256, 128, 64], }
+        'mp_hdims_aux': [64, 32], 
+        'mp_hdims_cond': [64, 32], }
 
 
     scheduler = ASHAScheduler(
@@ -99,7 +99,7 @@ def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5
         reduction_factor=2)
 
     reporter = CLIReporter(
-        parameter_columns=['stoch_latent_dim','mach_latent_dim', "beta_mach_unsup"],
+        parameter_columns=["beta_mach_unsup", "alpha_prof"],
         metric_columns=["loss", "loss_mp", 'KLD_stoch', 'KLD_mach'],
         max_report_frequency=10, 
         max_progress_rows=30, 

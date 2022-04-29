@@ -42,17 +42,16 @@ def replace_q95_with_qcly(mp_set):
     return mp_set
 
 class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
-    def __init__(self, model=None, params: dict = {'LR': 0.001}) -> None:
+    def __init__(self, model=None, hparams: dict = {'LR': 0.001}) -> None:
         super(EXAMPLE_DIVA_EXP_AK, self).__init__()
 
         self.model = model
-        self.params = params
+        self.params = hparams
         self.current_device = None
-        self.learning_rate = params["LR"]
-        self.scheduler_step_size = params["scheduler_step"]
-        self.physics = params['physics']
-        self.start_sup_time = params['start_sup_time']
-        self.save_hyperparameters()
+        self.learning_rate = hparams["LR"]
+        self.scheduler_step_size = hparams["scheduler_step"]
+        self.physics = hparams['physics']
+        self.start_sup_time = hparams['start_sup_time']
 
 
     def forward(self, input, **kwargs):
@@ -150,7 +149,8 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
 
     def on_train_start(self):
         if self.current_epoch == 1:
-            self.logger.log_hyperparams(self.hparams, {"hp/final_loss": 0, "hp/recon": 0})
+            self.logger.experiment.add_hparams(hparam_dict= self.params)
+            # self.logger.log_hyperparams(self.hparams, {"hp/final_loss": 0, "hp/recon": 0})
 
     def training_epoch_end(self, outputs):
         sch = self.lr_schedulers() 
