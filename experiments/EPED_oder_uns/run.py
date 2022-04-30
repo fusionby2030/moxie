@@ -94,10 +94,3 @@ state = {'model': model.state_dict(),
         }
 model_pth_name = 'modelstatedict_' + model_name + '.pth'
 torch.save(state, exp_path / 'model_results' / model_pth_name)
-
-
-
-
-
-
-# Do something with it
