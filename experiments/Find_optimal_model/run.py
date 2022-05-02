@@ -46,15 +46,15 @@ STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 4, 'pin_memory': False,
 
 HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size':512, 'scheduler_step': 0}
 
-
+# 'semi-supervised-start', 'semi-supervsied-cutoff', 'supervised'
 model_hyperparams = {'in_ch': 2, 'out_length':19,
-                    'mach_latent_dim': 9, 'stoch_latent_dim': 3,
-                    'beta_stoch': 1.0, 'beta_mach_unsup': 0.0273,'beta_mach_sup':  10.00,
+                    'mach_latent_dim': 9, 'stoch_latent_dim': 3, # 0.0273
+                    'beta_stoch': 5.0, 'beta_mach_unsup': 0.025,'beta_mach_sup':  2.00,
                     'alpha_mach': 500, 'alpha_prof': 379.0,  
                     'start_sup_time': 1500,
-                    'physics': False, 'gamma_stored_energy': 500.0, 'gamma_bpol': 0.0, 'gamma_beta': 0.0, 
-                    'mp_hdims_aux': [64, 32], 'mp_hdims_cond':[64, 32], 
-                    'hidden_dims': [2, 4], 'loss_type': 'semi-supervised',}
+                    'physics': False, 'gamma_stored_energy': 30.0, 'gamma_bpol': 0.0, 'gamma_beta': 0.0, 
+                    'mp_hdims_aux': [64, 128, 128, 128], 'mp_hdims_cond':[64, 32], 
+                    'hidden_dims': [2, 4], 'loss_type': 'semi-supervised-cutoff-increasing',}
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
 
@@ -64,13 +64,14 @@ datacls = PLDATAMODULE_AK(**params)
 
 model = DIVAMODEL(**model_hyperparams)
 
-trainer_params = {'max_epochs': 50, 'gradient_clip_val': 0.5, 'gradient_clip_algorithm': 'value'}
+trainer_params = {'max_epochs': 100, 'gradient_clip_val': 0.5, 'gradient_clip_algorithm': 'value'}
+
 if model_hyperparams['physics']:
-    model_name =  'SCHEDULER_PHYSICS_{}MD_{}SD_{}BMUN_{}BMSUP_{}BS_{}AM_{}AP_{}EP'.format(model_hyperparams['mach_latent_dim'], model_hyperparams['stoch_latent_dim'], int(model_hyperparams['beta_mach_unsup']), model_hyperparams['beta_mach_sup'], model_hyperparams['beta_stoch'], int(model_hyperparams['alpha_mach']), int(model_hyperparams['alpha_prof']), trainer_params['max_epochs'])# 'VAE_7MD_3SD_500BM_50AM_10AP'
+    model_name =  'PHYSICS_{}LOSS_{}MD_{}SD_{}BMUN_{}BMSUP_{}BS_{}AM_{}AP_{}EP'.format(model_hyperparams['loss_type'], model_hyperparams['mach_latent_dim'], model_hyperparams['stoch_latent_dim'], int(model_hyperparams['beta_mach_unsup']), model_hyperparams['beta_mach_sup'], model_hyperparams['beta_stoch'], int(model_hyperparams['alpha_mach']), int(model_hyperparams['alpha_prof']), trainer_params['max_epochs'])# 'VAE_7MD_3SD_500BM_50AM_10AP'
     if model_hyperparams['gamma_stored_energy'] > 0.0:
         model_name += '_{}GAMMA'.format(model_hyperparams['gamma_stored_energy'])
 else:
-    model_name =  'SCHEDULER_SECULAR_{}MD_{}SD_{}BMUN_{}BMSUP_{}BS_{}AM_{}AP_{}EP'.format(model_hyperparams['mach_latent_dim'], model_hyperparams['stoch_latent_dim'],                   int(model_hyperparams['beta_mach_unsup']), model_hyperparams['beta_mach_sup'], model_hyperparams['beta_stoch'], int(model_hyperparams['alpha_mach']), int(model_hyperparams['alpha_prof']),trainer_params['max_epochs'])# 'VAE_7MD_3SD_500BM_50AM_10AP'
+    model_name =  'SECULAR_{}LOSS_{}MD_{}SD_{}BMUN_{}BMSUP_{}BS_{}AM_{}AP_{}EP'.format(model_hyperparams['loss_type'], model_hyperparams['mach_latent_dim'], model_hyperparams['stoch_latent_dim'], int(model_hyperparams['beta_mach_unsup']), model_hyperparams['beta_mach_sup'], model_hyperparams['beta_stoch'], int(model_hyperparams['alpha_mach']), int(model_hyperparams['alpha_prof']),trainer_params['max_epochs'])# 'VAE_7MD_3SD_500BM_50AM_10AP'
     
 # model_name = 'no_physics_decent'
 # model_name = 'DIVA_W_PHYSICS_1'
