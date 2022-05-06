@@ -16,7 +16,7 @@ def get_new_beta_mach_sup(cutoff_1, cutoff_2, beta_mach_sup, beta_mach_unsup, cu
     return m*current_iteration + b
 
 def conditional_inference_simple_mean(PULSE, model=None): 
-    X, PSI, MASK, ID, MPS, _ = PULSE
+    X, PSI, MASK, ID, MPS, _, UNCERT = PULSE
     X[:, 0] = standardize(X[:, 0], D_norm, D_var)
     X[:, 1] = standardize(X[:, 1], T_norm, T_var)
     MPS = standardize(MPS, MP_norm, MP_var)
