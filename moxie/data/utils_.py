@@ -26,7 +26,7 @@ def standardize(x, mu, var):
 
 
 import pickle 
-def load_data(dataset_choice='SANDBOX_NO_VARIATIONS', file_loc='/home/kitadam/ENR_Sven/moxie/data/processed/pedestal_profiles_ML_READY_ak_19042022.pickle'):
+def load_data(dataset_choice='SANDBOX_NO_VARIATIONS', file_loc='/home/kitadam/ENR_Sven/moxie/data/processed/pedestal_profiles_ML_READY_ak_19042022.pickle', elm_timings=False):
     """
     
     Returns 
@@ -38,7 +38,14 @@ def load_data(dataset_choice='SANDBOX_NO_VARIATIONS', file_loc='/home/kitadam/EN
         massive_dict = pickle.load(file)
         full_dict = massive_dict[dataset_choice]
         massive_dict = {}
-        train_X, train_y, train_mask, train_radii, train_real_space_radii, train_ids, train_uncert = full_dict['train_dict']['padded']['profiles'],full_dict['train_dict']['padded']['controls'], full_dict['train_dict']['padded']['masks'], full_dict['train_dict']['padded']['radii'] ,full_dict['train_dict']['padded']['real_space_radii'] , full_dict['train_dict']['padded']['pulse_time_ids'], full_dict['train_dict']['padded']['uncerts']  
+    if elm_timings: 
+        train_X, train_y, train_mask, train_radii, train_real_space_radii, train_ids, train_uncert, train_elm_timings = full_dict['train_dict']['padded']['profiles'],full_dict['train_dict']['padded']['controls'], full_dict['train_dict']['padded']['masks'], full_dict['train_dict']['padded']['radii'] ,full_dict['train_dict']['padded']['real_space_radii'] , full_dict['train_dict']['padded']['pulse_time_ids'], full_dict['train_dict']['padded']['uncerts'], full_dict['train_dict']['padded']['elm_timings_frass']    
+        val_X, val_y, val_mask, val_radii, val_real_space_radii, val_ids, val_uncert, val_elm_timings = full_dict['val_dict']['padded']['profiles'],full_dict['val_dict']['padded']['controls'], full_dict['val_dict']['padded']['masks'], full_dict['val_dict']['padded']['radii'], full_dict['val_dict']['padded']['real_space_radii'], full_dict['val_dict']['padded']['pulse_time_ids'], full_dict['val_dict']['padded']['uncerts'], full_dict['val_dict']['padded']['elm_timings_frass']
+        test_X, test_y, test_mask, test_radii, test_real_space_radii, test_ids, test_uncert, test_elm_timings = full_dict['test_dict']['padded']['profiles'],full_dict['test_dict']['padded']['controls'], full_dict['test_dict']['padded']['masks'], full_dict['test_dict']['padded']['radii'], full_dict['test_dict']['padded']['real_space_radii'], full_dict['test_dict']['padded']['pulse_time_ids'], full_dict['test_dict']['padded']['uncerts'], full_dict['test_dict']['padded']['elm_timings_frass']
+        return (train_X, train_y, train_mask, train_radii, train_real_space_radii, train_ids, train_uncert, train_elm_timings), (val_X, val_y, val_mask, val_radii, val_real_space_radii, val_ids, val_uncert, val_elm_timings), (test_X, test_y, test_mask, test_radii, test_real_space_radii, test_ids, test_uncert, test_elm_timings)
+    else: 
+        train_X, train_y, train_mask, train_radii, train_real_space_radii, train_ids, train_uncert = full_dict['train_dict']['padded']['profiles'],full_dict['train_dict']['padded']['controls'], full_dict['train_dict']['padded']['masks'], full_dict['train_dict']['padded']['radii'] ,full_dict['train_dict']['padded']['real_space_radii'] , full_dict['train_dict']['padded']['pulse_time_ids'], full_dict['train_dict']['padded']['uncerts']
         val_X, val_y, val_mask, val_radii, val_real_space_radii, val_ids, val_uncert = full_dict['val_dict']['padded']['profiles'],full_dict['val_dict']['padded']['controls'], full_dict['val_dict']['padded']['masks'], full_dict['val_dict']['padded']['radii'], full_dict['val_dict']['padded']['real_space_radii'], full_dict['val_dict']['padded']['pulse_time_ids'], full_dict['val_dict']['padded']['uncerts']
         test_X, test_y, test_mask, test_radii, test_real_space_radii, test_ids, test_uncert = full_dict['test_dict']['padded']['profiles'],full_dict['test_dict']['padded']['controls'], full_dict['test_dict']['padded']['masks'], full_dict['test_dict']['padded']['radii'], full_dict['test_dict']['padded']['real_space_radii'], full_dict['test_dict']['padded']['pulse_time_ids'], full_dict['test_dict']['padded']['uncerts']
         return (train_X, train_y, train_mask, train_radii, train_real_space_radii, train_ids, train_uncert), (val_X, val_y, val_mask, val_radii, val_real_space_radii, val_ids, val_uncert), (test_X, test_y, test_mask, test_radii, test_real_space_radii, test_ids, test_uncert)
+        
