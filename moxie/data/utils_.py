@@ -34,7 +34,6 @@ def load_data(dataset_choice='SANDBOX_NO_VARIATIONS', file_loc='/home/kitadam/EN
         where each tuple contains (profiles, machine_parameters, masks, psi_coords, rmid_coords, pulse_ids)
     """
     with open(file_loc, 'rb') as file:
-        # test_X, test_y, test_mask, test_radii, test_real_space_radii, test_ids
         massive_dict = pickle.load(file)
         full_dict = massive_dict[dataset_choice]
         massive_dict = {}
