@@ -1,0 +1,342 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+AUXreg	moxie/models/AK_torch_modules.py	/^class AUXreg(nn.Module):$/;"	c
+BIGGER_SIZE	experiments/Example/comparison_experiment.py	/^BIGGER_SIZE = 22$/;"	v
+BIGGER_SIZE	experiments/Example/experiment_run.py	/^BIGGER_SIZE = 22$/;"	v
+BUILDDIR	docs/Makefile	/^BUILDDIR      = build$/;"	m
+BUILDDIR	docs/make.bat	/^set BUILDDIR=build$/;"	v
+Base	moxie/models/base.py	/^class Base(nn.Module):$/;"	c
+ConvBlock	moxie/models/AK_torch_modules.py	/^class ConvBlock(nn.Module):$/;"	c
+DATASET_AK	moxie/data/profile_dataset_torch.py	/^class DATASET_AK(Dataset):$/;"	c
+DECODER	moxie/models/AK_torch_modules.py	/^class DECODER(nn.Module):$/;"	c
+DIVAMODEL	moxie/models/.ipynb_checkpoints/DIVA_ak_1-checkpoint.py	/^class DIVAMODEL(Base):$/;"	c
+DIVAMODEL	moxie/models/DIVA_ak_1.py	/^class DIVAMODEL(Base):$/;"	c
+DIVAMODEL	moxie/models/DIVA_ak_2.py	/^class DIVAMODEL(Base):$/;"	c
+DIVAMODEL	moxie/models/DIVA_ak_3.py	/^class DIVAMODEL(Base):$/;"	c
+ENCODER	moxie/models/AK_torch_modules.py	/^class ENCODER(nn.Module):$/;"	c
+EXAMPLE_DIVA_EXP_AK	experiments/Example/experiment_class.py	/^class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):$/;"	c
+EXAMPLE_DIVA_EXP_AK	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):$/;"	c
+EXAMPLE_DIVA_EXP_AK	moxie/experiments/DIVA_EXP_AK_1.py	/^class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):$/;"	c
+Flatten	moxie/models/AK_torch_modules.py	/^class Flatten(nn.Module):$/;"	c
+HYPERPARAMS	experiments/EPED_oder_uns/.ipynb_checkpoints/run-checkpoint.py	/^HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size': 512, 'scheduler_step': 75}$/;"	v
+HYPERPARAMS	experiments/EPED_oder_uns/run.py	/^HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size':512, 'scheduler_step': 10000}$/;"	v
+HYPERPARAMS	experiments/Example/ablation.py	/^HYPERPARAMS = {'LR': 0.0025, 'weight_decay': 0.0, 'batch_size': 512}$/;"	v
+HYPERPARAMS	experiments/Example/run.py	/^HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size': 512}$/;"	v
+MEDIUM_SIZE	experiments/Example/comparison_experiment.py	/^MEDIUM_SIZE = 16$/;"	v
+MEDIUM_SIZE	experiments/Example/experiment_run.py	/^MEDIUM_SIZE = 16$/;"	v
+PLDATAMODULE_AK	moxie/data/.ipynb_checkpoints/profile_lightning_module-checkpoint.py	/^class PLDATAMODULE_AK(pl.LightningDataModule):$/;"	c
+PLDATAMODULE_AK	moxie/data/profile_lightning_module.py	/^class PLDATAMODULE_AK(pl.LightningDataModule):$/;"	c
+PRIORreg	moxie/models/AK_torch_modules.py	/^class PRIORreg(nn.Module):$/;"	c
+SMALL_SIZE	experiments/Example/comparison_experiment.py	/^SMALL_SIZE = 14$/;"	v
+SMALL_SIZE	experiments/Example/experiment_run.py	/^SMALL_SIZE = 14$/;"	v
+SOURCEDIR	docs/Makefile	/^SOURCEDIR     = source$/;"	m
+SOURCEDIR	docs/make.bat	/^set SOURCEDIR=source$/;"	v
+SPHINXBUILD	docs/Makefile	/^SPHINXBUILD   ?= sphinx-build$/;"	m
+SPHINXBUILD	docs/make.bat	/^	set SPHINXBUILD=sphinx-build$/;"	v
+SPHINXOPTS	docs/Makefile	/^SPHINXOPTS    ?=$/;"	m
+STATIC_PARAMS	experiments/EPED_oder_uns/.ipynb_checkpoints/run-checkpoint.py	/^STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 4, 'pin_memory': False, 'dataset_choice': 'ALL'}$/;"	v
+STATIC_PARAMS	experiments/EPED_oder_uns/run.py	/^STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 4, 'pin_memory': False, 'dataset_choice': 'SANDBOX_NO_VARIATIONS'}$/;"	v
+STATIC_PARAMS	experiments/Example/ablation.py	/^STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 4, 'pin_memory': False, 'dataset_choice': 'padded'}$/;"	v
+STATIC_PARAMS	experiments/Example/run.py	/^STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 4, 'pin_memory': False, 'dataset_choice': 'padded'}$/;"	v
+Tensor	moxie/models/utils_.py	/^Tensor = TypeVar('torch.tensor')$/;"	v
+TranspConvBlock	moxie/models/AK_torch_modules.py	/^class TranspConvBlock(nn.Module):$/;"	c
+UnFlatten	moxie/models/AK_torch_modules.py	/^class UnFlatten(nn.Module):$/;"	c
+__getitem__	moxie/data/profile_dataset_torch.py	/^    def __getitem__(self, idx):$/;"	m	class:DATASET_AK	file:
+__init__	experiments/Example/experiment_class.py	/^    def __init__(self, model=None, params: dict) -> None: $/;"	m	class:EXAMPLE_DIVA_EXP_AK
+__init__	moxie/data/.ipynb_checkpoints/profile_lightning_module-checkpoint.py	/^    def __init__(self, data_dir: str = '', num_workers: int = 1, batch_size: int = 512, dataset_choice='ALL', **params):$/;"	m	class:PLDATAMODULE_AK
+__init__	moxie/data/profile_dataset_torch.py	/^    def __init__(self, X, y, mask = None, norm_dicts = None, ids=None):$/;"	m	class:DATASET_AK
+__init__	moxie/data/profile_lightning_module.py	/^    def __init__(self, data_dir: str = '', num_workers: int = 1, batch_size: int = 512, dataset_choice='ALL', **params):$/;"	m	class:PLDATAMODULE_AK
+__init__	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^    def __init__(self, model=None, params: dict = {'LR': 0.001}) -> None:$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+__init__	moxie/experiments/DIVA_EXP_AK_1.py	/^    def __init__(self, model=None, params: dict = {'LR': 0.001}) -> None:$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+__init__	moxie/models/.ipynb_checkpoints/DIVA_ak_1-checkpoint.py	/^    def __init__(self, in_ch: int=2, out_length: int = 19,$/;"	m	class:DIVAMODEL
+__init__	moxie/models/AK_torch_modules.py	/^    def __init__(self, hidden_dims: List=[4, 2, 1], num_trans_conv_blocks: int = 2, trans_kernel_size: int = 3, trans_stride: int = 2, trans_padding: int = 1, end_conv_size=1):$/;"	m	class:DECODER
+__init__	moxie/models/AK_torch_modules.py	/^    def __init__(self, in_ch: int = 1, hidden_dims: List=[2, 4], num_conv_blocks: int = 2, conv_kernel_size: int = 3, conv_stride: int = 1, conv_padding = 'same', max_pool=True):$/;"	m	class:ENCODER
+__init__	moxie/models/AK_torch_modules.py	/^    def __init__(self, in_channels: int, out_channels: int, conv_kernel_size: int, max_pool_kernel_size: int, stride: int = 1, num_conv_blocks: int = 1,  padding='same', max_pool=True):$/;"	m	class:ConvBlock
+__init__	moxie/models/AK_torch_modules.py	/^    def __init__(self, in_channels: int, out_channels: int, conv_kernel_size: int, num_conv_blocks: int = 1, stride: int = 2, padding: int=1):$/;"	m	class:TranspConvBlock
+__init__	moxie/models/AK_torch_modules.py	/^    def __init__(self, in_dims = 13, mach_latent_dim=10, hidden_dims=[64, 32, 16]):$/;"	m	class:PRIORreg
+__init__	moxie/models/AK_torch_modules.py	/^    def __init__(self, mp_size, z_mach_dim, hidden_dims=[64, 32, 16]):$/;"	m	class:AUXreg
+__init__	moxie/models/AK_torch_modules.py	/^    def __init__(self, size, length):$/;"	m	class:UnFlatten
+__init__	moxie/models/DIVA_ak_1.py	/^    def __init__(self, in_ch: int=2, out_length: int = 19,$/;"	m	class:DIVAMODEL
+__init__	moxie/models/DIVA_ak_2.py	/^    def __init__(self, in_ch: int=2, out_length: int = 19,$/;"	m	class:DIVAMODEL
+__init__	moxie/models/DIVA_ak_3.py	/^    def __init__(self, in_ch: int=2, out_length: int = 19,$/;"	m	class:DIVAMODEL
+__init__	moxie/models/base.py	/^    def __init__(self) -> None:$/;"	m	class:Base
+__len__	moxie/data/profile_dataset_torch.py	/^    def __len__(self):$/;"	m	class:DATASET_AK	file:
+args	experiments/EPED_oder_uns/.ipynb_checkpoints/random_search-checkpoint.py	/^    args = parser.parse_args()$/;"	v
+args	experiments/EPED_oder_uns/random_search.py	/^    args = parser.parse_args()$/;"	v
+args	experiments/Example/random_search.py	/^    args = parser.parse_args()$/;"	v
+author	docs/source/conf.py	/^author = 'fusionby2030, ajaervin'$/;"	v
+author	setup.py	/^    author="Adam Kit", $/;"	v
+author_email	setup.py	/^    author_email="adam.kit@helsinki.fi", $/;"	v
+autodoc_inherit_docstrings	docs/source/conf.py	/^autodoc_inherit_docstrings = False # This disables the pytorch and other documentation from appearing! $/;"	v
+autodoc_mock_imports	docs/source/conf.py	/^autodoc_mock_imports = ['torch', 'pytorch-lightning', 'numpy', 'matplotlib', 'sklearn']$/;"	v
+beta_approximation	moxie/models/.ipynb_checkpoints/DIVA_ak_1-checkpoint.py	/^def beta_approximation(profiles_tensors, mp_tensors):$/;"	f
+beta_approximation	moxie/models/DIVA_ak_1.py	/^def beta_approximation(profiles_tensors, mp_tensors):$/;"	f
+beta_approximation	moxie/models/utils_.py	/^def beta_approximation(profiles_tensors, mp_tensors):$/;"	f
+boltzmann_constant	moxie/models/.ipynb_checkpoints/DIVA_ak_1-checkpoint.py	/^boltzmann_constant = 1.380e-23$/;"	v
+boltzmann_constant	moxie/models/DIVA_ak_1.py	/^boltzmann_constant = 1.380e-23$/;"	v
+boltzmann_constant	moxie/models/utils_.py	/^boltzmann_constant = 1.380e-23$/;"	v
+bpol_approx	moxie/models/.ipynb_checkpoints/DIVA_ak_1-checkpoint.py	/^def bpol_approx(mp_tensors): $/;"	f
+bpol_approx	moxie/models/DIVA_ak_1.py	/^def bpol_approx(mp_tensors): $/;"	f
+bpol_approx	moxie/models/utils_.py	/^def bpol_approx(mp_tensors): $/;"	f
+compare_cond_with_real	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^    def compare_cond_with_real(self, all_components):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+compare_cond_with_real	moxie/experiments/DIVA_EXP_AK_1.py	/^    def compare_cond_with_real(self, all_components):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+compare_correlations	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^    def compare_correlations(self):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+compare_correlations	moxie/experiments/DIVA_EXP_AK_1.py	/^    def compare_correlations(self):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+compare_generate_with_real	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^    def compare_generate_with_real(self):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+compare_generate_with_real	moxie/experiments/DIVA_EXP_AK_1.py	/^    def compare_generate_with_real(self):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+compare_pressures	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^    def compare_pressures(self, all_components):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+compare_pressures	moxie/experiments/DIVA_EXP_AK_1.py	/^    def compare_pressures(self, all_components):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+configure_optimizers	experiments/Example/experiment_class.py	/^    def configure_optimizers(self):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+configure_optimizers	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^    def configure_optimizers(self):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+configure_optimizers	moxie/experiments/DIVA_EXP_AK_1.py	/^    def configure_optimizers(self):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+copyright	docs/source/conf.py	/^copyright = '2021, fusionby2030'$/;"	v
+datacls	experiments/EPED_oder_uns/.ipynb_checkpoints/run-checkpoint.py	/^datacls = PLDATAMODULE_AK(**params)$/;"	v
+datacls	experiments/EPED_oder_uns/run.py	/^datacls = PLDATAMODULE_AK(**params)$/;"	v
+datacls	experiments/Example/ablation.py	/^    datacls = PLDATAMODULE_AK(**param)$/;"	v
+datacls	experiments/Example/run.py	/^datacls = PLDATAMODULE_AK(**params)$/;"	v
+dataset_path	experiments/EPED_oder_uns/.ipynb_checkpoints/run-checkpoint.py	/^dataset_path = home_path \/ 'data' \/ 'processed' \/ 'pedestal_profiles_ML_READY_ak_19042022.pickle'$/;"	v
+dataset_path	experiments/EPED_oder_uns/run.py	/^dataset_path = home_path \/ 'data' \/ 'processed' \/ 'pedestal_profiles_ML_READY_ak_19042022.pickle'$/;"	v
+dataset_path	experiments/Example/ablation.py	/^dataset_path = home_path \/ 'data' \/ 'processed' \/ 'pedestal_profiles_ML_READY_ak_09022022.pickle'$/;"	v
+dataset_path	experiments/Example/run.py	/^dataset_path = home_path \/ 'data' \/ 'processed' \/ 'pedestal_profiles_ML_READY_ak_09022022.pickle'$/;"	v
+de_standardize	experiments/Example/comparison_experiment.py	/^def de_standardize(x, mu, var):$/;"	f
+de_standardize	experiments/Example/experiment_run.py	/^def de_standardize(x, mu, var): $/;"	f
+de_standardize	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^def de_standardize(x, mu, var):$/;"	f
+de_standardize	moxie/experiments/DIVA_EXP_AK_1.py	/^def de_standardize(x, mu, var):$/;"	f
+de_standardize	moxie/models/.ipynb_checkpoints/DIVA_ak_1-checkpoint.py	/^def de_standardize(x, mu, var):$/;"	f
+de_standardize	moxie/models/DIVA_ak_1.py	/^def de_standardize(x, mu, var):$/;"	f
+de_standardize	moxie/models/DIVA_ak_3.py	/^def de_standardize(x, mu, var):$/;"	f
+de_standardize	moxie/models/utils_.py	/^def de_standardize(x, mu, var):$/;"	f
+decode	moxie/models/base.py	/^    def decode(self, input: Tensor) -> Any: $/;"	m	class:Base
+description	setup.py	/^    description="Representation Learning of Pedestal profiles"$/;"	v
+desired_path	experiments/EPED_oder_uns/.ipynb_checkpoints/random_search-checkpoint.py	/^    desired_path = home_path \/ 'data' \/ 'processed' \/ 'pedestal_profiles_ML_READY_ak_09022022.pickle'$/;"	v
+desired_path	experiments/EPED_oder_uns/random_search.py	/^    desired_path = home_path \/ 'data' \/ 'processed' \/ 'pedestal_profiles_ML_READY_ak_09022022.pickle'$/;"	v
+desired_path	experiments/Example/random_search.py	/^    desired_path = home_path \/ 'data' \/ 'processed' \/ 'pedestal_profiles_ML_READY_ak_09022022.pickle'$/;"	v
+e_c	moxie/models/.ipynb_checkpoints/DIVA_ak_1-checkpoint.py	/^e_c = 1.602e-19$/;"	v
+e_c	moxie/models/DIVA_ak_1.py	/^e_c = 1.602e-19$/;"	v
+e_c	moxie/models/utils_.py	/^e_c = 1.602e-19$/;"	v
+encode	moxie/models/base.py	/^    def encode(self, input: Tensor) -> List[Tensor]:$/;"	m	class:Base
+end	docs/make.bat	/^:end$/;"	l
+epub_show_urls	docs/source/conf.py	/^epub_show_urls = 'footnote'$/;"	v
+exp_path	experiments/EPED_oder_uns/.ipynb_checkpoints/random_search-checkpoint.py	/^    exp_path = file_path.parent$/;"	v
+exp_path	experiments/EPED_oder_uns/.ipynb_checkpoints/run-checkpoint.py	/^exp_path = file_path.parent$/;"	v
+exp_path	experiments/EPED_oder_uns/random_search.py	/^    exp_path = file_path.parent$/;"	v
+exp_path	experiments/EPED_oder_uns/run.py	/^exp_path = file_path.parent$/;"	v
+exp_path	experiments/Example/ablation.py	/^exp_path = file_path.parent$/;"	v
+exp_path	experiments/Example/random_search.py	/^    exp_path = file_path.parent$/;"	v
+exp_path	experiments/Example/run.py	/^exp_path = file_path.parent$/;"	v
+experiment	experiments/EPED_oder_uns/.ipynb_checkpoints/run-checkpoint.py	/^experiment = EXAMPLE_DIVA_EXP_AK(model, params)$/;"	v
+experiment	experiments/EPED_oder_uns/run.py	/^experiment = EXAMPLE_DIVA_EXP_AK(model, params)$/;"	v
+experiment	experiments/Example/ablation.py	/^    experiment = EXAMPLE_DIVA_EXP_AK(model, param)$/;"	v
+experiment	experiments/Example/run.py	/^experiment = EXAMPLE_DIVA_EXP_AK(model, params)$/;"	v
+experiment_dict	experiments/Example/comparison_experiment.py	/^experiment_dict =    {$/;"	v
+extensions	docs/source/conf.py	/^extensions = [$/;"	v
+file_path	experiments/EPED_oder_uns/.ipynb_checkpoints/random_search-checkpoint.py	/^    file_path = Path(__file__).resolve()$/;"	v
+file_path	experiments/EPED_oder_uns/.ipynb_checkpoints/run-checkpoint.py	/^file_path = pathlib.Path(__file__).resolve()# .parent.parent$/;"	v
+file_path	experiments/EPED_oder_uns/random_search.py	/^    file_path = Path(__file__).resolve()$/;"	v
+file_path	experiments/EPED_oder_uns/run.py	/^file_path = pathlib.Path(__file__).resolve()# .parent.parent$/;"	v
+file_path	experiments/Example/ablation.py	/^file_path = pathlib.Path(__file__).resolve()# .parent.parent$/;"	v
+file_path	experiments/Example/random_search.py	/^    file_path = Path(__file__).resolve()$/;"	v
+file_path	experiments/Example/run.py	/^file_path = pathlib.Path(__file__).resolve()# .parent.parent$/;"	v
+forward	experiments/Example/experiment_class.py	/^    def forward(self, input, **kwargs): $/;"	m	class:EXAMPLE_DIVA_EXP_AK
+forward	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^    def forward(self, input, **kwargs):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+forward	moxie/experiments/DIVA_EXP_AK_1.py	/^    def forward(self, input, **kwargs):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+forward	moxie/models/.ipynb_checkpoints/DIVA_ak_1-checkpoint.py	/^    def forward(self, in_profs: Tensor, in_mp: Tensor = None) -> Tensor:$/;"	m	class:DIVAMODEL
+forward	moxie/models/AK_torch_modules.py	/^    def forward(self, input):$/;"	m	class:Flatten
+forward	moxie/models/AK_torch_modules.py	/^    def forward(self, input):$/;"	m	class:UnFlatten
+forward	moxie/models/AK_torch_modules.py	/^    def forward(self, x):$/;"	m	class:AUXreg
+forward	moxie/models/AK_torch_modules.py	/^    def forward(self, x):$/;"	m	class:ConvBlock
+forward	moxie/models/AK_torch_modules.py	/^    def forward(self, x):$/;"	m	class:DECODER
+forward	moxie/models/AK_torch_modules.py	/^    def forward(self, x):$/;"	m	class:ENCODER
+forward	moxie/models/AK_torch_modules.py	/^    def forward(self, x):$/;"	m	class:PRIORreg
+forward	moxie/models/AK_torch_modules.py	/^    def forward(self, x):$/;"	m	class:TranspConvBlock
+forward	moxie/models/DIVA_ak_1.py	/^    def forward(self, in_profs: Tensor, in_mp: Tensor = None) -> Tensor:$/;"	m	class:DIVAMODEL
+forward	moxie/models/DIVA_ak_2.py	/^    def forward(self, in_profs: Tensor, in_mp: Tensor = None) -> Tensor:$/;"	m	class:DIVAMODEL
+forward	moxie/models/DIVA_ak_3.py	/^    def forward(self, in_profs: Tensor, in_mp: Tensor = None) -> Tensor:$/;"	m	class:DIVAMODEL
+forward	moxie/models/base.py	/^    def forward(self, *inputs: Tensor) -> Tensor:$/;"	m	class:Base
+generate	moxie/models/base.py	/^    def generate(self, x: Tensor, **kwargs) -> Tensor:$/;"	m	class:Base
+get_cond_enc_real_for_comparison	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^    def get_cond_enc_real_for_comparison(self):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+get_cond_enc_real_for_comparison	moxie/experiments/DIVA_EXP_AK_1.py	/^    def get_cond_enc_real_for_comparison(self):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+get_conv_output_size	moxie/models/utils_.py	/^def get_conv_output_size(initial_input_size, number_blocks, max_pool=True):$/;"	f
+get_density_norms	moxie/data/.ipynb_checkpoints/profile_lightning_module-checkpoint.py	/^    def get_density_norms(self, device=None):$/;"	m	class:PLDATAMODULE_AK
+get_density_norms	moxie/data/profile_lightning_module.py	/^    def get_density_norms(self, device=None):$/;"	m	class:PLDATAMODULE_AK
+get_final_output	moxie/models/utils_.py	/^def get_final_output(initial_input_size, number_blocks, number_trans_per_block, stride, padding, kernel_size):$/;"	f
+get_indexes_of_relevant_pulses	experiments/Example/comparison_experiment.py	/^def get_indexes_of_relevant_pulses(pulse_order, options=[]):$/;"	f
+get_jet_pedestal_database	experiments/Example/comparison_experiment.py	/^def get_jet_pedestal_database(data_path=''):$/;"	f
+get_latent_space	experiments/Example/comparison_experiment.py	/^def get_latent_space(in_profiles, model):$/;"	f
+get_machine_norms	moxie/data/.ipynb_checkpoints/profile_lightning_module-checkpoint.py	/^    def get_machine_norms(self, device=None):$/;"	m	class:PLDATAMODULE_AK
+get_machine_norms	moxie/data/profile_lightning_module.py	/^    def get_machine_norms(self, device=None):$/;"	m	class:PLDATAMODULE_AK
+get_param_dict	experiments/Example/ablation.py	/^def get_param_dict(old_dict, param_to_vary, lower_bound, upper_bound, n_samples):$/;"	f
+get_profile_data	experiments/Example/comparison_experiment.py	/^def get_profile_data(data_path=''):$/;"	f
+get_temperature_norms	moxie/data/.ipynb_checkpoints/profile_lightning_module-checkpoint.py	/^    def get_temperature_norms(self,device=None):$/;"	m	class:PLDATAMODULE_AK
+get_temperature_norms	moxie/data/profile_lightning_module.py	/^    def get_temperature_norms(self,device=None):$/;"	m	class:PLDATAMODULE_AK
+get_trans_output_size	moxie/models/utils_.py	/^def get_trans_output_size(input_size, stride, padding, kernel_size):$/;"	f
+help	docs/make.bat	/^:help$/;"	l
+home_path	experiments/EPED_oder_uns/.ipynb_checkpoints/random_search-checkpoint.py	/^    home_path = exp_path.parent.parent$/;"	v
+home_path	experiments/EPED_oder_uns/.ipynb_checkpoints/run-checkpoint.py	/^home_path = file_path.parent.parent.parent$/;"	v
+home_path	experiments/EPED_oder_uns/random_search.py	/^    home_path = exp_path.parent.parent$/;"	v
+home_path	experiments/EPED_oder_uns/run.py	/^home_path = file_path.parent.parent.parent$/;"	v
+home_path	experiments/Example/ablation.py	/^home_path = file_path.parent.parent.parent $/;"	v
+home_path	experiments/Example/random_search.py	/^    home_path = exp_path.parent.parent$/;"	v
+home_path	experiments/Example/run.py	/^home_path = file_path.parent.parent.parent$/;"	v
+html_theme	docs/source/conf.py	/^html_theme = 'sphinx_rtd_theme'$/;"	v
+intersphinx_disabled_domains	docs/source/conf.py	/^intersphinx_disabled_domains = ['std']$/;"	v
+intersphinx_mapping	docs/source/conf.py	/^intersphinx_mapping = {$/;"	v
+logger	experiments/EPED_oder_uns/.ipynb_checkpoints/run-checkpoint.py	/^logger = pl.loggers.TensorBoardLogger(exp_path \/ "tb_logs", name=model_name)$/;"	v
+logger	experiments/EPED_oder_uns/run.py	/^logger = pl.loggers.TensorBoardLogger(exp_path \/ "tb_logs", name=model_name)$/;"	v
+logger	experiments/Example/ablation.py	/^    logger = pl.loggers.TensorBoardLogger(exp_path \/ "tb_logs", name='LR={:.4}'.format(param['LR']))$/;"	v
+logger	experiments/Example/run.py	/^logger = pl.loggers.TensorBoardLogger(exp_path \/ "tb_logs", name=model_name)$/;"	v
+loss_function	moxie/models/.ipynb_checkpoints/DIVA_ak_1-checkpoint.py	/^    def loss_function(self, *args, **kwargs) -> Tensor:$/;"	m	class:DIVAMODEL
+loss_function	moxie/models/DIVA_ak_1.py	/^    def loss_function(self, *args, **kwargs) -> Tensor:$/;"	m	class:DIVAMODEL
+loss_function	moxie/models/DIVA_ak_2.py	/^    def loss_function(self, *args, **kwargs) -> Tensor:$/;"	m	class:DIVAMODEL
+loss_function	moxie/models/DIVA_ak_3.py	/^    def loss_function(self, *args, **kwargs) -> Tensor:$/;"	m	class:DIVAMODEL
+loss_function	moxie/models/base.py	/^    def loss_function(self, *inputs: Any, **kwargs) -> Tensor:$/;"	m	class:Base
+machine_param_order	experiments/Example/comparison_experiment.py	/^machine_param_order = ['Q95', 'RGEO', 'CR0', 'VOLM', 'TRIU', 'TRIL', 'ELON', 'POHM', 'IPLA', 'BVAC', 'NBI', 'ICRH', 'ELER']$/;"	v
+main	experiments/Example/comparison_experiment.py	/^def main(experiment_name="TRIANGULARITY"):$/;"	f
+model	experiments/EPED_oder_uns/.ipynb_checkpoints/run-checkpoint.py	/^model = DIVAMODEL(**model_hyperparams)$/;"	v
+model	experiments/EPED_oder_uns/.ipynb_checkpoints/run-checkpoint.py	/^model = runner.model.model$/;"	v
+model	experiments/EPED_oder_uns/run.py	/^model = DIVAMODEL(**model_hyperparams)$/;"	v
+model	experiments/EPED_oder_uns/run.py	/^model = runner.model.model$/;"	v
+model	experiments/Example/ablation.py	/^    model = DIVAMODEL(**model_hyperparams)$/;"	v
+model	experiments/Example/run.py	/^model = DIVAMODEL(**model_hyperparams)$/;"	v
+model	experiments/Example/run.py	/^model = runner.model.model$/;"	v
+model_hyperparams	experiments/EPED_oder_uns/.ipynb_checkpoints/run-checkpoint.py	/^model_hyperparams = {'in_ch': 2, 'out_length':19,$/;"	v
+model_hyperparams	experiments/EPED_oder_uns/run.py	/^model_hyperparams = {'in_ch': 2, 'out_length':19,$/;"	v
+model_hyperparams	experiments/Example/ablation.py	/^model_hyperparams = {'in_ch': 2, 'out_length':19, $/;"	v
+model_hyperparams	experiments/Example/run.py	/^model_hyperparams = {'in_ch': 2, 'out_length':19,$/;"	v
+model_name	experiments/EPED_oder_uns/.ipynb_checkpoints/run-checkpoint.py	/^    model_name =  'SCHEDULER_PHYSICS_{}MD_{}SD_{}BMUN_{}BMSUP_{}BS_{}AM_{}AP_{}EP'.format(model_hyperparams['mach_latent_dim'], model_hyperparams['stoch_latent_dim'], int(model_hyperparams['beta_mach_unsup']), model_hyperparams['beta_mach_sup'], model_hyperparams['beta_stoch'], int(model_hyperparams['alpha_mach']), int(model_hyperparams['alpha_prof']), trainer_params['max_epochs'])# 'VAE_7MD_3SD_500BM_50AM_10AP'$/;"	v
+model_name	experiments/EPED_oder_uns/.ipynb_checkpoints/run-checkpoint.py	/^    model_name =  'SCHEDULER_SECULAR_{}MD_{}SD_{}BMUN_{}BMSUP_{}BS_{}AM_{}AP_{}EP'.format(model_hyperparams['mach_latent_dim'], model_hyperparams['stoch_latent_dim'],                   int(model_hyperparams['beta_mach_unsup']), model_hyperparams['beta_mach_sup'], model_hyperparams['beta_stoch'], int(model_hyperparams['alpha_mach']), int(model_hyperparams['alpha_prof']),trainer_params['max_epochs'])# 'VAE_7MD_3SD_500BM_50AM_10AP'$/;"	v
+model_name	experiments/EPED_oder_uns/run.py	/^    model_name =  'SCHEDULER_PHYSICS_{}MD_{}SD_{}BMUN_{}BMSUP_{}BS_{}AM_{}AP_{}EP'.format(model_hyperparams['mach_latent_dim'], model_hyperparams['stoch_latent_dim'], int(model_hyperparams['beta_mach_unsup']), model_hyperparams['beta_mach_sup'], model_hyperparams['beta_stoch'], int(model_hyperparams['alpha_mach']), int(model_hyperparams['alpha_prof']), trainer_params['max_epochs'])# 'VAE_7MD_3SD_500BM_50AM_10AP'$/;"	v
+model_name	experiments/EPED_oder_uns/run.py	/^    model_name =  'SCHEDULER_SECULAR_{}MD_{}SD_{}BMUN_{}BMSUP_{}BS_{}AM_{}AP_{}EP'.format(model_hyperparams['mach_latent_dim'], model_hyperparams['stoch_latent_dim'],                   int(model_hyperparams['beta_mach_unsup']), model_hyperparams['beta_mach_sup'], model_hyperparams['beta_stoch'], int(model_hyperparams['alpha_mach']), int(model_hyperparams['alpha_prof']),trainer_params['max_epochs'])# 'VAE_7MD_3SD_500BM_50AM_10AP'$/;"	v
+model_name	experiments/Example/run.py	/^    model_name =  'REDUCED_PHYSICS_{}MD_{}SD_{}BM_{}AM_{}AP'.format(model_hyperparams['mach_latent_dim'], model_hyperparams['stoch_latent_dim'], int(model_hyperparams['beta_mach']), int(model_hyperparams['alpha_mach']), int(model_hyperparams['alpha_prof']))# 'VAE_7MD_3SD_500BM_50AM_10AP'$/;"	v
+model_name	experiments/Example/run.py	/^    model_name =  'SECULAR_{}MD_{}SD_{}BM_{}AM_{}AP'.format(model_hyperparams['mach_latent_dim'], model_hyperparams['stoch_latent_dim'], int(model_hyperparams['beta_mach']), int(model_hyperparams['alpha_mach']), int(model_hyperparams['alpha_prof']))# 'VAE_7MD_3SD_500BM_50AM_10AP'$/;"	v
+model_pth_name	experiments/EPED_oder_uns/.ipynb_checkpoints/run-checkpoint.py	/^model_pth_name = 'modelstatedict_' + model_name + '.pth'$/;"	v
+model_pth_name	experiments/EPED_oder_uns/run.py	/^model_pth_name = 'modelstatedict_' + model_name + '.pth'$/;"	v
+model_pth_name	experiments/Example/run.py	/^model_pth_name = 'modelstatedict_' + model_name + '.pth'$/;"	v
+mu_0	moxie/models/.ipynb_checkpoints/DIVA_ak_1-checkpoint.py	/^mu_0 = 1.256e-6 $/;"	v
+mu_0	moxie/models/DIVA_ak_1.py	/^mu_0 = 1.256e-6 $/;"	v
+mu_0	moxie/models/utils_.py	/^mu_0 = 1.256e-6 $/;"	v
+name	setup.py	/^    name = "moxie", $/;"	v
+napoleon_google_docstring	docs/source/conf.py	/^napoleon_google_docstring = False$/;"	v
+napoleon_numpy_docstring	docs/source/conf.py	/^napoleon_numpy_docstring = True$/;"	v
+normalize_profiles	moxie/data/utils_.py	/^def normalize_profiles(profiles, mu_T=None, var_T=None, mu_D=None, var_D=None): $/;"	f
+normalize_profiles	moxie/models/utils_.py	/^def normalize_profiles(profiles, mu_T=None, var_T=None, mu_D=None, var_D=None, de_norm=False): $/;"	f
+num_iterations	moxie/models/.ipynb_checkpoints/DIVA_ak_1-checkpoint.py	/^    num_iterations = 0 # Trickery for the semi-supervsied loss,$/;"	v	class:DIVAMODEL
+num_iterations	moxie/models/DIVA_ak_1.py	/^    num_iterations = 0 # Trickery for the semi-supervsied loss,$/;"	v	class:DIVAMODEL
+num_iterations	moxie/models/DIVA_ak_2.py	/^    num_iterations = 0 # Trickery for the semi-supervsied loss,$/;"	v	class:DIVAMODEL
+num_iterations	moxie/models/DIVA_ak_3.py	/^    num_iterations = 0 # Trickery for the semi-supervsied loss,$/;"	v	class:DIVAMODEL
+on_train_start	experiments/Example/experiment_class.py	/^    def on_train_start(self):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+on_train_start	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^    def on_train_start(self):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+on_train_start	moxie/experiments/DIVA_EXP_AK_1.py	/^    def on_train_start(self):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+p_yhatz	moxie/models/.ipynb_checkpoints/DIVA_ak_1-checkpoint.py	/^    def p_yhatz(self, z: Tensor) -> Tensor:$/;"	m	class:DIVAMODEL
+p_yhatz	moxie/models/DIVA_ak_1.py	/^    def p_yhatz(self, z: Tensor) -> Tensor:$/;"	m	class:DIVAMODEL
+p_yhatz	moxie/models/DIVA_ak_2.py	/^    def p_yhatz(self, z: Tensor) -> Tensor:$/;"	m	class:DIVAMODEL
+p_yhatz	moxie/models/DIVA_ak_3.py	/^    def p_yhatz(self, z: Tensor) -> Tensor:$/;"	m	class:DIVAMODEL
+p_zmachx	moxie/models/.ipynb_checkpoints/DIVA_ak_1-checkpoint.py	/^    def p_zmachx(self, machine_params: Tensor) -> List[Tensor]:$/;"	m	class:DIVAMODEL
+p_zmachx	moxie/models/DIVA_ak_1.py	/^    def p_zmachx(self, machine_params: Tensor) -> List[Tensor]:$/;"	m	class:DIVAMODEL
+p_zmachx	moxie/models/DIVA_ak_2.py	/^    def p_zmachx(self, machine_params: Tensor) -> List[Tensor]:$/;"	m	class:DIVAMODEL
+p_zmachx	moxie/models/DIVA_ak_3.py	/^    def p_zmachx(self, machine_params: Tensor) -> List[Tensor]:$/;"	m	class:DIVAMODEL
+packages	setup.py	/^    packages = find_packages(), $/;"	v
+params	experiments/EPED_oder_uns/.ipynb_checkpoints/run-checkpoint.py	/^params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}$/;"	v
+params	experiments/EPED_oder_uns/run.py	/^params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}$/;"	v
+params	experiments/Example/ablation.py	/^params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}$/;"	v
+params	experiments/Example/run.py	/^params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}$/;"	v
+parser	experiments/EPED_oder_uns/.ipynb_checkpoints/random_search-checkpoint.py	/^    parser = argparse.ArgumentParser(description='Search for hyperparams using raytune and HPC.')$/;"	v
+parser	experiments/EPED_oder_uns/random_search.py	/^    parser = argparse.ArgumentParser(description='Search for hyperparams using raytune and HPC.')$/;"	v
+parser	experiments/Example/random_search.py	/^    parser = argparse.ArgumentParser(description='Search for hyperparams using raytune and HPC.')$/;"	v
+physics_dojo	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^    def physics_dojo(self, batch_x, interp_size=100, mp_idx=-5, mp_lims=(-0.5e6, -5e6)):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+physics_dojo	moxie/experiments/DIVA_EXP_AK_1.py	/^    def physics_dojo(self, batch_x, interp_size=100, mp_idx=-5, mp_lims=(-0.5e6, -5e6)):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+physics_dojo_dict	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^physics_dojo_dict = {$/;"	v
+physics_dojo_dict	moxie/experiments/DIVA_EXP_AK_1.py	/^physics_dojo_dict = {$/;"	v
+plot_corr_matrix	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^    def plot_corr_matrix(self, z, val_params, title='Z_machine'):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+plot_corr_matrix	moxie/experiments/DIVA_EXP_AK_1.py	/^    def plot_corr_matrix(self, z, val_params, title='Z_machine'):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+plot_latent_space	experiments/Example/comparison_experiment.py	/^def plot_latent_space(z, mps, mp_dim=-1, ls_dims=[1,3,7], MP_NAME='Something', LS_LIMS=None):$/;"	f
+plot_profile_comparisons	experiments/Example/comparison_experiment.py	/^def plot_profile_comparisons(mp_dim, latex_name, PULSE_1, PULSE_2, annotation='', T_LIM=None):$/;"	f
+prepare_data	moxie/data/.ipynb_checkpoints/profile_lightning_module-checkpoint.py	/^    def prepare_data(self):$/;"	m	class:PLDATAMODULE_AK
+prepare_data	moxie/data/profile_lightning_module.py	/^    def prepare_data(self):$/;"	m	class:PLDATAMODULE_AK
+project	docs/source/conf.py	/^project = 'Moxie'$/;"	v
+q_hatxzmach	moxie/models/.ipynb_checkpoints/DIVA_ak_1-checkpoint.py	/^    def q_hatxzmach(self, z_mach: Tensor):$/;"	m	class:DIVAMODEL
+q_hatxzmach	moxie/models/DIVA_ak_1.py	/^    def q_hatxzmach(self, z_mach: Tensor):$/;"	m	class:DIVAMODEL
+q_hatxzmach	moxie/models/DIVA_ak_2.py	/^    def q_hatxzmach(self, z_mach: Tensor):$/;"	m	class:DIVAMODEL
+q_hatxzmach	moxie/models/DIVA_ak_3.py	/^    def q_hatxzmach(self, z_mach: Tensor):$/;"	m	class:DIVAMODEL
+q_zy	moxie/models/.ipynb_checkpoints/DIVA_ak_1-checkpoint.py	/^    def q_zy(self, profile: Tensor) -> List[Tensor]:$/;"	m	class:DIVAMODEL
+q_zy	moxie/models/DIVA_ak_1.py	/^    def q_zy(self, profile: Tensor) -> List[Tensor]:$/;"	m	class:DIVAMODEL
+q_zy	moxie/models/DIVA_ak_2.py	/^    def q_zy(self, profile: Tensor) -> List[Tensor]:$/;"	m	class:DIVAMODEL
+q_zy	moxie/models/DIVA_ak_3.py	/^    def q_zy(self, profile: Tensor) -> List[Tensor]:$/;"	m	class:DIVAMODEL
+real_profile_comparison	experiments/Example/experiment_run.py	/^def real_profile_comparison(PULSE_1, PULSE_2, de_normed=False, norms_d=None, norms_t=None): $/;"	f
+release	docs/source/conf.py	/^release = '0.1'$/;"	v
+relevant_columns	experiments/Example/comparison_experiment.py	/^relevant_columns = ['shot', 'nepedheight10^19(m^-3)','Tepedheight(keV)', 'B(T)','Ip(MA)', 'q95',  'R(m)', 'a(m)','gasflowrateofmainspecies10^22(e\/s)',  'P_TOT=PNBI+Pohm+PICRH-Pshi(MW)', 'P_ICRH(MW)', 'P_NBI(MW)','plasmavolume(m^3)', 'averagetriangularity', 'divertorconfiguration', 'FLAG:Seeding', 'FLAG:Kicks', 'FLAG:RMP', 'FLAG:pellets',]$/;"	v
+reparameterize	moxie/models/.ipynb_checkpoints/DIVA_ak_1-checkpoint.py	/^    def reparameterize(self, mu: Tensor, logvar: Tensor) -> Tensor:$/;"	m	class:DIVAMODEL
+reparameterize	moxie/models/DIVA_ak_1.py	/^    def reparameterize(self, mu: Tensor, logvar: Tensor) -> Tensor:$/;"	m	class:DIVAMODEL
+reparameterize	moxie/models/DIVA_ak_2.py	/^    def reparameterize(self, mu: Tensor, logvar: Tensor) -> Tensor:$/;"	m	class:DIVAMODEL
+reparameterize	moxie/models/DIVA_ak_3.py	/^    def reparameterize(self, mu: Tensor, logvar: Tensor) -> Tensor:$/;"	m	class:DIVAMODEL
+replace_q95_with_qcly	moxie/data/.ipynb_checkpoints/profile_lightning_module-checkpoint.py	/^def replace_q95_with_qcly(mp_set):$/;"	f
+replace_q95_with_qcly	moxie/data/profile_lightning_module.py	/^def replace_q95_with_qcly(mp_set):$/;"	f
+replace_q95_with_qcly	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^def replace_q95_with_qcly(mp_set):$/;"	f
+replace_q95_with_qcly	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^def replace_q95_with_qcly(mp_set, mu, var):$/;"	f
+replace_q95_with_qcly	moxie/experiments/DIVA_EXP_AK_1.py	/^def replace_q95_with_qcly(mp_set):$/;"	f
+replace_q95_with_qcly	moxie/experiments/DIVA_EXP_AK_1.py	/^def replace_q95_with_qcly(mp_set, mu, var):$/;"	f
+runner	experiments/EPED_oder_uns/.ipynb_checkpoints/run-checkpoint.py	/^runner = pl.Trainer(logger=logger, **trainer_params)$/;"	v
+runner	experiments/EPED_oder_uns/run.py	/^runner = pl.Trainer(logger=logger, **trainer_params)$/;"	v
+runner	experiments/Example/ablation.py	/^    runner = pl.Trainer(logger=logger, **trainer_params)$/;"	v
+runner	experiments/Example/run.py	/^runner = pl.Trainer(logger=logger, **trainer_params)$/;"	v
+sample	moxie/models/base.py	/^    def sample(self, batch_size:int, current_device: int, **kwargs) -> Tensor:$/;"	m	class:Base
+setup	moxie/data/.ipynb_checkpoints/profile_lightning_module-checkpoint.py	/^    def setup(self, stage=None):$/;"	m	class:PLDATAMODULE_AK
+setup	moxie/data/profile_lightning_module.py	/^    def setup(self, stage=None):$/;"	m	class:PLDATAMODULE_AK
+standardize	experiments/Example/comparison_experiment.py	/^def standardize(x, mu, var):$/;"	f
+standardize	experiments/Example/experiment_run.py	/^def standardize(x, mu, var): $/;"	f
+standardize	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^def standardize(x, mu, var):$/;"	f
+standardize	moxie/experiments/DIVA_EXP_AK_1.py	/^def standardize(x, mu, var):$/;"	f
+standardize	moxie/models/.ipynb_checkpoints/DIVA_ak_1-checkpoint.py	/^def standardize(x, mu, var):$/;"	f
+standardize	moxie/models/DIVA_ak_1.py	/^def standardize(x, mu, var):$/;"	f
+standardize	moxie/models/DIVA_ak_3.py	/^def standardize(x, mu, var):$/;"	f
+standardize	moxie/models/utils_.py	/^def standardize(x, mu, var):$/;"	f
+standardize_simple	moxie/data/utils_.py	/^def standardize_simple(x, mu=None, var=None):$/;"	f
+state	experiments/EPED_oder_uns/.ipynb_checkpoints/run-checkpoint.py	/^state = {'model': model.state_dict(),$/;"	v
+state	experiments/EPED_oder_uns/run.py	/^state = {'model': model.state_dict(),$/;"	v
+state	experiments/Example/run.py	/^state = {'model': model.state_dict(),$/;"	v
+static_pressure_stored_energy_approximation	moxie/models/utils_.py	/^def static_pressure_stored_energy_approximation(profs, mask): $/;"	f
+study	experiments/Example/ablation.py	/^study = get_param_dict(params, 'LR', lower_bound=0.001, upper_bound=0.01, n_samples=10)$/;"	v
+templates_path	docs/source/conf.py	/^templates_path = ['_templates']$/;"	v
+test_dataloader	moxie/data/.ipynb_checkpoints/profile_lightning_module-checkpoint.py	/^    def test_dataloader(self):$/;"	m	class:PLDATAMODULE_AK
+test_dataloader	moxie/data/profile_lightning_module.py	/^    def test_dataloader(self):$/;"	m	class:PLDATAMODULE_AK
+test_epoch_end	experiments/Example/experiment_class.py	/^    def test_epoch_end(self, outputs):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+test_epoch_end	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^    def test_epoch_end(self, outputs):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+test_epoch_end	moxie/experiments/DIVA_EXP_AK_1.py	/^    def test_epoch_end(self, outputs):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+test_step	experiments/Example/experiment_class.py	/^    def test_step(self, batch, batch_idx, optimizer_idx=0):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+test_step	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^    def test_step(self, batch, batch_idx, optimizer_idx=0):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+test_step	moxie/experiments/DIVA_EXP_AK_1.py	/^    def test_step(self, batch, batch_idx, optimizer_idx=0):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+torch_shaping_approx	moxie/models/.ipynb_checkpoints/DIVA_ak_1-checkpoint.py	/^def torch_shaping_approx(minor_radius, tri_u, tri_l, elongation):$/;"	f
+torch_shaping_approx	moxie/models/DIVA_ak_1.py	/^def torch_shaping_approx(minor_radius, tri_u, tri_l, elongation):$/;"	f
+torch_shaping_approx	moxie/models/utils_.py	/^def torch_shaping_approx(minor_radius, tri_u, tri_l, elongation):$/;"	f
+train_dataloader	moxie/data/.ipynb_checkpoints/profile_lightning_module-checkpoint.py	/^    def train_dataloader(self):$/;"	m	class:PLDATAMODULE_AK
+train_dataloader	moxie/data/profile_lightning_module.py	/^    def train_dataloader(self):$/;"	m	class:PLDATAMODULE_AK
+train_model_on_tune	experiments/EPED_oder_uns/.ipynb_checkpoints/random_search-checkpoint.py	/^def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='', pin_memory=False):$/;"	f
+train_model_on_tune	experiments/EPED_oder_uns/random_search.py	/^def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='', pin_memory=False):$/;"	f
+train_model_on_tune	experiments/Example/random_search.py	/^def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='', pin_memory=False):$/;"	f
+trainer_params	experiments/EPED_oder_uns/.ipynb_checkpoints/run-checkpoint.py	/^trainer_params = {'max_epochs': 100, 'gradient_clip_val': 0.5, 'gradient_clip_algorithm': 'value'}$/;"	v
+trainer_params	experiments/EPED_oder_uns/run.py	/^trainer_params = {'max_epochs': 50, 'gradient_clip_val': 0.5, 'gradient_clip_algorithm': 'value'}$/;"	v
+trainer_params	experiments/Example/ablation.py	/^    trainer_params = {'max_epochs': 50, 'profiler': 'simple', 'gradient_clip_val': 0.5, 'gradient_clip_algorithm': 'value'}$/;"	v
+trainer_params	experiments/Example/run.py	/^trainer_params = {'max_epochs': 500, 'gradient_clip_val': 0.5, 'gradient_clip_algorithm': 'value'}$/;"	v
+training_epoch_end	experiments/Example/experiment_class.py	/^    def training_epoch_end(self, outputs):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+training_epoch_end	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^    def training_epoch_end(self, outputs):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+training_epoch_end	moxie/experiments/DIVA_EXP_AK_1.py	/^    def training_epoch_end(self, outputs):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+training_step	experiments/Example/experiment_class.py	/^    def training_step(self, batch, batch_idx, optimizer_idx = 0):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+training_step	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^    def training_step(self, batch, batch_idx, optimizer_idx = 0):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+training_step	moxie/experiments/DIVA_EXP_AK_1.py	/^    def training_step(self, batch, batch_idx, optimizer_idx = 0):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+tune_asha	experiments/EPED_oder_uns/.ipynb_checkpoints/random_search-checkpoint.py	/^def tune_asha(num_samples=2000, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5, data_dir='', pin_memory=False, experiment_name='NEW_CONSTRAINTS'):$/;"	f
+tune_asha	experiments/EPED_oder_uns/random_search.py	/^def tune_asha(num_samples=2000, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5, data_dir='', pin_memory=False, experiment_name='NEW_CONSTRAINTS'):$/;"	f
+tune_asha	experiments/Example/random_search.py	/^def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5, data_dir='', pin_memory=False):$/;"	f
+val_dataloader	moxie/data/.ipynb_checkpoints/profile_lightning_module-checkpoint.py	/^    def val_dataloader(self):$/;"	m	class:PLDATAMODULE_AK
+val_dataloader	moxie/data/profile_lightning_module.py	/^    def val_dataloader(self):$/;"	m	class:PLDATAMODULE_AK
+validation_epoch_end	experiments/Example/experiment_class.py	/^    def validation_epoch_end(self, outputs):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+validation_epoch_end	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^    def validation_epoch_end(self, outputs):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+validation_epoch_end	moxie/experiments/DIVA_EXP_AK_1.py	/^    def validation_epoch_end(self, outputs):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+validation_step	experiments/Example/experiment_class.py	/^    def validation_step(self, batch, batch_idx, optimizer_idx=0):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+validation_step	moxie/experiments/.ipynb_checkpoints/DIVA_EXP_AK_1-checkpoint.py	/^    def validation_step(self, batch, batch_idx, optimizer_idx=0):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+validation_step	moxie/experiments/DIVA_EXP_AK_1.py	/^    def validation_step(self, batch, batch_idx, optimizer_idx=0):$/;"	m	class:EXAMPLE_DIVA_EXP_AK
+version	docs/source/conf.py	/^version = '0.1.0'$/;"	v
+version	setup.py	/^    version="0.1.0",$/;"	v
