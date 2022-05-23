@@ -29,17 +29,17 @@ pl.utilities.seed.seed_everything(42)
 # dataset_choice = 'ALL', 'ALL_NO_VARIATIONS', 'SANDBOX_ALL', 'SANDBOX_NO_VARIATIONS'
 STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 4, 'pin_memory': False, 'dataset_choice': 'SANDBOX_NO_VARIATIONS', 'elm_style_choice': 'simple'}
 
-HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size':512, 'scheduler_step': 0}
+HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size':256, 'scheduler_step': 0}
 
 # 'semi-supervised-start', 'semi-supervsied-cutoff', 'supervised'
 model_hyperparams = {'out_length':19, 'elm_style_choice': 'simple',
                     'mach_latent_dim': 9, 'stoch_latent_dim': 3, # 0.0273
-                    'beta_stoch': 1.0, 'beta_mach_unsup': 0.01,'beta_mach_sup':  0.00,
+                    'beta_stoch': 2.0, 'beta_mach_unsup': 0.008,'beta_mach_sup':  0.00,
                     'alpha_mach': 1, 'alpha_prof': 500.0,  
                     'start_sup_time': 500,
-                    'physics': False, 'gamma_stored_energy': 50.0, 'gamma_bpol': 5.0, 'gamma_beta': 0.0, 
+                    'physics': True, 'gamma_stored_energy': 100.0, 'gamma_bpol': 5.0, 'gamma_beta': 0.0, 
                     'mp_hdims_aux': [64, 128, 128, 128], 'mp_hdims_cond':[64, 64, 32], 
-                    'hidden_dims': [2, 4], 'loss_type': 'semi-supervised-cutoff-increasing',}
+                    'hidden_dims': [3, 6], 'loss_type': 'semi-supervised-cutoff-increasing',}
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
 
@@ -48,7 +48,7 @@ datacls = PLDATAMODULE_AK(**params)
 
 
 model = PSI_MODEL(**model_hyperparams)
-model_name='PSI_v1'
+model_name='PSI_v2'
 trainer_params = {'max_epochs': 100, 'gradient_clip_val': 0.5, 'gradient_clip_algorithm': 'value'}
 
 logger = pl.loggers.TensorBoardLogger(exp_path / "tb_logs", name=model_name)
