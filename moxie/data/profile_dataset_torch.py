@@ -8,7 +8,7 @@ class DATASET_AK(Dataset):
     TODO: Allow for squeezing or unsqueezing for just density choices? Probably don't care, can call your X as X[:, 0:1, :]
 
     """
-    def __init__(self, X, y, mask = None, norm_dicts = None, ids=None):
+    def __init__(self, X, y, mask = None, norm_dicts = None, ids=None, neseps=None):
         if not torch.is_tensor(X):
             self.X = torch.from_numpy(X)
         else:
@@ -23,6 +23,8 @@ class DATASET_AK(Dataset):
             self.norm_dicts = norm_dicts
         if ids is not None:
             self.ids = ids
+        if neseps is not None: 
+            self.neseps = neseps
 
     def __len__(self):
         return len(self.X)

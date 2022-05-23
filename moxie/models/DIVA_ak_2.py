@@ -1,4 +1,4 @@
-# DIVA 2 AK 
+# DIVA 2 AK
 
 from .utils_ import *
 from .base import Base
@@ -37,12 +37,12 @@ class DIVAMODEL(Base):
         The size of the stoch latent space. Should always be smaller than mach_latent_dim
     physics: bool
         If True, then propogate the three physics losses
-    gamma_stored_energy: float 
-        If physics is True, this is the weighting term on the static pressure stored energy loss 
-    gamma_bpol: float 
-        If physics is True, this is the weighting term on the approximated poloidal field loss 
-    gamma_beta: float 
-        If physics is True, this is the weighting term on the beta approximation 
+    gamma_stored_energy: float
+        If physics is True, this is the weighting term on the static pressure stored energy loss
+    gamma_bpol: float
+        If physics is True, this is the weighting term on the approximated poloidal field loss
+    gamma_beta: float
+        If physics is True, this is the weighting term on the beta approximation
     loss_type: str
         Three options: 'supervised', 'unsupervised', 'semi-supervised'
         'unsupervised': Prof recon Loss + KLD_stoch(vs N(0, 1)) + KLD_mach(vs N(0, 1))
@@ -59,9 +59,9 @@ class DIVAMODEL(Base):
                         beta_stoch: float = 0.01,
                         beta_mach_unsup: float = 0.01, beta_mach_sup: float = 1.,
                         mach_latent_dim: int = 15, stoch_latent_dim: int = 5,
-                        encoder_end_dense_size: int = 128, 
+                        encoder_end_dense_size: int = 128,
                         hidden_dims = [2,4],  mp_hdims_cond = [64, 32],mp_hdims_aux = [64, 32],
-                        physics: bool = False, gamma_stored_energy: float = 0.0,gamma_bpol: float = 0.0, gamma_beta:float = 0.0, 
+                        physics: bool = False, gamma_stored_energy: float = 0.0,gamma_bpol: float = 0.0, gamma_beta:float = 0.0,
                         loss_type: str = 'semi-supervised', **kwargs) -> None:
 
         super(DIVAMODEL, self).__init__()
@@ -75,7 +75,7 @@ class DIVAMODEL(Base):
         self.mp_hdims_cond = mp_hdims_cond
         self.mp_hdims_aux = mp_hdims_aux
 
-        end_conv_size = get_conv_output_size(out_length, len(self.hidden_dims)) 
+        end_conv_size = get_conv_output_size(out_length, len(self.hidden_dims))
 
         # Loss hyperparams
 
@@ -146,14 +146,14 @@ class DIVAMODEL(Base):
             The latent space is parameterized by mean and logvar of the stoch and mach subspaces
             i.e., [mu_stoch, var_stoch, mu_mach, var_mach]
         """
-        # Propogate density and temperature profiles through respective encoders 
+        # Propogate density and temperature profiles through respective encoders
         encoded_prof_n = self.encoder_n(profile[:, 0:1, :])
         encoded_prof_t = self.encoder_t(profile[:, 1:, :])
-        # concat the output 
+        # concat the output
         concat = torch.cat((encoded_prof_n, encoded_prof_t), 1)
-        # Feed concat output into one last dense layer 
+        # Feed concat output into one last dense layer
         encoded_prof = self.encoder_end(concat)
-        # Determine the latent variables 
+        # Determine the latent variables
         mu_stoch = self.fc_mu_stoch(encoded_prof)
         var_stoch = self.fc_var_stoch(encoded_prof)
         mu_mach = self.fc_mu_mach(encoded_prof)
@@ -258,40 +258,40 @@ class DIVAMODEL(Base):
         in_mp = kwargs['in_mp']
         device = in_profs.device
         start_sup_time = kwargs['start_sup_time']
-        
+
         cutoff_2 = start_sup_time + 1000
-        
+
         # This is really sub optimal, should cache these before.
         D_mu, D_var = kwargs['D_norms']
         T_mu, T_var = kwargs['T_norms']
         MP_mu, MP_var = kwargs['MP_norms']
-        
+
         D_mu, D_var= D_mu.to(device), D_var.to(device)
         T_mu, T_var = T_mu.to(device), T_var.to(device)
         MP_mu, MP_var = MP_mu.to(device), MP_var.to(device)
-        
+
         if 'mask' in kwargs:
             mask = kwargs['mask']
             recon_prof_loss = F.mse_loss(out_profs[mask], in_profs[mask])
         else:
             recon_prof_loss = F.mse_loss(out_profs, in_profs)
-        
-        # 
-        
-        
+
+        #
+
+
         real_in_mps = torch.clone(in_mp)
         real_out_mps = torch.clone(out_mp)
-        
+
         real_in_mps = de_standardize(real_in_mps, MP_mu, MP_var)
         real_out_mps = de_standardize(real_out_mps, MP_mu, MP_var)
-        
-        # Bpol approximation 
-        
+
+        # Bpol approximation
+
         approx_bpol_in = bpol_approx(real_in_mps)
         approx_bpol_out = bpol_approx(real_out_mps)
-        
+
         bpol_loss = F.mse_loss(approx_bpol_in, approx_bpol_out)
-        
+
         # Static pressure stored energy
         real_in_profs = torch.clone(in_profs)
         real_in_profs = normalize_profiles(real_in_profs, T_mu, T_var, D_mu, D_var, de_norm=True)
@@ -307,15 +307,15 @@ class DIVAMODEL(Base):
         # Beta approximation
         approx_beta_in = beta_approximation(real_in_profs, real_in_mps)
         approx_beta_out = beta_approximation(real_out_profs, real_out_mps)
-        
+
         beta_loss = F.mse_loss(approx_beta_in, approx_beta_out)
-        
+
         physics_loss = torch.zeros_like(recon_prof_loss)
 
         if self.physics:
             physics_loss += self.gamma_stored_energy*stored_energy_loss
             physics_loss += self.gamma_bpol*bpol_loss
-            physics_loss += self.gamma_beta*beta_loss        
+            physics_loss += self.gamma_beta*beta_loss
 
         recon_mp_loss = F.mse_loss(out_mp, in_mp)
 

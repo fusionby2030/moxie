@@ -1,4 +1,4 @@
-# DIVA 1 
+# DIVA 1
 from .utils_ import *
 from .base import Base
 from .AK_torch_modules import PRIORreg, ENCODER, DECODER, AUXreg
@@ -8,7 +8,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 boltzmann_constant = 1.380e-23
 e_c = 1.602e-19
-mu_0 = 1.256e-6 
+mu_0 = 1.256e-6
 
 # Helper Functions
 def de_standardize(x, mu, var):
@@ -26,16 +26,16 @@ def torch_shaping_approx(minor_radius, tri_u, tri_l, elongation):
     alpha_bot = -gamma_bot / (b*b)
     top_int = (torch.arcsinh(2*torch.abs(alpha_top)*b) + 2*torch.abs(alpha_top)*b*torch.sqrt(4*alpha_top*alpha_top*b*b+1)) / (2*torch.abs(alpha_top))
     bot_int = (torch.arcsinh(2*torch.abs(alpha_bot)*b) + 2*torch.abs(alpha_bot)*b*torch.sqrt(4*alpha_bot*alpha_bot*b*b+1)) / (2*torch.abs(alpha_bot))
-    return bot_int + top_int 
+    return bot_int + top_int
 
-def bpol_approx(mp_tensors): 
+def bpol_approx(mp_tensors):
     shaping = torch_shaping_approx(mp_tensors[:, 2], mp_tensors[:, 4], mp_tensors[:, 5], mp_tensors[:, 6])
     return mu_0*mp_tensors[:, 8] / shaping
 
 def beta_approximation(profiles_tensors, mp_tensors):
     density, temperature = profiles_tensors[:, 0, :], profiles_tensors[:, 1, :]
     pressure_prof = density*temperature
-    pressure_average = pressure_prof[:, 0]     
+    pressure_average = pressure_prof[:, 0]
     bpol = bpol_approx(mp_tensors)
     bt = mp_tensors[:, 9]
     return 2*e_c*2*mu_0 * pressure_average / (bt*bt + bpol*bpol)
@@ -82,9 +82,9 @@ class DIVAMODEL(Base):
                         beta_stoch: float = 0.01,
                         beta_mach_unsup: float = 0.01, beta_mach_sup: float = 1.,
                         mach_latent_dim: int = 15, stoch_latent_dim: int = 5,
-                        encoder_end_dense_size: int = 128, 
+                        encoder_end_dense_size: int = 128,
                         hidden_dims = [2,4],  mp_hdims_cond = [64, 32],mp_hdims_aux = [64, 32],
-                        physics: bool = False, gamma_stored_energy: float = 0.0,gamma_bpol: float = 0.0, gamma_beta:float = 0.0, 
+                        physics: bool = False, gamma_stored_energy: float = 0.0,gamma_bpol: float = 0.0, gamma_beta:float = 0.0,
                         loss_type: str = 'semi-supervised', **kwargs) -> None:
 
         super(DIVAMODEL, self).__init__()
@@ -98,7 +98,7 @@ class DIVAMODEL(Base):
         self.mp_hdims_cond = mp_hdims_cond
         self.mp_hdims_aux = mp_hdims_aux
 
-        end_conv_size = get_conv_output_size(out_length, len(self.hidden_dims)) 
+        end_conv_size = get_conv_output_size(out_length, len(self.hidden_dims))
 
         # Loss hyperparams
         self.alpha_prof = alpha_prof
@@ -286,31 +286,31 @@ class DIVAMODEL(Base):
         D_mu, D_var = kwargs['D_norms']
         T_mu, T_var = kwargs['T_norms']
         MP_mu, MP_var = kwargs['MP_norms']
-        
+
         D_mu, D_var= D_mu.to(device), D_var.to(device)
         T_mu, T_var = T_mu.to(device), T_var.to(device)
         MP_mu, MP_var = MP_mu.to(device), MP_var.to(device)
-        
+
         if 'mask' in kwargs:
             mask = kwargs['mask']
             recon_prof_loss = F.mse_loss(out_profs[mask], in_profs[mask])
         else:
             recon_prof_loss = F.mse_loss(out_profs, in_profs)
 
-        
+
         real_in_mps = torch.clone(in_mp)
         real_out_mps = torch.clone(out_mp)
-        
+
         real_in_mps = de_standardize(real_in_mps, MP_mu, MP_var)
         real_out_mps = de_standardize(real_out_mps, MP_mu, MP_var)
-        
-        # Bpol approximation 
-        
+
+        # Bpol approximation
+
         approx_bpol_in = bpol_approx(real_in_mps)
         approx_bpol_out = bpol_approx(real_out_mps)
-        
+
         bpol_loss = F.mse_loss(approx_bpol_in, approx_bpol_out)
-        
+
         # Static pressure stored energy
         real_in_profs = torch.clone(in_profs)
         real_in_profs[:, 0] = de_standardize(real_in_profs[:, 0], D_mu, D_var)
@@ -326,10 +326,10 @@ class DIVAMODEL(Base):
         # Beta approximation
         approx_beta_in = beta_approximation(real_in_profs, real_in_mps)
         approx_beta_out = beta_approximation(real_out_profs, real_out_mps)
-        
+
         beta_loss = F.mse_loss(approx_beta_in, approx_beta_out)
-        
-        
+
+
         physics_loss = 0.0
 
         if self.physics:

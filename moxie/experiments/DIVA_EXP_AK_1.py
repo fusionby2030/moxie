@@ -14,7 +14,7 @@ def standardize(x, mu, var):
 def replace_q95_with_qcly(mp_set, mu, var):
     mp_set = de_standardize(mp_set, mu, var)
     mu_0 = 1.25663706e-6 # magnetic constant
-    
+
     mp_set[:, 0] = ((1 + 2*mp_set[:, 6]**2) / 2.0) * (2*mp_set[:, 9]*torch.pi*mp_set[:, 2]**2) / (mp_set[:, 1] * mp_set[:, 8] * mu_0)
     mp_set = standardize(mp_set, mu, var)
     return mp_set
@@ -153,8 +153,8 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
             # self.logger.log_hyperparams(self.hparams, {"hp/final_loss": 0, "hp/recon": 0})
 
     def training_epoch_end(self, outputs):
-        sch = self.lr_schedulers() 
-        if sch is not None: 
+        sch = self.lr_schedulers()
+        if sch is not None:
             sch.step()
         # Outputs is whatever that is returned from training_step
 
@@ -163,23 +163,23 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         avg_KLD_stoch = torch.stack([x['KLD_stoch'] for x in outputs]).mean()
         avg_KLD_mach = torch.stack([x['KLD_mach'] for x in outputs]).mean()
         avg_recon_loss_mp = torch.stack([x['Reconstruction_Loss_mp'] for x in outputs]).mean()
-        
+
         avg_physics_loss = torch.stack([x['Physics_all'] for x in outputs]).mean()
         avg_sse_loss = torch.stack([x['static_stored_energy'] for x in outputs]).mean()
         avg_bpol_loss = torch.stack([x['poloidal_field_approximation'] for x in outputs]).mean()
-        avg_beta_loss = torch.stack([x['beta_approx'] for x in outputs]).mean() 
-        
+        avg_beta_loss = torch.stack([x['beta_approx'] for x in outputs]).mean()
+
         # else:
         #     avg_physics_loss = 0.0
-        
+
         metrics = {'Loss/Train': avg_loss,
                     'ReconLoss/Train': avg_recon_loss,
                     'ReconLossMP/Train': avg_recon_loss_mp,
                     'KLD_stoch/Train': avg_KLD_stoch,
                     'KLD_mach/Train': avg_KLD_mach,
-                    'physics/all/Train': avg_physics_loss, 
-                    'physics/sse/Train': avg_sse_loss, 
-                    'physics/bpol/Train': avg_bpol_loss, 
+                    'physics/all/Train': avg_physics_loss,
+                    'physics/sse/Train': avg_sse_loss,
+                    'physics/bpol/Train': avg_bpol_loss,
                     'physics/beta/Train': avg_beta_loss}
 
         self.log_dict(metrics)
@@ -202,20 +202,20 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         avg_KLD_stoch = torch.stack([x['KLD_stoch'] for x in outputs]).mean()
         avg_KLD_mach = torch.stack([x['KLD_mach'] for x in outputs]).mean()
         avg_bpol_loss = torch.stack([x['poloidal_field_approximation'] for x in outputs]).mean()
-        
+
         # Physics losses
         avg_physics_loss = torch.stack([x['Physics_all'] for x in outputs]).mean()
         avg_sse_loss = torch.stack([x['static_stored_energy'] for x in outputs]).mean()
-        avg_beta_loss = torch.stack([x['beta_approx'] for x in outputs]).mean() 
-        
+        avg_beta_loss = torch.stack([x['beta_approx'] for x in outputs]).mean()
+
         metrics = {'Loss/Valid': avg_loss,
                     'ReconLoss/Valid': avg_recon_loss,
                     'ReconLossMP/Valid': avg_recon_loss_mp,
                     'KLD_stoch/Valid': avg_KLD_stoch,
                     'KLD_mach/Valid': avg_KLD_mach,
-                    'physics/all/Valid': avg_physics_loss, 
-                    'physics/sse/Valid': avg_sse_loss, 
-                    'physics/bpol/Valid': avg_bpol_loss, 
+                    'physics/all/Valid': avg_physics_loss,
+                    'physics/sse/Valid': avg_sse_loss,
+                    'physics/bpol/Valid': avg_bpol_loss,
                     'physics/beta/Valid': avg_beta_loss}
 
 
@@ -255,12 +255,12 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         optimizer = optim.Adam(self.model.parameters(),
                                lr=self.params['LR'],
                                weight_decay=self.params['weight_decay'])
-        if self.scheduler_step_size > 0.0: 
+        if self.scheduler_step_size > 0.0:
             lr_scheduler = {
-                'scheduler': torch.optim.lr_scheduler.StepLR(optimizer, step_size=self.scheduler_step_size, gamma=0.5), 
+                'scheduler': torch.optim.lr_scheduler.StepLR(optimizer, step_size=self.scheduler_step_size, gamma=0.5),
                 'name': 'StepLR'
                 }
-        else: 
+        else:
             return [optimizer]
         return [optimizer], [lr_scheduler]
 
@@ -330,27 +330,27 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         test_density_real = de_standardize(test_density_real, mu_D, var_D)
 
         # Temperature from conditional
-        train_temperature_cond = out_profs_train[:, 1:, :]
-        val_temperature_cond = out_profs_val[:, 1:, :]
-        test_temperature_cond = out_profs_test[:, 1:, :]
+        train_temperature_cond = out_profs_train[:, 1:2, :]
+        val_temperature_cond = out_profs_val[:, 1:2, :]
+        test_temperature_cond = out_profs_test[:, 1:2, :]
 
         train_temperature_cond = de_standardize(train_temperature_cond, mu_T, var_T)
         val_temperature_cond = de_standardize(val_temperature_cond, mu_T, var_T)
         test_temperature_cond = de_standardize(test_temperature_cond, mu_T, var_T)
 
         # Temperature from encoder
-        train_temperature_enc = train_results_enc['out_profs'][:, 1:,  :]
-        val_temperature_enc = val_results_enc['out_profs'][:, 1:, :]
-        test_temperature_enc = test_results_enc['out_profs'][:, 1:, :]
+        train_temperature_enc = train_results_enc['out_profs'][:, 1:2,  :]
+        val_temperature_enc = val_results_enc['out_profs'][:, 1:2, :]
+        test_temperature_enc = test_results_enc['out_profs'][:, 1:2, :]
 
         train_temperature_enc = de_standardize(train_temperature_enc, mu_T, var_T)
         val_temperature_enc = de_standardize(val_temperature_enc, mu_T, var_T)
         test_temperature_enc = de_standardize(test_temperature_enc, mu_T, var_T)
 
         # Real Temperature
-        train_temperature_real = train_prof_og[:, 1:,:]
-        val_temperature_real = val_prof_og[:, 1:, :]
-        test_temperature_real = test_prof_og[:, 1:, :]
+        train_temperature_real = train_prof_og[:, 1:2,:]
+        val_temperature_real = val_prof_og[:, 1:2, :]
+        test_temperature_real = test_prof_og[:, 1:2, :]
 
 
         train_temperature_real = de_standardize(train_temperature_real, mu_T, var_T)
@@ -366,7 +366,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         fig, axs = plt.subplots(3, 3, figsize=(10, 10), constrained_layout=True, sharey='col',  sharex=True)
 
         k = 50
-        axs[0, 0].plot(train_temperature_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[0, 0].plot(train_temperature_cond[k].squeeze(), label='Cond', lw=4)
         axs[0, 1].plot(train_density_cond[k].squeeze(), label='Conditional', lw=4)
         axs[0, 2].plot(train_density_cond[k].squeeze() * train_temperature_cond[k].squeeze(), label='Conditional', lw=4)
 
@@ -374,12 +374,12 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         axs[0, 1].plot(train_density_real[k].squeeze(), label='Real', lw=4)
         axs[0, 2].plot(train_density_real[k].squeeze() * train_temperature_real[k].squeeze(), label='Real', lw=4)
 
-        axs[0, 0].plot(train_temperature_enc[k].squeeze(), label='Real', lw=4)
+        axs[0, 0].plot(train_temperature_enc[k].squeeze(), label='Enc', lw=4)
         axs[0, 1].plot(train_density_enc[k].squeeze(), label='Real', lw=4)
         axs[0, 2].plot(train_density_enc[k].squeeze() * train_temperature_enc[k].squeeze(), label='Real', lw=4)
 
         k = 150
-        axs[1, 0].plot(train_temperature_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[1, 0].plot(train_temperature_cond[k].squeeze(), label='Cond', lw=4)
         axs[1, 1].plot(train_density_cond[k].squeeze(), label='Conditional', lw=4)
         axs[1, 2].plot(train_density_cond[k].squeeze() * train_temperature_cond[k].squeeze(), label='Conditional', lw=4)
 
@@ -387,22 +387,22 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         axs[1, 1].plot(train_density_real[k].squeeze(), label='Real', lw=4)
         axs[1, 2].plot(train_density_real[k].squeeze() * train_temperature_real[k].squeeze(), label='Real', lw=4)
 
-        axs[1, 0].plot(train_temperature_enc[k].squeeze(), label='Real', lw=4)
-        axs[1, 1].plot(train_density_enc[k].squeeze(), label='Real', lw=4)
+        axs[1, 0].plot(train_temperature_enc[k].squeeze(), label='Enc', lw=4)
+        axs[1, 1].plot(train_density_enc[k].squeeze(), label='Enc', lw=4)
         axs[1, 2].plot(train_density_enc[k].squeeze() * train_temperature_enc[k].squeeze(), label='Real', lw=4)
 
 
         k = 250
-        axs[2, 0].plot(train_temperature_cond[k].squeeze(), label='Conditional', lw=4)
-        axs[2, 1].plot(train_density_cond[k].squeeze(), label='Conditional', lw=4)
+        axs[2, 0].plot(train_temperature_cond[k].squeeze(), label='Cond', lw=4)
+        axs[2, 1].plot(train_density_cond[k].squeeze(), label='Cond', lw=4)
         axs[2, 2].plot(train_density_cond[k].squeeze() * train_temperature_cond[k].squeeze(), label='Conditional', lw=4)
 
         axs[2, 0].plot(train_temperature_real[k].squeeze(), label='Real', lw=4)
         axs[2, 1].plot(train_density_real[k].squeeze(), label='Real', lw=4)
         axs[2, 2].plot(train_density_real[k].squeeze() * train_temperature_real[k].squeeze(), label='Real', lw=4)
 
-        axs[2, 0].plot(train_temperature_enc[k].squeeze(), label='Real', lw=4)
-        axs[2, 1].plot(train_density_enc[k].squeeze(), label='Real', lw=4)
+        axs[2, 0].plot(train_temperature_enc[k].squeeze(), label='Encoder', lw=4)
+        axs[2, 1].plot(train_density_enc[k].squeeze(), label='Encoder', lw=4)
         axs[2, 2].plot(train_density_enc[k].squeeze() * train_temperature_enc[k].squeeze(), label='Real', lw=4)
 
         axs[0, 0].legend()
@@ -465,7 +465,7 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         fig.suptitle('Val Profiles Reconstruction')
         plt.setp(axs, xticks=[])
         self.logger.experiment.add_figure('pressure_profs/val', fig)
-
+        """
         # Test
         fig, axs = plt.subplots(3, 3, figsize=(10, 10), constrained_layout=True, sharey='col',  sharex=True)
 
@@ -514,9 +514,10 @@ class EXAMPLE_DIVA_EXP_AK(pl.LightningModule):
         axs[0, 0].set_ylabel('$T_e \; \; (eV)$', size='xx-large')
         axs[0, 2].set_ylabel('$p_e \; \;$ (Pa)')
 
-        fig.suptitle('test Profiles Reconstruction')
+        fig.suptitle('Test Profiles Reconstruction')
         plt.setp(axs, xticks=[])
         self.logger.experiment.add_figure('pressure_profs/test', fig)
+        """
 
 
     def compare_cond_with_real(self, all_components):

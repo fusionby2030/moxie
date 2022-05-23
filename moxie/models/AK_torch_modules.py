@@ -109,7 +109,7 @@ class TranspConvBlock(nn.Module):
 
 class DECODER(nn.Module):
     """ The DECODER """
-    def __init__(self, hidden_dims: List=[4, 2, 1], num_trans_conv_blocks: int = 2, trans_kernel_size: int = 3, trans_stride: int = 2, trans_padding: int = 1, end_conv_size=1):
+    def __init__(self, end_ch = 2, hidden_dims: List=[4, 2, 2], num_trans_conv_blocks: int = 2, trans_kernel_size: int = 3, trans_stride: int = 2, trans_padding: int = 1, end_conv_size=1):
         super(DECODER, self).__init__()
         self.num_trans_conv_blocks = num_trans_conv_blocks
         self.trans_kernel_size = trans_kernel_size
@@ -120,8 +120,8 @@ class DECODER(nn.Module):
         self.block = nn.ModuleList()
 
         self.block.append(UnFlatten(size=hidden_dims[0], length=end_conv_size))
-        if self.hidden_dims[-1] != 1:
-            self.hidden_dims.append(1)
+        if self.hidden_dims[-1] != end_ch:
+            self.hidden_dims.append(end_ch)
         for i in range(len(hidden_dims) - 1):
             self.block.append(TranspConvBlock(hidden_dims[i], hidden_dims[i+1], trans_kernel_size, num_trans_conv_blocks, trans_stride, trans_padding))
             # self.block.append(nn.ReLU())
