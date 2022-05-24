@@ -34,10 +34,10 @@ HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size':256, 'scheduler_st
 # 'semi-supervised-start', 'semi-supervsied-cutoff', 'supervised'
 model_hyperparams = {'out_length':19, 'elm_style_choice': 'simple',
                     'mach_latent_dim': 9, 'stoch_latent_dim': 3, # 0.0273
-                    'beta_stoch': 2.0, 'beta_mach_unsup': 0.008,'beta_mach_sup':  0.00,
-                    'alpha_mach': 1, 'alpha_prof': 500.0,  
+                    'beta_stoch': 2.0, 'beta_mach_unsup': 0.0023,'beta_mach_sup':  10.00,
+                    'alpha_mach': 200, 'alpha_prof': 817.0,  
                     'start_sup_time': 500,
-                    'physics': True, 'gamma_stored_energy': 100.0, 'gamma_bpol': 5.0, 'gamma_beta': 0.0, 
+                    'physics': False, 'gamma_stored_energy': 100.0, 'gamma_bpol': 5.0, 'gamma_beta': 0.0, 
                     'mp_hdims_aux': [64, 128, 128, 128], 'mp_hdims_cond':[64, 64, 32], 
                     'hidden_dims': [3, 6], 'loss_type': 'semi-supervised-cutoff-increasing',}
 

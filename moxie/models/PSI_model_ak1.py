@@ -294,7 +294,6 @@ class PSI_MODEL(Base):
             ).mean(0).sum()
 
         self.num_iterations += 1
-        start_sup_time = 500
         if self.loss_type == 'semi-supervised-cutoff-increasing':
             if self.num_iterations > start_sup_time:
                 beta_mach_unsup_new = get_new_beta_mach_sup(start_sup_time, cutoff_2, self.beta_mach_sup, self.beta_mach_unsup, self.num_iterations)
