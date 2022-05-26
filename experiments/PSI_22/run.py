@@ -37,7 +37,7 @@ model_hyperparams = {'out_length':19, 'elm_style_choice': 'simple',
                     'beta_stoch': 2.0, 'beta_mach_unsup': 0.0023,'beta_mach_sup':  10.00,
                     'alpha_mach': 200, 'alpha_prof': 817.0,  
                     'start_sup_time': 500,
-                    'physics': False, 'gamma_stored_energy': 100.0, 'gamma_bpol': 5.0, 'gamma_beta': 0.0, 
+                    'physics': True, 'gamma_stored_energy': 100.0, 'gamma_bpol': 5.0, 'gamma_beta': 10.0,
                     'mp_hdims_aux': [64, 128, 128, 128], 'mp_hdims_cond':[64, 64, 32], 
                     'hidden_dims': [3, 6], 'loss_type': 'semi-supervised-cutoff-increasing',}
 
@@ -48,7 +48,7 @@ datacls = PLDATAMODULE_AK(**params)
 
 
 model = PSI_MODEL(**model_hyperparams)
-model_name='PSI_v2'
+model_name='PSI_v2_physics'
 trainer_params = {'max_epochs': 100, 'gradient_clip_val': 0.5, 'gradient_clip_algorithm': 'value'}
 
 logger = pl.loggers.TensorBoardLogger(exp_path / "tb_logs", name=model_name)

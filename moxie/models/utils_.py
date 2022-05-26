@@ -80,7 +80,8 @@ def beta_approximation(profiles_tensors, mp_tensors):
     bt = mp_tensors[:, 9]
     return (100*2)*e_c*2*mu_0 * pressure_average / (bt*bt + bpol*bpol)
 
-def static_pressure_stored_energy_approximation(profs, mask): 
+def static_pressure_stored_energy_approximation(profs_og, mask): 
+    profs = torch.clone(profs_og)
     return boltzmann_constant*torch.prod(profs.masked_fill_(~mask, 0), 1).sum(1)
 
 def get_conv_output_size(initial_input_size, number_blocks, max_pool=True):
