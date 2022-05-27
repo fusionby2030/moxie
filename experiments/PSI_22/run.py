@@ -16,7 +16,7 @@ exp_path = file_path.parent
 # Path of moxie stuffs
 home_path = file_path.parent.parent.parent
 # Path to data
-dataset_path = home_path / 'data' / 'processed' / 'cleaned_ml_ready_dict_180622.pickle'
+dataset_path = home_path / 'data' / 'processed' / 'cleaned_ml_ready_dict_270522_not_sandbox.pickle'
 
 
 # SEED EVERYTHING!
@@ -29,16 +29,16 @@ pl.utilities.seed.seed_everything(42)
 # dataset_choice = 'ALL', 'ALL_NO_VARIATIONS', 'SANDBOX_ALL', 'SANDBOX_NO_VARIATIONS'
 STATIC_PARAMS = {'data_dir':dataset_path, 'num_workers': 4, 'pin_memory': False, 'dataset_choice': 'SANDBOX_NO_VARIATIONS', 'elm_style_choice': 'simple'}
 
-HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size':256, 'scheduler_step': 0}
+HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size':512, 'scheduler_step': 0}
 
 # 'semi-supervised-start', 'semi-supervsied-cutoff', 'supervised'
 model_hyperparams = {'out_length':19, 'elm_style_choice': 'simple',
                     'mach_latent_dim': 9, 'stoch_latent_dim': 3, # 0.0273
-                    'beta_stoch': 2.0, 'beta_mach_unsup': 0.0023,'beta_mach_sup':  10.00,
-                    'alpha_mach': 200, 'alpha_prof': 817.0,  
-                    'start_sup_time': 500,
-                    'physics': True, 'gamma_stored_energy': 100.0, 'gamma_bpol': 5.0, 'gamma_beta': 10.0,
-                    'mp_hdims_aux': [64, 128, 128, 128], 'mp_hdims_cond':[64, 64, 32], 
+                    'beta_stoch': 2.0, 'beta_mach_unsup': 0.06,'beta_mach_sup':  1.00,
+                    'alpha_mach': 200, 'alpha_prof': 400.0,  
+                    'start_sup_time': 1000,
+                    'physics': True, 'gamma_stored_energy': 50.0, 'gamma_bpol': 5.0, 'gamma_beta': 5.0,
+                    'mp_hdims_aux': [256, 128, 64, 32], 'mp_hdims_cond':[256, 128, 64, 32], 
                     'hidden_dims': [3, 6], 'loss_type': 'semi-supervised-cutoff-increasing',}
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
