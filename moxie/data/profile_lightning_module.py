@@ -4,7 +4,7 @@ from .utils_ import *
 import pickle  # data loading issues
 import torch
 from torch.utils.data import DataLoader
-
+import numpy as np
 def replace_q95_with_qcly(mp_set):
     mu_0 = 1.25663706e-6 # magnetic constant
     mp_set[:, 0] = ((1 + 2*mp_set[:, 6]**2) / 2.0) * (2*mp_set[:, 9]*torch.pi*mp_set[:, 2]**2) / (mp_set[:, 1] * mp_set[:, 8] * mu_0)
@@ -39,12 +39,44 @@ class PLDATAMODULE_AK(pl.LightningDataModule):
 
     def prepare_data(self):
         # Grab the dataset
-        with open(self.file_loc, 'rb') as file:
-            full_dict = pickle.load(file)
-            train_X, train_y, train_mask, train_ids, train_elms, self.train_neseps = full_dict['train']['profiles'],  full_dict['train']['mps'],  full_dict['train']['masks'], full_dict['train']['ids'], full_dict['train']['elm_perc'], full_dict['train']['neseps']
-            val_X, val_y, val_mask, val_ids, val_elms, self.val_neseps = full_dict['val']['profiles'],  full_dict['val']['mps'], full_dict['val']['masks'], full_dict['val']['ids'], full_dict['val']['elm_perc'], full_dict['val']['neseps']
-            test_X, test_y, test_mask, test_ids, test_elms, self.test_neseps = full_dict['test']['profiles'],  full_dict['test']['mps'], full_dict['test']['masks'], full_dict['test']['ids'], full_dict['test']['elm_perc'], full_dict['test']['neseps']
+        if self.file_loc == '/home/local/kitadam/ENR_Sven/moxie/data/processed/pedestal_profiles_ML_READY_ak_09022022.pickle': 
+            with open(self.file_loc, 'rb') as file:
+                full_dict = pickle.load(file)
+                train_X, train_y, train_mask, train_radii, train_ids = full_dict['train_dict']['padded']['profiles'],full_dict['train_dict']['padded']['controls'], full_dict['train_dict']['padded']['masks'], full_dict['train_dict']['padded']['radii'] , full_dict['train_dict']['padded']['pulse_time_ids'] 
+                val_X, val_y, val_mask, val_radii, val_ids = full_dict['val_dict']['padded']['profiles'],full_dict['val_dict']['padded']['controls'], full_dict['val_dict']['padded']['masks'], full_dict['val_dict']['padded']['radii'], full_dict['val_dict']['padded']['pulse_time_ids']
+                test_X, test_y, test_mask, test_radii, test_ids = full_dict['test_dict']['padded']['profiles'],full_dict['test_dict']['padded']['controls'], full_dict['test_dict']['padded']['masks'], full_dict['test_dict']['padded']['radii'], full_dict['test_dict']['padded']['pulse_time_ids']
+                self.train_neseps = torch.zeros(len(train_X))
+                self.val_neseps = torch.zeros(len(val_X))
+                self.test_neseps = torch.zeros(len(test_X))
+        else: 
+            with open(self.file_loc, 'rb') as file:
+                full_dict = pickle.load(file)
+                train_X, train_y, train_mask, train_ids, train_elms, self.train_neseps = full_dict['train']['profiles'],  full_dict['train']['mps'],  full_dict['train']['masks'], full_dict['train']['ids'], full_dict['train']['elm_perc'], full_dict['train']['neseps']
 
+
+                val_X, val_y, val_mask, val_ids, val_elms, self.val_neseps = full_dict['val']['profiles'],  full_dict['val']['mps'], full_dict['val']['masks'], full_dict['val']['ids'], full_dict['val']['elm_perc'], full_dict['val']['neseps']
+                test_X, test_y, test_mask, test_ids, test_elms, self.test_neseps = full_dict['test']['profiles'],  full_dict['test']['mps'], full_dict['test']['masks'], full_dict['test']['ids'], full_dict['test']['elm_perc'], full_dict['test']['neseps']
+
+            # Take a subset! 
+            train_ts = train_X[:, 1, :]
+            subset_idx = np.logical_and(train_ts[:, -1] < 1000, train_ts[:, -2] < 1000)
+            susbet_idx = np.logical_and(subset_idx, train_ts[:, -3] < 1000)
+            susbet_idx = np.logical_and(subset_idx, train_ts[:, -4] < 1000)
+            susbet_idx = np.logical_and(subset_idx, train_ts[:, -5] < 1000)
+            susbet_idx = np.logical_and(subset_idx, train_ts[:, -6] < 1000)
+            susbet_idx = np.logical_and(subset_idx, train_ts[:, -7] < 1000)
+            susbet_idx = np.logical_and(subset_idx, train_ts[:, -8] < 1000)
+            susbet_idx = np.logical_and(subset_idx, train_ts[:, -1] > 0)
+            susbet_idx = np.logical_and(subset_idx, train_ts[:, -2] > 0)
+            susbet_idx = np.logical_and(subset_idx, train_ts[:, -3] > 0)
+            susbet_idx = np.logical_and(subset_idx, train_ts[:, -4] > 0)
+            susbet_idx = np.logical_and(subset_idx, train_ts[:, -5] > 0)
+            susbet_idx = np.logical_and(subset_idx, train_ts[:, -6] > 0)
+            susbet_idx = np.logical_and(subset_idx, train_ts[:, -7] > 0)
+            susbet_idx = np.logical_and(subset_idx, train_ts[:, -8] > 0)
+
+
+            train_X, train_y, train_mask, train_ids, train_elms, self.train_neseps = train_X[subset_idx], train_y[subset_idx], train_mask[subset_idx], train_ids[subset_idx], train_elms[subset_idx], self.train_neseps[subset_idx]
         # Convert to float torch tensors
         self.X_train, self.y_train = torch.from_numpy(train_X).float(), torch.from_numpy(train_y).float()
         self.X_val, self.y_val = torch.from_numpy(val_X).float(), torch.from_numpy(val_y).float()

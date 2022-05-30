@@ -143,8 +143,8 @@ class DIVAMODEL(Base):
         # Decoder
 
         self.decoder_input = nn.Linear(self.stoch_latent_dim + self.mach_latent_dim, self.hidden_dims[-1]*end_conv_size)
-        self.decoder_t = DECODER(end_conv_size=end_conv_size) # DECODER(hidden_dims = self.hidden_dims[::-1], end_conv_size=end_conv_size)
-        self.decoder_n = DECODER(end_conv_size=end_conv_size) # DECODER(hidden_dims = self.hidden_dims[::-1], end_conv_size=end_conv_size)
+        self.decoder_t = DECODER(end_ch = 1,hidden_dims=[4, 2], end_conv_size=end_conv_size) # DECODER(hidden_dims = self.hidden_dims[::-1], end_conv_size=end_conv_size)
+        self.decoder_n = DECODER(end_ch = 1,hidden_dims=[4, 2], end_conv_size=end_conv_size) # DECODER(hidden_dims = self.hidden_dims[::-1], end_conv_size=end_conv_size)
         final_size = self.decoder_n.final_size
         self.final_layer_n = nn.Linear(final_size, out_length)
         self.final_layer_t = nn.Linear(final_size, out_length)
@@ -209,31 +209,31 @@ class DIVAMODEL(Base):
         return [c_mu_mach, c_var_mach]
 
     def p_yhatz(self, z: Tensor) -> Tensor:
-         """
-         Decode reparametrized latent space into profiles
+        """
+        Decode reparametrized latent space into profiles
 
-         Parameters
-         ----------
+        Parameters
+        ----------
 
-         latent_spaces: Tensor
-             The reparameterization of Z_mach and Z_stoch
+        latent_spaces: Tensor
+         The reparameterization of Z_mach and Z_stoch
 
 
-         Returns
-         -------
+        Returns
+        -------
 
-         hat_profile: Tensor
-             A generated profile with shape [BS, in_channels, in_length]
-             For just the density profiles, psi22 dataset, this is [BS, 1, 63]
-         """
-         result = self.decoder_input(z)
-         result_n = self.decoder_n(result)
-         result_t = self.decoder_t(result)
-         out_prof_n = self.final_layer_n(result_n)
-         out_prof_t = self.final_layer_t(result_t)
-         out_prof = torch.cat((out_prof_n, out_prof_t), 1)
+        hat_profile: Tensor
+         A generated profile with shape [BS, in_channels, in_length]
+         For just the density profiles, psi22 dataset, this is [BS, 1, 63]
+        """
+        result = self.decoder_input(z)
+        result_n = self.decoder_n(result)
+        result_t = self.decoder_t(result)
+        out_prof_n = self.final_layer_n(result_n)
+        out_prof_t = self.final_layer_t(result_t)
+        out_prof = torch.cat((out_prof_n, out_prof_t), 1)
 
-         return out_prof
+        return out_prof
 
     def q_hatxzmach(self, z_mach: Tensor):
         """
@@ -330,7 +330,7 @@ class DIVAMODEL(Base):
         beta_loss = F.mse_loss(approx_beta_in, approx_beta_out)
 
 
-        physics_loss = 0.0
+        physics_loss = torch.zeros_like(recon_prof_loss)
 
         if self.physics:
             physics_loss += self.gamma_stored_energy*stored_energy_loss
