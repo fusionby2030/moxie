@@ -71,9 +71,14 @@ def cut_profiles(pulse_profs: dict, time_window_mask: np.array, rmid: np.array) 
     # Gather the last 20 values from HRTS measurement
     n_profs, t_profs = pulse_profs['NE']['values'][time_window_mask], pulse_profs['TE']['values'][time_window_mask]
     dne_profs, dte_profs = pulse_profs['DNE']['values'][time_window_mask], pulse_profs['DTE']['values'][time_window_mask]
-    n_cut, t_cut, together_cut = np.zeros((len(n_profs), 20)), np.zeros((len(t_profs), 20)), np.zeros((len(n_profs), 2, 20))
-    dn_cut, dt_cut, d_together_cut = np.zeros((len(dne_profs), 20)), np.zeros((len(dte_profs), 20)), np.zeros((len(n_profs), 2, 20 ))
-    rmid_cut = np.zeros((len(n_profs), 20))
+    # n_cut, t_cut, together_cut = np.zeros((len(n_profs), 20)), np.zeros((len(t_profs), 20)), np.zeros((len(n_profs), 2, 20))
+    # dn_cut, dt_cut, d_together_cut = np.zeros((len(dne_profs), 20)), np.zeros((len(dte_profs), 20)), np.zeros((len(n_profs), 2, 20 ))
+    # rmid_cut = np.zeros((len(n_profs), 20))
+    n_cut, t_cut = n_profs[:, -20:], t_profs[:, -20:]
+    dn_cut, dt_cut = dne_profs[:, -20:], dte_profs[:, -20:]
+    together_cut, d_together_cut = np.stack((n_cut, t_cut), 1), np.stack((dn_cut, dt_cut), 1)
+    rmid_cut = rmid[:, -20:]
+    """
     for n, (n_prof, t_prof, dne_prof, dte_prof) in enumerate(zip(n_profs, t_profs, dne_profs, dte_profs)): 
         # Grab only the pedestal region
         # pedestal_mask = np.logical_and(psi[n] > 0.8, psi[n] < 1.1)
@@ -93,6 +98,7 @@ def cut_profiles(pulse_profs: dict, time_window_mask: np.array, rmid: np.array) 
         dn_cut[n] = d_pedestal
         dt_cut[n] = t_pedestal
         d_together_cut[n] = d_together
+    """
     return n_cut, t_cut, together_cut, rmid_cut, dn_cut, dt_cut, d_together_cut
 def cut_controls(pulse_mps: dict, t1: float, t2: float, time_windows: np.array, pulse_num: int) -> np.array: 
     def sample_input(mp_loc: dict, key: str, t1, t2, window_times, index): 
@@ -159,17 +165,15 @@ def main() -> dict:
         N_CUT, T_CUT, TOGETHER_CUT, RMID_CUT, DN_CUT, DT_CUT, D_TOGETHER_CUT = cut_profiles(pulse_profs, time_window_mask, RMID)
         CONTROLS = cut_controls(pulse_mps, t1, t2, time_windows, pulse_num)      
         ELM_FRACS = get_elm_timings(pulse_num, time_windows)
-        # everything runs up to here
         # IMPLEMENT: ELM CYCLES
         add_to_dict(JET_PROC_DICT, pulse_num, machine_parameters=CONTROLS, profiles=TOGETHER_CUT, profiles_uncert=D_TOGETHER_CUT, elm_fractions=ELM_FRACS, rmids_efit=RMID)
         
         total_slices += len(time_windows)
         total_nan += np.isnan(CONTROLS[:, -2]).sum() + np.isnan(CONTROLS[:, -6]).sum()
-        
     total_pulses = len(JET_PROC_DICT)
     print(f'{total_slices} slices collected from {total_pulses} pulses\nThere are {total_nan} slices with unusable machine parameters')
     return JET_PROC_DICT
-
+# everything runs up to here
 if __name__ == '__main__': 
     JET_PROC_DICT = main()
     
