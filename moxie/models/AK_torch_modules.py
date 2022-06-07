@@ -1,6 +1,6 @@
-import torch 
-import torch.nn as nn 
-from .utils_ import * 
+import torch
+import torch.nn as nn
+from .utils_ import *
 
 class Flatten(nn.Module):
     def forward(self, input):
@@ -109,7 +109,7 @@ class TranspConvBlock(nn.Module):
 
 class DECODER(nn.Module):
     """ The DECODER """
-    def __init__(self, hidden_dims: List=[4, 2, 1], num_trans_conv_blocks: int = 2, trans_kernel_size: int = 3, trans_stride: int = 2, trans_padding: int = 1, end_conv_size=1):
+    def __init__(self, end_ch = 2, hidden_dims: List=[4, 2, 2], num_trans_conv_blocks: int = 2, trans_kernel_size: int = 3, trans_stride: int = 2, trans_padding: int = 1, end_conv_size=1):
         super(DECODER, self).__init__()
         self.num_trans_conv_blocks = num_trans_conv_blocks
         self.trans_kernel_size = trans_kernel_size
@@ -120,7 +120,8 @@ class DECODER(nn.Module):
         self.block = nn.ModuleList()
 
         self.block.append(UnFlatten(size=hidden_dims[0], length=end_conv_size))
-
+        if self.hidden_dims[-1] != end_ch:
+            self.hidden_dims.append(end_ch)
         for i in range(len(hidden_dims) - 1):
             self.block.append(TranspConvBlock(hidden_dims[i], hidden_dims[i+1], trans_kernel_size, num_trans_conv_blocks, trans_stride, trans_padding))
             # self.block.append(nn.ReLU())
@@ -161,17 +162,17 @@ class PRIORreg(nn.Module):
     """
     A regressor to define the prior for Z_mach
     """
-    def __init__(self, mach_latent_dim=10):
+    def __init__(self, in_dims = 13, mach_latent_dim=10, hidden_dims=[64, 32, 16]):
         super(PRIORreg, self).__init__()
         self.block = nn.ModuleList()
-        self.block.append(nn.Linear(13, 32))
-        self.block.append(nn.ReLU())
-        self.block.append(nn.Linear(32, 16))
-        self.block.append(nn.ReLU())
-        self.out_mu = nn.Linear(16, mach_latent_dim)
-        self.out_var = nn.Linear(16, mach_latent_dim)
-        # self.block.append(nn.Linear(16, 2))
-        # self.out = nn.Linear(100, 2)
+        in_d = in_dims
+        for h_dim in hidden_dims:
+            self.block.append(nn.Linear(in_d, h_dim))
+            self.block.append(nn.Sigmoid())
+            in_d = h_dim
+
+        self.out_mu = nn.Linear(in_d, mach_latent_dim)
+        self.out_var = nn.Linear(in_d, mach_latent_dim)
 
     def forward(self, x):
         for lay in self.block:
@@ -185,16 +186,15 @@ class AUXreg(nn.Module):
 
     This will take us from Z_mach to machine params
     """
-    def __init__(self, mp_size, z_mach_dim):
+    def __init__(self, mp_size, z_mach_dim, hidden_dims=[64, 32, 16]):
         super(AUXreg, self).__init__()
         self.block = nn.ModuleList()
-        self.block.append(nn.Linear(z_mach_dim, 64))
-        self.block.append(nn.ReLU())
-        self.block.append(nn.Linear(64, 32))
-        self.block.append(nn.ReLU())
-        self.block.append(nn.Linear(32, 16))
-        self.block.append(nn.ReLU())
-        self.block.append(nn.Linear(16, mp_size))
+        in_d = z_mach_dim
+        for h_dim in hidden_dims:
+            self.block.append(nn.Linear(in_d, h_dim))
+            self.block.append(nn.LeakyReLU())
+            in_d = h_dim
+        self.block.append(nn.Linear(in_d, mp_size))
 
     def forward(self, x):
         for lay in self.block:

@@ -1,0 +1,11 @@
+trial_id,loss,KLD_mach,KLD_stoch,loss_mp,time_this_iter_s,done,timesteps_total,episodes_total,training_iteration,experiment_id,date,timestamp,time_total_s,pid,hostname,node_ip,time_since_restore,timesteps_since_restore,iterations_since_restore,experiment_tag,config.LR,config.mach_latent_dim,config.stoch_latent_dim,config.beta_stoch,config.beta_mach_unsup,config.beta_mach_sup,config.alpha_prof,config.alpha_mach,config.start_sup_time,config.physics,config.gamma_stored_energy,config.encoder_end_dense_size
+02221_00000,0.20784848928451538,8.920294761657715,31.663484573364258,0.6575616002082825,5.0296900272369385,True,,,50.0,4ad0d0288fca42f98add3d3098ea44f7,2022-04-11_17-13-47,1649686427.0,253.95568704605103,1154026.0,dx6-mat-32,128.214.72.230,253.95568704605103,0.0,50.0,"0_alpha_mach=256,alpha_prof=491,beta_mach_sup=1.0,beta_mach_unsup=0.12282,beta_stoch=0.006,mach_latent_dim=9,start_sup_time=787,stoch_latent_dim=5",0.003,9.0,5.0,0.006,0.12282105316294127,1.0,491.0,256.0,787.0,False,0.0,128.0
+02221_00001,0.31264424324035645,3.939607858657837,0.3347190320491791,0.6852966547012329,5.162356376647949,False,,,9.0,4d35e61cd3cc42d08a0127303d7ce106,2022-04-11_17-14-35,1649686475.0,46.49459266662598,1154025.0,dx6-mat-32,128.214.72.230,46.49459266662598,0.0,9.0,"1_alpha_mach=168,alpha_prof=266,beta_mach_sup=1.0,beta_mach_unsup=1.6791,beta_stoch=2.151,mach_latent_dim=7,start_sup_time=198,stoch_latent_dim=5",0.003,7.0,5.0,2.1510000000000002,1.67908558972952,1.0,266.0,168.0,198.0,False,0.0,128.0
+02221_00002,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+02221_00003,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+02221_00004,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+02221_00005,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+02221_00006,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+02221_00007,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+02221_00008,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+02221_00009,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
