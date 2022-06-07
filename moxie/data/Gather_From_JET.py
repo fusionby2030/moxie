@@ -115,6 +115,7 @@ if __name__ == '__main__':
 			all_dict[str(pulse_num)] = {'inputs': inputs_dict, 'outputs': outputs_dict, 'elms': elm_arr}
 		else:
 			elm_arr = gather_elm_timings(pulse_num, dda, uid)
-			all_dict[str(pulse_num)]['elms'] = np.append(all_dict[str(pulse_num)]['elms'], elm_arr)
+            if elm_array != 'NO ELM TIMINGS': 
+                all_dict[str(pulse_num)]['elms'] = np.append(all_dict[str(pulse_num)]['elms'], elm_arr)
 	with open('./all_shots.pickle', 'wb') as file:
 		pickle.dump(all_dict, file)
