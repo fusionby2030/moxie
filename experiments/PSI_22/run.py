@@ -3,7 +3,7 @@ import sys, os, pathlib
 
 from moxie.models.PSI_model_ak1 import PSI_MODEL
 from moxie.data.profile_lightning_module_psi import PLDATAMODULE_AK
-from moxie.experiments.DIVA_EXP_AK_1 import EXAMPLE_DIVA_EXP_AK
+from moxie.experiments.PSI_LIGHTNING_EXP import PSI_EXP
 
 import torch
 import pytorch_lightning as pl
@@ -18,7 +18,7 @@ exp_path = file_path.parent
 # Path of moxie stuffs
 home_path = file_path.parent.parent.parent
 # Path to data
-dataset_path = home_path / 'data' / 'processed' / f'ML_READY_dict_{CURRENT_DATE}.pickle'
+dataset_path = home_path / 'data' / 'processed' / f'ML_READY_dict_06062022.pickle'# f'ML_READY_dict_{CURRENT_DATE}.pickle'
 
 
 # SEED EVERYTHING!
@@ -36,10 +36,10 @@ HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size':512, 'scheduler_st
 model_hyperparams = {'out_length':20, 'elm_style_choice': 'simple',
                     'mach_latent_dim': 9, 'stoch_latent_dim': 3, # 0.0273
                     'beta_stoch': 1.0, 'beta_mach_unsup': 0.01,'beta_mach_sup':  0.00,
-                    'alpha_mach': 100, 'alpha_prof': 100.0,  
+                    'alpha_mach': 100, 'alpha_prof': 100.0,
                     'start_sup_time': 1000, 'scheduler_step': 5000,
                     'physics': True, 'gamma_stored_energy': 50.0, 'gamma_bpol': 100.0, 'gamma_beta': 10.0,
-                    'mp_hdims_aux': [40, 40, 40, 40, 40, 40, 32, 16], 'mp_hdims_cond':[40, 40, 40, 40, 40, 40, 32, 16], 
+                    'mp_hdims_aux': [40, 40, 40, 40, 40, 40, 32, 16], 'mp_hdims_cond':[40, 40, 40, 40, 40, 40, 32, 16],
                     'hidden_dims': [3, 3, 6], 'loss_type': 'semi-supervised-cutoff',}
 
 params = {**STATIC_PARAMS, **HYPERPARAMS, **model_hyperparams}
@@ -49,12 +49,12 @@ datacls = PLDATAMODULE_AK(**params)
 
 
 model = PSI_MODEL(**model_hyperparams)
-model_name='PSI_v2_physics'
+model_name='PSI_renewed'
 trainer_params = {'max_epochs': 50, 'gradient_clip_val': 0.5, 'gradient_clip_algorithm': 'value'}
 
 logger = pl.loggers.TensorBoardLogger(exp_path / "tb_logs", name=model_name)
 
-experiment = EXAMPLE_DIVA_EXP_AK(model, params)
+experiment = PSI_EXP(model, params)
 runner = pl.Trainer(logger=logger, **trainer_params)
 
 runner.fit(experiment, datamodule=datacls)
@@ -72,7 +72,3 @@ state = {'model': model.state_dict(),
         }
 model_pth_name = 'modelstatedict_' + model_name + '.pth'
 torch.save(state, exp_path / 'model_results' / model_pth_name)
-
-
-
-
