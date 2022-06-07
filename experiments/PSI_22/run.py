@@ -18,7 +18,7 @@ exp_path = file_path.parent
 # Path of moxie stuffs
 home_path = file_path.parent.parent.parent
 # Path to data
-dataset_path = home_path / 'data' / 'processed' / f'ML_READY_dict_06062022.pickle'# f'ML_READY_dict_{CURRENT_DATE}.pickle'
+dataset_path = home_path / 'data' / 'processed' / f'ML_READY_dict.pickle'# f'ML_READY_dict_{CURRENT_DATE}.pickle'
 
 
 # SEED EVERYTHING!
