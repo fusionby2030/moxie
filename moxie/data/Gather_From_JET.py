@@ -95,28 +95,28 @@ def gather_elm_timings(pulse_num, dda, uid):
         return np.array(['NO ELM TIMINGS'])
 
 if __name__ == '__main__':
-	df = pd.read_csv('./JPD_PPF_INFO.csv')
-	validated_df = df[df['FLAG:HRTSdatavalidated'] > 0]
+        df = pd.read_csv('/home/mn2596/JETPEDESTAL_ANALYSIS/moxie_profile_project/final_data/processed/jet-pedestal-database.csv')
+        validated_df = df[df['FLAG:HRTSdatavalidated'] > 0]
 
-	valid_count = 0
-	all_dict = {}
+        valid_count = 0
+        all_dict = {}
 
-	for index, row in validated_df.iterrows():
-		name, pulse_num = row['dda'], int(row['shot'])
-		dda, uid = name.split('/')
-		valid_count += 1
-		if str(pulse_num) not in all_dict.keys():
-			print('\n-----SHOT {} -------{} Total'.format(pulse_num, valid_count))
-			print('Gathering Outputs')
-			outputs_dict = gather_all_outputs(pulse_num)
-			print('Gathering Inputs')
-			inputs_dict = gather_all_inputs(pulse_num)
-			print('Gathering ELMS')
-			elm_arr = gather_elm_timings(pulse_num, dda, uid)
-			all_dict[str(pulse_num)] = {'inputs': inputs_dict, 'outputs': outputs_dict, 'elms': elm_arr}
-		else:
-			elm_arr = gather_elm_timings(pulse_num, dda, uid)
-            if elm_arr != 'NO ELM TIMINGS':
-                all_dict[str(pulse_num)]['elms'] = np.append(all_dict[str(pulse_num)]['elms'], elm_arr)
-	with open(f'./JET_RAW_DATA_{CURRENT_DATE}.pickle', 'wb') as file: # f'processed_pulse_dict_{CURRENT_DATE}.pickle'
-		pickle.dump(all_dict, file)
+        for index, row in validated_df.iterrows():
+                name, pulse_num = row['dda'], int(row['shot'])
+                dda, uid = name.split('/')
+                valid_count += 1
+                if str(pulse_num) not in all_dict.keys():
+                        print('\n-----SHOT {} -------{} Total'.format(pulse_num, valid_count))
+                        print('Gathering Outputs')
+                        outputs_dict = gather_all_outputs(pulse_num)
+                        print('Gathering Inputs')
+                        inputs_dict = gather_all_inputs(pulse_num)
+                        print('Gathering ELMS')
+                        elm_arr = gather_elm_timings(pulse_num, dda, uid)
+                        all_dict[str(pulse_num)] = {'inputs': inputs_dict, 'outputs': outputs_dict, 'elms': elm_arr}
+                else:
+                        elm_arr = gather_elm_timings(pulse_num, dda, uid)
+                        if elm_arr != 'NO ELM TIMINGS':
+                            all_dict[str(pulse_num)]['elms'] = np.append(all_dict[str(pulse_num)]['elms'], elm_arr)
+        with open(f'../../data/raw/JET_RAW_DATA_{CURRENT_DATE}.pickle', 'wb') as file: # f'processed_pulse_dict_{CURRENT_DATE}.pickle'
+                pickle.dump(all_dict, file)

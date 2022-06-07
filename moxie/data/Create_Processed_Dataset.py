@@ -35,7 +35,7 @@ PROCESSED_DATA_DIR = '../../data/processed/'
 RAW_DATA_DIR = '../../data/raw/'
 
 JET_RAW_DATA_LOC = RAW_DATA_DIR + f'JET_RAW_DATA_{CURRENT_DATE}.pickle' # f'processed_pulse_dict_{CURRENT_DATE}.pickle'
-JET_PDB_FILE_LOC = RAW_DATA_DIR + 'jet-pedestal-database.csv'
+JET_PDB_FILE_LOC = '/home/mn2596/JETPEDESTAL_ANALYSIS/moxie_profile_project/final_data/processed/jet-pedestal-database.csv'
 
 JET_PDB_MP_COLS = [ 'Ip(MA)', 'B(T)', 'R(m)', 'a(m)', 'averagetriangularity', 'Meff', 'P_NBI(MW)', 'P_ICRH(MW)', 'P_TOT=PNBI+Pohm+PICRH-Pshi(MW)', 'plasmavolume(m^3)', 'q95', 'gasflowrateofmainspecies10^22(e/s)']
 JET_PDB_PROF_COLS = ['Tepedheight(keV)', 'nepedheight10^19(m^-3)', 'nesep']
