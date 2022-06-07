@@ -1,12 +1,14 @@
 """
 author: adam.kit@helsinki.fi
 
-Script uses the Simple Access Layer from JET to gather the required data. 
+Script uses the Simple Access Layer from JET to gather the required data.
 """
 from jet.data import sal
 import pickle
 import numpy as np
 import pandas as pd
+from datetime import datetime
+CURRENT_DATE = datetime.today().strftime('%d%m%Y')
 
 def get_ppf(pulse, dda, dtype, user='jetppf', sequence=0):
     return sal.get('/pulse/{}/ppf/signal/{}/{}/{}:{}'.format(pulse, user, dda, dtype, sequence))
@@ -83,20 +85,19 @@ def gather_all_outputs(pulse_num):
             continue
     return profiles_dict
 
-def gather_elm_timings(pulse_num, dda, uid): 
-    try: 
+def gather_elm_timings(pulse_num, dda, uid):
+    try:
         new_signal = get_ppf(pulse_num, dda=dda, user=uid, dtype='TEL1')
-        new_data = new_signal.data 
+        new_data = new_signal.data
         return new_data
-    except Exception as e: 
+    except Exception as e:
         print('NO ELM TIMINGS')
         return np.array(['NO ELM TIMINGS'])
 
 if __name__ == '__main__':
-	df = pd.read_csv('./jet-pedestal-database.csv')
+	df = pd.read_csv('./JPD_PPF_INFO.csv')
 	validated_df = df[df['FLAG:HRTSdatavalidated'] > 0]
 
-	validated_shots = list(set(HRTS_VALIDATED_SHOTS))
 	valid_count = 0
 	all_dict = {}
 
@@ -104,7 +105,7 @@ if __name__ == '__main__':
 		name, pulse_num = row['dda'], int(row['shot'])
 		dda, uid = name.split('/')
 		valid_count += 1
-		if str(pulse_num) not in all_dict.keys(): 
+		if str(pulse_num) not in all_dict.keys():
 			print('\n-----SHOT {} -------{} Total'.format(pulse_num, valid_count))
 			print('Gathering Outputs')
 			outputs_dict = gather_all_outputs(pulse_num)
@@ -115,7 +116,7 @@ if __name__ == '__main__':
 			all_dict[str(pulse_num)] = {'inputs': inputs_dict, 'outputs': outputs_dict, 'elms': elm_arr}
 		else:
 			elm_arr = gather_elm_timings(pulse_num, dda, uid)
-            if elm_array != 'NO ELM TIMINGS': 
+            if elm_arr != 'NO ELM TIMINGS':
                 all_dict[str(pulse_num)]['elms'] = np.append(all_dict[str(pulse_num)]['elms'], elm_arr)
-	with open('./all_shots.pickle', 'wb') as file:
+	with open(f'./JET_RAW_DATA_{CURRENT_DATE}.pickle', 'wb') as file: # f'processed_pulse_dict_{CURRENT_DATE}.pickle'
 		pickle.dump(all_dict, file)
