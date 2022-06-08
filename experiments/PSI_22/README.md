@@ -6,4 +6,6 @@ You can visualize results, if you have tensorboard installed, via: `tensorboard 
 
 You can change hyperparameters. 
 
-There might be argparsing later, if I am not lazy. 
+There might be argparsing later, if I am not lazy.
+
+We shall see.  
