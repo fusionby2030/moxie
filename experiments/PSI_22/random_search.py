@@ -89,11 +89,10 @@ def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5
         'encoder_end_dense_size': 128, # 128,
         'dataset_choice': 'SANDBOX_NO_VARIATIONS',
         'scheduler_step': 0.0,
-        'mp_hdims_aux': [128, 128, 64, 32],
-        'mp_hdims_cond': [128, 128, 64, 32],
-        'hidden_dims': [3, 6],
+        'mp_hdims_aux': [40, 40, 40, 40, 40, 40, 32, 16], 'mp_hdims_cond':[40, 40, 40, 40, 40, 40, 32, 16],
+        'hidden_dims': [2, 4],
         'elm_style_choice': 'simple',
-        'loss_type': 'semi-supervised-cutoff-increasing',}
+        'loss_type': 'semi-supervised-cutoff',}
 
 
     scheduler = ASHAScheduler(
