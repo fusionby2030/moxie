@@ -15,7 +15,7 @@ class PSI_MODEL(Base):
         Single Encder -> Decoder, i.e., ne, te (and ELM perc) are all passed through the same encoder
     """
     num_iterations = 0 # Trickery for the semi-supervsied loss,
-    def __init__(self, in_ch: int=2, out_length: int = 19, elm_style_choice: str = 'none',
+    def __init__(self, in_ch: int=2, out_length: int = 20, elm_style_choice: str = 'none',
                         alpha_prof: float = 1., alpha_mach: float = 1.,
                         beta_stoch: float = 0.01,
                         beta_mach_unsup: float = 0.01, beta_mach_sup: float = 1.,
@@ -84,8 +84,6 @@ class PSI_MODEL(Base):
         self.decoder = DECODER(end_ch=in_ch, hidden_dims = reversed_dims, end_conv_size=end_conv_size) # DECODER(hidden_dims = self.hidden_dims[::-1], end_conv_size=end_conv_size)
         final_size = self.decoder.final_size
         self.final_layer = nn.Linear(final_size, out_length)
-        # self.final_layer_t = nn.Linear(final_size, out_length)
-        # self.final_layer_elm = nn.Linear(final_size, out_length)
 
         # AUX REG
         self.aux_reg = AUXreg(z_mach_dim=self.mach_latent_dim, mp_size=num_machine_params, hidden_dims=self.mp_hdims_aux)
