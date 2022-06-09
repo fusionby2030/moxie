@@ -49,6 +49,8 @@ def main(model_hyperparams, args):
     model_pth_name = 'modelstatedict_' + args.name + '.pth'
     torch.save(state, exp_path / 'model_results' / model_pth_name)
 
+# {'LR': 0.003, 'mach_latent_dim': 12, 'stoch_latent_dim': 3, 'beta_stoch': 5.0, 'beta_mach_unsup': 0.0843, 'beta_mach_sup': 10.0, 'alpha_prof': 959, 'alpha_mach': 200.0, 'start_sup_time': 500.0, 'physics': False, 'gamma_stored_energy': 0.0, 'encoder_end_dense_size': 128, 'dataset_choice': 'SANDBOX_NO_VARIATIONS', 'scheduler_step': 0.0, 'mp_hdims_aux': [128, 128, 64, 32], 'mp_hdims_cond': [128, 128, 64, 32], 'hidden_dims': [3, 6], 'elm_style_choice': 'simple', 'loss_type': 'semi-supervised-cutoff-increasing'}
+
 if __name__ == '__main__':
 
     file_path = pathlib.Path(__file__).resolve()
