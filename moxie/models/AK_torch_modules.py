@@ -168,7 +168,7 @@ class PRIORreg(nn.Module):
         in_d = in_dims
         for h_dim in hidden_dims:
             self.block.append(nn.Linear(in_d, h_dim))
-            self.block.append(nn.Sigmoid())
+            self.block.append(nn.ReLU())
             in_d = h_dim
 
         self.out_mu = nn.Linear(in_d, mach_latent_dim)
@@ -192,7 +192,7 @@ class AUXreg(nn.Module):
         in_d = z_mach_dim
         for h_dim in hidden_dims:
             self.block.append(nn.Linear(in_d, h_dim))
-            self.block.append(nn.LeakyReLU())
+            self.block.append(nn.ReLU())
             in_d = h_dim
         self.block.append(nn.Linear(in_d, mp_size))
 

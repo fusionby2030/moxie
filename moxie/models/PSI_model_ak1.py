@@ -292,7 +292,7 @@ class PSI_MODEL(Base):
             ).mean(0).sum()
 
         self.num_iterations += 1
-        if self.loss_type == 'semi-supervised': 
+        if self.loss_type == 'semi-supervised':
             if self.num_iterations % 2 == 0:
                 beta_mach_unsup_new = get_new_beta_mach_sup(start_sup_time, cutoff_2, self.beta_mach_sup, self.beta_mach_unsup, self.num_iterations)
                 sup_kld_loss =torch.distributions.kl.kl_divergence(
@@ -310,8 +310,8 @@ class PSI_MODEL(Base):
 
                 unsupervised_loss = self.alpha_prof * recon_prof_loss + self.beta_stoch * stoch_kld_loss + self.beta_mach_unsup * unsup_kld_loss
                 return {'loss': unsupervised_loss, 'KLD_stoch': stoch_kld_loss, 'KLD_mach': unsup_kld_loss, 'Reconstruction_Loss': recon_prof_loss, 'Reconstruction_Loss_mp': recon_mp_loss, 'Physics_all': physics_loss, 'static_stored_energy': stored_energy_loss, 'poloidal_field_approximation': bpol_loss, 'beta_approx': beta_loss}
-            
-        elif self.loss_type == 'semi-supervised-cutoff': 
+
+        elif self.loss_type == 'semi-supervised-cutoff':
             if self.num_iterations > start_sup_time and self.num_iterations % 2 == 0:
                 beta_mach_unsup_new = get_new_beta_mach_sup(start_sup_time, cutoff_2, self.beta_mach_sup, self.beta_mach_unsup, self.num_iterations)
                 sup_kld_loss =torch.distributions.kl.kl_divergence(

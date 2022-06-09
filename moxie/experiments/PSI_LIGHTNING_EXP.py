@@ -1,20 +1,13 @@
 import math
 from typing import List, Callable, Union, Any, TypeVar, Tuple
 import numpy as np
-Tensor = TypeVar('torch.tensor')
-import PIL.Image
 import torch
 from torch import optim
-# from torchvision.transforms import ToTensor
 import pytorch_lightning as pl
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
-import io
-# from..models.VAE import BaseVAE
-
-
-# def plot_to_image(figure):
+Tensor = TypeVar('torch.tensor')
 
 def de_standardize(x, mu, var):
     return (x*var) + mu
@@ -35,90 +28,15 @@ class PSI_EXP(pl.LightningModule):
     def forward(self, input, **kwargs):
         return self.model(input, **kwargs)
 
-    def physics_dojo(self, batch_x, interp_size=100, mp_idx=-5, mp_lims=(-0.5e6, -5e6)):
-        MP_norm, MP_var = self.trainer.datamodule.get_machine_norms(device=self.current_device)
-        D_norm, D_var = self.trainer.datamodule.get_density_norms(device=self.current_device)
-        T_norm, T_var = self.trainer.datamodule.get_temperature_norms(device=self.current_device)
-
-        mp_interp = standardize(torch.linspace(mp_lims[0], mp_lims[1], interp_size, device=self.current_device), MP_norm[mp_idx], MP_var[mp_idx])
-
-        interp_sample_mp = torch.repeat_interleave(batch_x, interp_size, dim=0)
-        interp_sample_mp[:, mp_idx] = mp_interp
-
-        # calculate new Q!
-        interp_sample_mp = replace_q95_with_qcly(interp_sample_mp)
-
-        # Feed to the Prior Reg
-        cond_prior_mu, cond_prior_var = self.model.p_zmachx(interp_sample_mp)
-
-        # The latent space from prior reg
-        cond_z_mach, z_stoch = self.model.reparameterize(cond_prior_mu, cond_prior_var), torch.distributions.normal.Normal(0, 1).sample((interp_size, 3)).to(self.current_device)
-        z_cond = torch.cat((z_stoch, cond_z_mach), 1)
-
-        # Predict the profiles and the machine parameters
-        out_profs_cond, out_mp_cond = self.model.p_yhatz(z_cond), self.model.q_hatxzmach(cond_z_mach)
-
-        # Check the density limit in the out profs  (negative densities)
-        out_profs_cond_destand = torch.clone(out_profs_cond)
-        out_profs_cond_destand[:, 0] = de_standardize(out_profs_cond_destand[:, 0], D_norm, D_var)
-        out_profs_cond_destand[:, 1] = de_standardize(out_profs_cond_destand[:, 1], T_norm, T_var)
-
-
-        out_profs_cond_destand_clamped = torch.clamp(out_profs_cond_destand, min=None, max=0.0)
-
-        out_profs_cond_stand_clamped = torch.clone(out_profs_cond_destand_clamped)
-        out_profs_cond_stand_clamped[:, 0] = standardize(out_profs_cond_stand_clamped[:, 0], D_norm, D_var)
-        out_profs_cond_stand_clamped[:, 1] = standardize(out_profs_cond_stand_clamped[:, 1], D_norm, D_var)
-
-        out_profs_comparison = torch.zeros_like(out_profs_cond_destand)
-        out_profs_comparison[:, 0] = standardize(out_profs_comparison[:, 0], D_norm, D_var)
-        out_profs_comparison[:, 1] = standardize(out_profs_comparison[:, 1], D_norm, D_var)
-
-
-        # compare_density_limit = F.mse_loss(out_profs_comparison, out_profs_cond_stand_clamped)
-
-        # Feed profiles to the encoder
-        mu_stoch, log_var_stoch, mu_mach, log_var_mach = self.model.q_zy(out_profs_cond)
-        encoded_z_stoch, encoded_z_mach = self.model.reparameterize(mu_stoch, log_var_stoch), self.model.reparameterize(mu_mach, log_var_mach)
-        z_encoded = torch.cat((encoded_z_stoch, encoded_z_mach), 1)
-
-        # Grab the predicted machine parameters
-        out_mp_encoded = self.model.q_hatxzmach(encoded_z_mach)
-
-        # Compare two out mps
-        # compare_mp_loss = F.mse_loss(out_mp_encoded, out_mp_cond)
-
-        return out_profs_comparison, out_profs_cond_stand_clamped, out_mp_encoded, interp_sample_mp# out_mp_cond
-
-
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
         real_profile, machine_params, masks, ids = batch
-        # Get batch means
-        """
-        records_array = np.array([int(x.split('/')[0]) for x in ids])
-        idx_sort = np.argsort(records_array)
-        sorted_records_array = records_array[idx_sort]
-        vals, idx_start, count = np.unique(sorted_records_array, return_counts=True, return_index=True)
-        res = np.split(idx_sort, idx_start[1:])
-        """
         self.current_device = real_profile.device
 
         sample_batch_x, sample_batch_y = machine_params[0:1], real_profile[0:1]
 
 
         results = self.forward(real_profile, in_mp=machine_params)
-        """
-        if self.physics: # and batch_idx%3==0 and self.model.num_iterations > self.cutoff:
-            NAMES = ['Q95', 'RGEO', 'CR0', 'VOLM', 'TRIU', 'TRIL', 'ELON', 'POHM', 'IPLA', 'BVAC', 'NBI', 'ICRH', 'ELER']
-            REDUCED_NAMES = ['POHM', 'NBI', 'ICRH', 'ELER', 'IPLA', 'BVAC']
-            choice = np.random.choice(REDUCED_NAMES)
-            # Q_cyc= ((1+2kappa^2) / 2 ) * (2pia^2 Bt) / (R IP  mu_0)
-            # Here we need to implement something that scales everything related to q95.
-            mp_idx, mp_lims = physics_dojo_dict[choice]['idx'], physics_dojo_dict[choice]['lim']
-            physics_dojo_results = self.physics_dojo(sample_batch_x, mp_idx=mp_idx, mp_lims=mp_lims)
-        else:
-            physics_dojo_results = (0.0, 0.0, 0.0, 0.0)
-        """
+
         physics_dojo_results = (0.0, 0.0, 0.0, 0.0)
         train_loss = self.model.loss_function(**results, M_N = self.params['batch_size']/ len(self.trainer.datamodule.train_dataloader()), optimizer_idx=optimizer_idx, batch_idx = batch_idx, mask=masks, D_norms= self.trainer.datamodule.get_density_norms(), T_norms= self.trainer.datamodule.get_temperature_norms(), MP_norms = self.trainer.datamodule.get_machine_norms(), physics_dojo_results=physics_dojo_results, start_sup_time=self.start_sup_time)
 
@@ -241,6 +159,59 @@ class PSI_EXP(pl.LightningModule):
         else:
             return [optimizer]
         return [optimizer], [lr_scheduler]
+
+    def physics_dojo(self, batch_x, interp_size=100, mp_idx=-5, mp_lims=(-0.5e6, -5e6)):
+        MP_norm, MP_var = self.trainer.datamodule.get_machine_norms(device=self.current_device)
+        D_norm, D_var = self.trainer.datamodule.get_density_norms(device=self.current_device)
+        T_norm, T_var = self.trainer.datamodule.get_temperature_norms(device=self.current_device)
+
+        mp_interp = standardize(torch.linspace(mp_lims[0], mp_lims[1], interp_size, device=self.current_device), MP_norm[mp_idx], MP_var[mp_idx])
+
+        interp_sample_mp = torch.repeat_interleave(batch_x, interp_size, dim=0)
+        interp_sample_mp[:, mp_idx] = mp_interp
+
+        # calculate new Q!
+        interp_sample_mp = replace_q95_with_qcly(interp_sample_mp)
+
+        # Feed to the Prior Reg
+        cond_prior_mu, cond_prior_var = self.model.p_zmachx(interp_sample_mp)
+
+        # The latent space from prior reg
+        cond_z_mach, z_stoch = self.model.reparameterize(cond_prior_mu, cond_prior_var), torch.distributions.normal.Normal(0, 1).sample((interp_size, 3)).to(self.current_device)
+        z_cond = torch.cat((z_stoch, cond_z_mach), 1)
+
+        # Predict the profiles and the machine parameters
+        out_profs_cond, out_mp_cond = self.model.p_yhatz(z_cond), self.model.q_hatxzmach(cond_z_mach)
+
+        # Check the density limit in the out profs  (negative densities)
+        out_profs_cond_destand = torch.clone(out_profs_cond)
+        out_profs_cond_destand[:, 0] = de_standardize(out_profs_cond_destand[:, 0], D_norm, D_var)
+        out_profs_cond_destand[:, 1] = de_standardize(out_profs_cond_destand[:, 1], T_norm, T_var)
+
+
+        out_profs_cond_destand_clamped = torch.clamp(out_profs_cond_destand, min=None, max=0.0)
+
+        out_profs_cond_stand_clamped = torch.clone(out_profs_cond_destand_clamped)
+        out_profs_cond_stand_clamped[:, 0] = standardize(out_profs_cond_stand_clamped[:, 0], D_norm, D_var)
+        out_profs_cond_stand_clamped[:, 1] = standardize(out_profs_cond_stand_clamped[:, 1], D_norm, D_var)
+
+        out_profs_comparison = torch.zeros_like(out_profs_cond_destand)
+        out_profs_comparison[:, 0] = standardize(out_profs_comparison[:, 0], D_norm, D_var)
+        out_profs_comparison[:, 1] = standardize(out_profs_comparison[:, 1], D_norm, D_var)
+
+        # compare_density_limit = F.mse_loss(out_profs_comparison, out_profs_cond_stand_clamped)
+        # Feed profiles to the encoder
+        mu_stoch, log_var_stoch, mu_mach, log_var_mach = self.model.q_zy(out_profs_cond)
+        encoded_z_stoch, encoded_z_mach = self.model.reparameterize(mu_stoch, log_var_stoch), self.model.reparameterize(mu_mach, log_var_mach)
+        z_encoded = torch.cat((encoded_z_stoch, encoded_z_mach), 1)
+
+        # Grab the predicted machine parameters
+        out_mp_encoded = self.model.q_hatxzmach(encoded_z_mach)
+
+        # Compare two out mps
+        # compare_mp_loss = F.mse_loss(out_mp_encoded, out_mp_cond)
+
+        return out_profs_comparison, out_profs_cond_stand_clamped, out_mp_encoded, interp_sample_mp
 
     def get_cond_enc_real_for_comparison(self):
         train_data_iter = iter(self.trainer.datamodule.train_dataloader())
