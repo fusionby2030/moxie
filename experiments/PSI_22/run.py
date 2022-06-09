@@ -28,7 +28,6 @@ def main(model_hyperparams, args):
     datacls = PLDATAMODULE_AK(**params)
     # TODO: Grab Sizes of the input/output datasets
 
-
     model = PSI_MODEL(**model_hyperparams)
     trainer_params = {'max_epochs': 50, 'gradient_clip_val': 0.5, 'gradient_clip_algorithm': 'value'}
 
@@ -52,13 +51,10 @@ def main(model_hyperparams, args):
 
 if __name__ == '__main__':
 
-    # Find the curent path of the file
-    file_path = pathlib.Path(__file__).resolve()# .parent.parent
-    # Path of experiment
+    file_path = pathlib.Path(__file__).resolve()
     exp_path = file_path.parent
-    # Path of moxie stuffs
     home_path = file_path.parent.parent.parent
-    # Path to data
+
     dataset_path = home_path / 'data' / 'processed' / f'ML_READY_dict.pickle'# f'ML_READY_dict_{CURRENT_DATE}.pickle'
     parser = ArgumentParser()
     parser.add_argument("--name", '-n',  type=str, default=f'EXAMPLE_{CURRENT_DATE}')
