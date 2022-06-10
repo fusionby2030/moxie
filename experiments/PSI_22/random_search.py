@@ -75,7 +75,7 @@ def train_model_on_tune(search_space, num_epochs, num_gpus, num_cpus, data_dir='
 
 def tune_asha(num_samples=500, num_epochs=50, gpus_per_trial=0, cpus_per_trial=5, data_dir='', pin_memory=False, experiment_name='NEW_CONSTRAINTS'):
     search_space = {
-        'LR': tune.loguniform(0.00001, 0.01),
+        'LR': tune.qloguniform(0.0001, 0.01, 0.0001),
         'mach_latent_dim': tune.choice([6, 7, 8, 9, 10, 11, 12]),
         'stoch_latent_dim': 3, # tune.choice([3, 4, 5]),
         'beta_stoch': 5.0, # tune.qloguniform(0.005,10, 0.001),

@@ -19,7 +19,7 @@ def main(model_hyperparams, args):
     model_hyperparams = {**model_hyperparams, **STATIC_PARAMS}
 
 
-    TRAINING_HYPERPARAMS = {'LR': 0.003, 'weight_decay': 0.0, 'batch_size':512, 'scheduler_step': 0}
+    TRAINING_HYPERPARAMS = {'LR': 0.0026891676946622796, 'weight_decay': 0.0, 'batch_size':512, 'scheduler_step': 0}
 
     # 'semi-supervised-start', 'semi-supervsied-cutoff', 'supervised'
 
@@ -50,6 +50,9 @@ def main(model_hyperparams, args):
     torch.save(state, exp_path / 'model_results' / model_pth_name)
 
 # {'LR': 0.003, 'mach_latent_dim': 12, 'stoch_latent_dim': 3, 'beta_stoch': 5.0, 'beta_mach_unsup': 0.0843, 'beta_mach_sup': 10.0, 'alpha_prof': 959, 'alpha_mach': 200.0, 'start_sup_time': 500.0, 'physics': False, 'gamma_stored_energy': 0.0, 'encoder_end_dense_size': 128, 'dataset_choice': 'SANDBOX_NO_VARIATIONS', 'scheduler_step': 0.0, 'mp_hdims_aux': [128, 128, 64, 32], 'mp_hdims_cond': [128, 128, 64, 32], 'hidden_dims': [3, 6], 'elm_style_choice': 'simple', 'loss_type': 'semi-supervised-cutoff-increasing'}
+# {'LR': 0.0026891676946622796, 'mach_latent_dim': 8, 'stoch_latent_dim': 3,
+# 'beta_stoch': 5.0, 'beta_mach_unsup': 0.0218, 'beta_mach_sup': 10.0, 'alpha_prof': 409,
+# 'alpha_mach': 200.0, 'start_sup_time': 500.0, 'physics': False, 'gamma_stored_energy': 0.0, 'encoder_end_dense_size': 128, 'dataset_choice': 'SANDBOX_NO_VARIATIONS', 'scheduler_step': 0.0, 'mp_hdims_aux': [40, 40, 40, 40, 40, 40, 32, 16], 'mp_hdims_cond': [40, 40, 40, 40, 40, 40, 32, 16], 'hidden_dims': [2, 4], 'elm_style_choice': 'simple', 'loss_type': 'semi-supervised-cutoff'}
 
 if __name__ == '__main__':
 
@@ -62,11 +65,11 @@ if __name__ == '__main__':
     parser.add_argument("--name", '-n',  type=str, default=f'EXAMPLE_{CURRENT_DATE}')
     parser.add_argument('--data_path', type=str, default=dataset_path)
     args = parser.parse_args()
-    model_hyperparams = {'mach_latent_dim': 9, 'stoch_latent_dim': 3, # 0.0273
-                        'beta_stoch': 1.0, 'beta_mach_unsup': 0.001,'beta_mach_sup':  0.00,
-                        'alpha_mach': 100, 'alpha_prof': 350.0,
-                        'start_sup_time': 1000, 'scheduler_step': 5000,
-                        'physics': True, 'gamma_stored_energy': 10.0, 'gamma_bpol': 100.0, 'gamma_beta': 10.0,
+    model_hyperparams = {'mach_latent_dim': 8, 'stoch_latent_dim': 3, # 0.0273
+                        'beta_stoch': 5.0, 'beta_mach_unsup': 0.0218,'beta_mach_sup':  10.00,
+                        'alpha_mach': 200, 'alpha_prof': 409.0,
+                        'start_sup_time': 500, 'scheduler_step': 0.0,
+                        'physics': False, 'gamma_stored_energy': 1.0, 'gamma_bpol': 100.0, 'gamma_beta': 10.0,
                         'mp_hdims_aux': [40, 40, 40, 40, 40, 40, 32, 16], 'mp_hdims_cond':[40, 40, 40, 40, 40, 40, 32, 16],
                         'hidden_dims': [2, 4], 'loss_type': 'semi-supervised-cutoff',}
 
