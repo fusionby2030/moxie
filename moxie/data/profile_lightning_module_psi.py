@@ -26,6 +26,7 @@ class PLDATAMODULE_AK(pl.LightningDataModule):
         self.mu_D, self.var_D = None, None # Density normailizing constants
         self.mu_MP, self.var_MP = None, None # Machine params normailizing constant
         self.elm_style_choice = elm_style_choice
+
         if elm_style_choice == 'simple':
             self.in_channels = 3
         else:
@@ -38,59 +39,50 @@ class PLDATAMODULE_AK(pl.LightningDataModule):
             self.pin_memory = False
 
     def prepare_data(self):
-        # Grab the dataset
+        def convert_to_tensors(data):
+            X, y, mask, ids, elms = data
+            X, y, elms = torch.from_numpy(X).float(), torch.from_numpy(y).float(), torch.from_numpy(elms).float()
+            mask = torch.from_numpy(mask) > 0
+            mask  = torch.repeat_interleave(mask.unsqueeze(1), self.in_channels, 1)
+            if self.elm_style_choice == 'simple':
+                ELM_data = torch.repeat_interleave(elms.unsqueeze(1), 20, 1).unsqueeze(1)
+                X = torch.concat((X, ELM_data), 1)
+                y = torch.column_stack((y, elms))
+            elif self.elm_style_choice == 'mp_only':
+                y = torch.column_stack((y, elms))
+            else: pass
+            return X, y, mask, ids, elms
+        def normalize_tensors(data,prof_norms={'mu_T': None, 'var_T': None, 'mu_D': None, 'var_D': None}, mp_norms={'mu': None, 'var': None}):
+            X, y, mask, ids, elms = data
+            X_norm, y_norm = torch.clone(X), torch.clone(y)
+            X_norm, *prof_norms_new = normalize_profiles(X, **prof_norms)
+            y_norm = replace_q95_with_qcly(y_norm)
+            if self.elm_style_choice in ['simple', 'mp_only']:
+                y_norm[:, :-1], *mp_norms_new  = standardize_simple(y_norm[:, :-1], **mp_norms)
+            else:
+                y_norm, *mp_norms_new  = standardize_simple(y_norm, **mp_norms)
+            return (X_norm, y_norm, mask, ids, elms), (dict(zip(prof_norms.keys(), prof_norms_new)), (dict(zip(mp_norms.keys(), mp_norms_new))))
+
         with open(self.file_loc, 'rb') as file:
             full_dict = pickle.load(file)
-            train_X, train_y, train_mask, train_ids, train_elms = full_dict['train']['profiles'],  full_dict['train']['machine_parameters'],  full_dict['train']['profiles_mask'], full_dict['train']['timings'], full_dict['train']['elm_fractions']
+            # train_data = train_X, train_y, train_mask, train_ids, train_elms
+            train_data = full_dict['train']['profiles'],  full_dict['train']['machine_parameters'],  full_dict['train']['profiles_mask'], full_dict['train']['timings'], full_dict['train']['elm_fractions']
+            val_data = full_dict['val']['profiles'],  full_dict['val']['machine_parameters'], full_dict['val']['profiles_mask'], full_dict['val']['timings'], full_dict['val']['elm_fractions']
+            test_data = full_dict['test']['profiles'],  full_dict['test']['machine_parameters'], full_dict['test']['profiles_mask'], full_dict['test']['timings'], full_dict['test']['elm_fractions']
 
+        train_data_tensor, val_data_tensor, test_data_tensor = convert_to_tensors(train_data), convert_to_tensors(val_data), convert_to_tensors(test_data)
+        train_data_norm, (prof_norms, mp_norms) = normalize_tensors(train_data_tensor)
+        val_data_norm, _ = normalize_tensors(val_data_tensor, prof_norms, mp_norms)
+        test_data_norm, _ = normalize_tensors(test_data_tensor, prof_norms, mp_norms)
 
-            val_X, val_y, val_mask, val_ids, val_elms = full_dict['val']['profiles'],  full_dict['val']['machine_parameters'], full_dict['val']['profiles_mask'], full_dict['val']['timings'], full_dict['val']['elm_fractions']
-            
-            test_X, test_y, test_mask, test_ids, test_elms = full_dict['test']['profiles'],  full_dict['test']['machine_parameters'], full_dict['test']['profiles_mask'], full_dict['test']['timings'], full_dict['test']['elm_fractions']
-
-        # Convert to float torch tensors
-        self.X_train, self.y_train = torch.from_numpy(train_X).float(), torch.from_numpy(train_y).float()
-        self.X_val, self.y_val = torch.from_numpy(val_X).float(), torch.from_numpy(val_y).float()
-        self.X_test, self.y_test = torch.from_numpy(test_X).float(), torch.from_numpy(test_y).float()
-
-        # The mask is tricky, as it is originally a bool list, which is True for all vals to be masked.
-        # Then is is converted into numpy (through the padding procedure), which results in a 0 for all vals to be masked, then 1 for vals not to be masked.
-        # here we convert them to torch bool tensors again
-        # and unsqueeze them to match the same dimensionality as the profiles [#datapoints, 2, #spatial resoultion]
-        # This is necesary for the mask_fill functions.
-
-        self.train_mask, self.val_mask, self.test_mask = torch.from_numpy(train_mask) > 0, torch.from_numpy(val_mask) > 0, torch.from_numpy(test_mask) > 0
-        self.train_mask, self.val_mask, self.test_mask = self.train_mask.unsqueeze(1),  self.val_mask.unsqueeze(1), self.test_mask.unsqueeze(1)
-        self.train_mask, self.val_mask, self.test_mask = torch.repeat_interleave(self.train_mask, self.in_channels, 1 ), torch.repeat_interleave(self.val_mask, self.in_channels, 1), torch.repeat_interleave(self.test_mask, self.in_channels, 1)
-
-        # Sanity check(s)
-        assert torch.isnan(self.y_train).any() == False
-
-        # Normalize the profiles
-
-        self.X_train, self.mu_D, self.var_D, self.mu_T, self.var_T = normalize_profiles(self.X_train)
-        self.X_val = normalize_profiles(self.X_val, self.mu_T, self.var_T, self.mu_D, self.var_D)
-        self.X_test = normalize_profiles(self.X_test, self.mu_T, self.var_T, self.mu_D, self.var_D)
-        if self.elm_style_choice == 'simple':
-            ELM_train = torch.repeat_interleave(torch.from_numpy(train_elms).unsqueeze(1), 20, 1).unsqueeze(1).float()
-            ELM_val = torch.repeat_interleave(torch.from_numpy(val_elms).unsqueeze(1), 20, 1).unsqueeze(1).float()
-            ELM_test = torch.repeat_interleave(torch.from_numpy(test_elms).unsqueeze(1), 20, 1).unsqueeze(1).float()
-            self.X_train, self.X_val, self.X_test = torch.concat((self.X_train, ELM_train), 1), torch.concat((self.X_val, ELM_val), 1), torch.concat((self.X_test, ELM_test), 1)
-        # Normalize the machine parameters
-        self.y_train, self.y_val, self.y_test = replace_q95_with_qcly(self.y_train), replace_q95_with_qcly(self.y_val), replace_q95_with_qcly(self.y_test)
-        self.y_train, self.mu_MP, self.var_MP = standardize_simple(self.y_train)
-        self.y_val = standardize_simple(self.y_val, self.mu_MP, self.var_MP)
-        self.y_test =  standardize_simple(self.y_test, self.mu_MP, self.var_MP)
-
-        if self.elm_style_choice == 'simple':
-            self.y_train = torch.column_stack((self.y_train, torch.from_numpy(train_elms).float()))
-            self.y_val = torch.column_stack((self.y_val, torch.from_numpy(val_elms).float()))
-            self.y_test = torch.column_stack((self.y_test, torch.from_numpy(test_elms).float()))
-
-        # make sure the ids are there
-        self.train_ids, self.val_ids, self.test_ids = train_ids, val_ids, test_ids
+        self.X_train, self.y_train, self.train_mask, self.train_ids, self.train_elms = train_data_norm
+        self.X_val, self.y_val, self.val_mask, self.val_ids, self.val_elms = val_data_norm
+        self.X_test, self.y_test, self.test_mask, self.test_ids, self.test_elms = test_data_norm
+        self.mu_T, self.var_T,  self.mu_D, self.var_D = prof_norms.values()
+        self.mu_MP, self.var_MP = mp_norms.values()
 
     def setup(self, stage=None):
+
         self.train_set = DATASET_AK(self.X_train, self.y_train, mask = self.train_mask, ids = self.train_ids)
         self.val_set = DATASET_AK(self.X_val, self.y_val, mask = self.val_mask, ids = self.val_ids)
         self.test_set = DATASET_AK(self.X_test, y = self.y_test, mask = self.test_mask, ids = self.test_ids)

@@ -23,7 +23,7 @@ class DATASET_AK(Dataset):
             self.norm_dicts = norm_dicts
         if ids is not None:
             self.ids = ids
-        if neseps is not None: 
+        if neseps is not None:
             self.neseps = neseps
 
     def __len__(self):

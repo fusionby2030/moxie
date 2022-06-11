@@ -29,6 +29,9 @@ class PSI_MODEL(Base):
         if elm_style_choice == 'simple':
             num_machine_params = 14
             in_ch = 3
+        elif elm_style_choice == 'mp_only':
+            num_machine_params = 14
+            in_ch = 2
         else:
             num_machine_params = 13
             in_ch = 2 # maybe make its own variable? Or try from KWARGS
@@ -38,8 +41,6 @@ class PSI_MODEL(Base):
         self.hidden_dims = hidden_dims
         self.mp_hdims_cond = mp_hdims_cond
         self.mp_hdims_aux = mp_hdims_aux
-
-
 
         # Loss hyperparams
 
@@ -89,8 +90,8 @@ class PSI_MODEL(Base):
         self.aux_reg = AUXreg(z_mach_dim=self.mach_latent_dim, mp_size=num_machine_params, hidden_dims=self.mp_hdims_aux)
 
     def forward(self, in_profs: Tensor, in_mp: Tensor = None) -> Tensor:
-
         prior_mu, prior_stoch = self.p_zmachx(in_mp)
+
         mu_stoch, log_var_stoch, mu_mach, log_var_mach = self.q_zy(in_profs)
         z_stoch, z_mach = self.reparameterize(mu_stoch, log_var_stoch), self.reparameterize(mu_mach, log_var_mach)
         z = torch.cat((z_stoch, z_mach), 1)

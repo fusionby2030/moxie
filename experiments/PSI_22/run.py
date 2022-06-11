@@ -15,7 +15,7 @@ CURRENT_DATE = datetime.today().strftime('%d%m%Y')
 def main(model_hyperparams, args):
     pl.utilities.seed.seed_everything(42)
 
-    STATIC_PARAMS = {'out_length': 20, 'elm_style_choice': 'simple', 'data_dir': args.data_path}
+    STATIC_PARAMS = {'out_length': 20, 'elm_style_choice': 'mp_only', 'data_dir': args.data_path}
     model_hyperparams = {**model_hyperparams, **STATIC_PARAMS}
 
 
