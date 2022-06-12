@@ -74,7 +74,6 @@ class PLDATAMODULE_AK(pl.LightningDataModule):
         train_data_norm, (prof_norms, mp_norms) = normalize_tensors(train_data_tensor)
         val_data_norm, _ = normalize_tensors(val_data_tensor, prof_norms, mp_norms)
         test_data_norm, _ = normalize_tensors(test_data_tensor, prof_norms, mp_norms)
-
         self.X_train, self.y_train, self.train_mask, self.train_ids, self.train_elms = train_data_norm
         self.X_val, self.y_val, self.val_mask, self.val_ids, self.val_elms = val_data_norm
         self.X_test, self.y_test, self.test_mask, self.test_ids, self.test_elms = test_data_norm

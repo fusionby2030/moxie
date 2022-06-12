@@ -33,8 +33,6 @@ class PSI_EXP(pl.LightningModule):
         self.current_device = real_profile.device
 
         sample_batch_x, sample_batch_y = machine_params[0:1], real_profile[0:1]
-
-
         results = self.forward(real_profile, in_mp=machine_params)
 
         physics_dojo_results = (0.0, 0.0, 0.0, 0.0)
@@ -64,9 +62,6 @@ class PSI_EXP(pl.LightningModule):
         avg_sse_loss = torch.stack([x['static_stored_energy'] for x in outputs]).mean()
         avg_bpol_loss = torch.stack([x['poloidal_field_approximation'] for x in outputs]).mean()
         avg_beta_loss = torch.stack([x['beta_approx'] for x in outputs]).mean()
-
-        # else:
-        #     avg_physics_loss = 0.0
 
         metrics = {'Loss/Train': avg_loss,
                     'ReconLoss/Train': avg_recon_loss,

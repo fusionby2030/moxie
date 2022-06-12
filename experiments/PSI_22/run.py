@@ -29,7 +29,7 @@ def main(model_hyperparams, args):
     # TODO: Grab Sizes of the input/output datasets
 
     model = PSI_MODEL(**model_hyperparams)
-    trainer_params = {'max_epochs': 50, 'gradient_clip_val': 0.5, 'gradient_clip_algorithm': 'value'}
+    trainer_params = {'max_epochs': 50, 'gradient_clip_val': 1.0, 'gradient_clip_algorithm': 'value'}
 
     logger = pl.loggers.TensorBoardLogger(exp_path / "tb_logs", name=args.name)
 
