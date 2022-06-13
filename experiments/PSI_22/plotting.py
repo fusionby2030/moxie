@@ -51,17 +51,16 @@ def standardize_simple(x, mu=None, var=None):
         x_normed = (x - mu ) / var
         return x_normed, mu, var
 
-def load_data(args):
-    def convert_to_tensors(data, elm_style_choice='simple'):
+def load_data(args, elm_style_choice='simple'):
+    def convert_to_tensors(data):
         X, y, mask, ids, elms = data
-        X, y, elms = torch.from_numpy(X).float(), torch.from_numpy(y).float(), torch.from_numpy(elms).float()
-        mask = torch.from_numpy(mask) > 0
+        X, y = torch.from_numpy(X).float(), torch.from_numpy(y).float()
+        elms, mask = torch.from_numpy(elms).float(), torch.from_numpy(mask) > 0
 
-        if elm_style_choice == 'simple':
-            ELM_data = torch.repeat_interleave(elms.unsqueeze(1), 20, 1).unsqueeze(1)
-            X = torch.concat((X, ELM_data), 1)
-        # y, = replace_q95_with_qcly(y)
-        if elm_style_choice == 'simple':
+        if elm_style_choice in ['simple', 'mp_only']:
+            if elm_style_choice == 'simple':
+                ELM_data = torch.repeat_interleave(elms.unsqueeze(1), 20, 1).unsqueeze(1)
+                X = torch.concat((X, ELM_data), 1)
             y = torch.column_stack((y, elms))
         data_tensor = X, y, mask, ids, elms
         return data_tensor
@@ -81,6 +80,42 @@ def get_latent_space(in_profiles, model):
         z_stoch, z_mach = model.reparameterize(mu_stoch, log_var_stoch), model.reparameterize(mu_mach, log_var_mach)
         z = torch.cat((z_stoch, z_mach), 1)
     return z_mach, z_stoch, z
+
+def reduced_find_separatrix(ne, te, x, plot_result=False):
+    # This just moves until we find te < 100
+    idx_r, idx_l = 1, 0
+    while te[idx_r] > 100:
+        idx_l, idx_r = idx_l +1, idx_r +1
+    weights_r, weights_l = get_weights(te, idx_l, idx_r)
+    tesep_estimation = weights_l*te[idx_l] + weights_r*te[idx_r]
+    nesep_estimation = weights_l*ne[idx_l] + weights_r*ne[idx_r]
+    rsep_estimation = weights_l*x[idx_l] + weights_r*x[idx_r]
+    return tesep_estimation, nesep_estimation, rsep_estimation
+
+def get_weights(te, idx_l, idx_r, query=100):
+    # Gets weighst as usual
+    dist = te[idx_r] - query + query - te[idx_l]
+    weights = (1-(te[idx_r] - query)/dist, 1-(query - te[idx_l])/dist)
+    return weights
+
+def get_nesep_for_samples(sample_profs):
+    # For all the genearted profiles, calculate the neseps and reseps
+    sample_rmids = np.tile(np.linspace(3.75, 3.95, 20), (len(sample_profs), 1))
+    sample_rseps_pred = np.zeros(len(sample_rmids))
+    sample_neseps_pred = np.zeros(len(sample_rmids))
+    for n, (profs, rmids) in enumerate(zip(sample_profs, sample_rmids)):
+        ne, te, x = profs[0].numpy(), profs[1].numpy(), rmids
+        logical_mask = np.logical_and(te > 0, ne > 0)
+        ne, te, x = ne[logical_mask], te[logical_mask], x[logical_mask]
+        try:
+            estimations = reduced_find_separatrix(ne, te, x)
+        except Exception as e:
+            continue
+        else:
+            sample_neseps_pred[n] = estimations[1]
+            sample_rseps_pred[n] = estimations[2]
+    return sample_neseps_pred, sample_rseps_pred
+
 def get_preds_from_conditional(mps, profs):
     with torch.no_grad():
         cond_mu_sample, cond_var_sample =  model.p_zmachx(mps)
@@ -106,23 +141,21 @@ def get_preds_from_latent_space(z_mach, z_stoch):
     out_profs[:, 1] = de_standardize(out_profs[:, 1], T_mu, T_var)
     out_mps[:, :-1] = de_standardize(out_mps[:, :-1], MP_mu, MP_var)
     return out_profs, out_mps
-def main(args):
-    global MP_mu, MP_var, D_mu, D_var, T_mu, T_var, model
-    exp_dict = torch.load(f'./model_results/modelstatedict_{args.name}.pth')
-    state_dict, (MP_mu, MP_var), (D_mu, D_var), (T_mu, T_var), model_hyperparams = exp_dict.values()
-    model = PSI_MODEL(**model_hyperparams)
-    model.load_state_dict(state_dict)
 
-    (train_data, val_data, test_data), (train_data_tensor, val_data_tensor, test_data_tensor) = load_data(args)
+def repeated_sample_to_get_uncerts(z_mach, z_stoch, sample_1=-1, sample_size=20):
+    sample_1_z_mach, sample_1_z_stoch = torch.tile(z_mach[sample_1], (sample_size, 1)), torch.tile(z_stoch, (sample_size, 1)) + torch.normal(0, 1, (sample_size, model_hyperparams['stoch_latent_dim']))
+    sample_1_profs, sample_1_mps = get_preds_from_latent_space(sample_1_z_mach, sample_1_z_stoch)
+    sample_1_neseps, sample_1_rseps = get_nesep_for_samples(sample_1_profs)
+    keep_ids = sample_1_neseps != 0 # catch failures and leave them alone
+    sample_1_profs, sample_1_mps, sample_1_neseps, sample_1_rseps = sample_1_profs[keep_ids], sample_1_mps[keep_ids], sample_1_neseps[keep_ids], sample_1_rseps[keep_ids]
 
-    plot_conditional_generate(train_data_tensor)
-
+    return  (torch.mean(sample_1_profs, 0), torch.std(sample_1_profs, 0)), (torch.mean(sample_1_mps, 0), torch.std(sample_1_mps, 0)), (sample_1_neseps.mean(), sample_1_neseps.std()), (sample_1_rseps, sample_1_rseps.std())
 def plot_conditional_generate(data):
     profs, mps, mask, ids, elms = data
 
     image_res = 512
     sample_size = image_res ** 2 # 2D
-    r1_c, r2_c = -5e6, 0
+    r1_c, r2_c = -4e6, 0
     a, b = sample_size, 2
     range_current = torch.linspace(start=r1_c, end=r2_c, steps=image_res)
     r1, r2 = 0, 1
@@ -164,7 +197,7 @@ def plot_conditional_generate(data):
     fig.colorbar(cax, ax=ls_ax, label='Inferred $n_{e, ped}$', location='left')
     ls_ax.set_xlabel('Conditional $I_P$ ')
     ls_ax.set_ylabel('Conditional ELM % ')
-    x_label_list = np.linspace(-5, 0, 5)
+    x_label_list = np.linspace(-4, 0, 5)
     y_label_list = np.linspace(0, 1, 5)
     ls_ax.set_xticks([0, 0.25, 0.5, 0.75, 1.0])
     ls_ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0])
@@ -173,7 +206,7 @@ def plot_conditional_generate(data):
 
 
     plt.show()
-def plot_1(data):
+def plot_latent_space_nesep(data):
     # Latent space plot
     profs, mps, mask, ids, elms = data
     mps_norm, profs_norm = torch.clone(mps), torch.clone(profs)
@@ -184,8 +217,9 @@ def plot_1(data):
 
     image_res = 512
     sample_size = image_res ** 2 # 2D
-    r1, r2 = -15, 15
+    r1, r2 = -10, 10
     a, b = sample_size, 2
+    ld_1, ld_2 = 1, 5
 
     z_mach_mean, z_stoch_mean = Z_MACH.mean(0), Z_STOCH.mean(0)
     z_mach_sample, z_stoch_sample = torch.tile(z_mach_mean, (sample_size, 1)), torch.tile(z_stoch_mean, (sample_size, 1))
@@ -195,19 +229,57 @@ def plot_1(data):
     range_imagecoord = torch.linspace(0, image_res-1, steps=image_res, dtype=torch.int32)  # so we can easily go back
     range_imagecoord = torch.cartesian_prod(range_imagecoord, range_imagecoord)
 
-    ld_1, ld_2 = 2, 4
     z_mach_sample[:, ld_1] = range_xy[:, 0]
     z_mach_sample[:, ld_2] = range_xy[:, 1]
-    sample_profs, sample_mps = get_preds_from_latent_space(z_mach_sample, z_stoch_sample)
 
+    sample_profs, sample_mps = get_preds_from_latent_space(z_mach_sample, z_stoch_sample)
+    sample_neseps, sample_rseps = get_nesep_for_samples(sample_profs)
 
     x = np.linspace(3.75, 3.95, 20)
+
     image_array = np.zeros((image_res, image_res))
 
     for i in range(range_imagecoord.shape[0]):
         _x, _y = range_imagecoord[i]
         _y = image_res - 1 - _y  # (0, 0) for img are on top left so reverse
-        image_array[_y, _x] = inferred_y[i]
+        image_array[_y, _x] = sample_neseps[i]
+
+    sample_z4 = 2
+    sample_z6 = 0
+    data_sample = torch.tensor([sample_z4, sample_z6])
+    min_i = -1
+    min_dist = 100000
+    for i in range(range_xy.shape[0]):
+        a = data_sample.cpu().numpy()
+        b = range_xy[i].cpu().numpy()
+        dist = np.linalg.norm(a-b)
+        if dist < min_dist:
+            min_dist = dist
+            min_i = i
+    sample_1 = min_i
+    sample_1_results = repeated_sample_to_get_uncerts(z_mach_sample, z_stoch_mean, sample_1)
+    sample_1_profs, sample_1_mps, sample_1_neseps, sample_1_rseps = sample_1_results
+
+    sample_z4 = 9
+    sample_z6 = -9
+    data_sample = torch.tensor([sample_z4, sample_z6])
+    min_i = -1
+    min_dist = 100000
+    for i in range(range_xy.shape[0]):
+        a = data_sample.cpu().numpy()
+        b = range_xy[i].cpu().numpy()
+        dist = np.linalg.norm(a-b)
+        if dist < min_dist:
+            min_dist = dist
+            min_i = i
+    sample_2 = min_i
+    sample_2_results = repeated_sample_to_get_uncerts(z_mach_sample, z_stoch_mean, sample_2)
+    sample_2_profs, sample_2_mps, sample_2_neseps, sample_2_rseps = sample_2_results
+
+    rsep_approx = sample_1_rseps[0].mean()
+    resep_error = sample_1_rseps[0].std()
+    rsep_approx_2 = sample_2_rseps[0].mean()
+    resep_error_2 = sample_2_rseps[0].std()
 
     cmap = mpl.cm.viridis
     cmap = mpl.cm.plasma
@@ -215,18 +287,69 @@ def plot_1(data):
     centi = 1/2.54
     #cmap = mpl.cm.viridis
 
-    fig, ls_ax = plt.subplots(1, 1, figsize=(40*centi, 20*centi), constrained_layout=True)
+    fig, (ls_ax, t_ax) = plt.subplots(1, 2, figsize=(40*centi, 20*centi), constrained_layout=True)
 
     """ LATENT SPACE PLOT """
     cax = ls_ax.imshow(image_array, extent=[r1, r2, r1, r2], cmap=cmap, norm=norm, interpolation='spline36')
-    fig.colorbar(cax, ax=ls_ax, label='Inferred ELM %', location='left')
+    fig.colorbar(cax, ax=ls_ax, label='Inferred $n_{e, sep}$ %', location='left')
+    ls_ax.scatter(z_mach_sample[:, ld_1][sample_1], z_mach_sample[:, ld_2][sample_1], c=sample_neseps[sample_1], edgecolor='black', cmap=cmap, norm=norm, s=500, marker='*', linewidths=3)
+    ls_ax.scatter(z_mach_sample[:, ld_1][sample_2], z_mach_sample[:, ld_2][sample_2], c=sample_neseps[sample_2], edgecolor='black', cmap=cmap, norm=norm, s=500, marker='*', linewidths=3)
     ls_ax.set_xlabel('Latent Dimension ' + str(ld_1))
     ls_ax.set_ylabel('Latent Dimension ' + str(ld_2))
 
 
-    plt.show()
-    pass
+    """ PROFILES PLOT """
+    n_ax = t_ax.twinx()
 
+    n_ax.errorbar(x - rsep_approx_2, sample_2_profs[0][0]*1e-19, yerr=sample_2_profs[1][0]*1e-19, alpha=0.8, fmt='none', color='cadetblue')
+    ne = n_ax.plot(x - rsep_approx_2, sample_2_profs[0][0]*1e-19, color='royalblue', lw=3)
+    n_ax.scatter(x - rsep_approx_2, sample_2_profs[0][0]*1e-19, color='black', s=75)
+    n_ax.set_ylim(0, 10)
+    n_ax.set_ylabel('Generated $n_e$ [ $10^{19}$ m$^{-3}$ ]')
+    n_ax.axvline(0, color='black', lw=1, zorder=10)
+
+    n_ax.errorbar(0, sample_2_neseps[0]*1e-19, yerr=sample_2_neseps[1]*1e-19,  elinewidth=4, capsize=10.0, ls='--', ecolor='red', ms=25, color=cmap(norm(sample_2_neseps[0])), fmt='*', markeredgecolor='black', zorder=20)
+
+    # plt.plot(sample_2_profs[0][1], color=cmap(norm(sample_1_neseps[0])), ls='--')
+    t_ax.errorbar(x - rsep_approx_2, sample_2_profs[0][1], yerr=sample_2_profs[1][1], alpha=0.8,fmt='none',  color='tan')
+    te = t_ax.plot(x - rsep_approx_2, sample_2_profs[0][1], color='orange', ls='--', lw=3)
+    t_ax.scatter(x - rsep_approx_2, sample_2_profs[0][1], color='black', s=75, )
+
+    """
+    n_ax.errorbar(x - rsep_approx, sample_1_profs[0][0]*1e-19, yerr=sample_1_profs[1][0]*1e-19, alpha=0.8, fmt='none', color='cadetblue')
+    ne = n_ax.plot(x - rsep_approx, sample_1_profs[0][0]*1e-19, color='royalblue', lw=3)
+    n_ax.scatter(x - rsep_approx, sample_1_profs[0][0]*1e-19, color='black', s=75)
+    n_ax.set_ylim(0, 8)
+    n_ax.set_ylabel('Generated $n_e$ [ $10^{19}$ m$^{-3}$ ]')
+    n_ax.axvline(0, color='black', lw=1, zorder=10)
+
+    n_ax.errorbar(0, sample_1_neseps[0]*1e-19, yerr=sample_1_neseps[1]*1e-19,  elinewidth=4, capsize=10.0, ls='--', ecolor='red', ms=25, color=cmap(norm(sample_1_neseps[0])), fmt='*', markeredgecolor='black', zorder=20)
+
+    # plt.plot(sample_1_profs[0][1], color=cmap(norm(sample_1_neseps[0])), ls='--')
+    t_ax.errorbar(x - rsep_approx, sample_1_profs[0][1], yerr=sample_1_profs[1][1], alpha=0.8,fmt='none',  color='tan')
+    te = t_ax.plot(x - rsep_approx, sample_1_profs[0][1], color='orange', ls='--', lw=3)
+    t_ax.scatter(x - rsep_approx, sample_1_profs[0][1], color='black', s=75, )
+    """
+    t_ax.axhline(100, color='black', ls='--', lw=3)
+    t_ax.annotate('$T_{e, sep} = 100$ [eV]', xy=(0.1, 0.1), xycoords='axes fraction')
+    t_ax.set_ylim(0, 1500)
+    n_ax.set_facecolor('gainsboro')
+
+    t_ax.set_xlabel(r'$R_{mid} - R_{mid, sep}$ [m]')
+    t_ax.set_ylabel('Generated $T_e$ [ eV ]')
+    fig.suptitle('Generating profiles via representation learning')
+    plt.show()
+def main(args):
+    global MP_mu, MP_var, D_mu, D_var, T_mu, T_var, model, model_hyperparams
+    exp_dict = torch.load(f'./model_results/modelstatedict_{args.name}.pth')
+    state_dict, (MP_mu, MP_var), (D_mu, D_var), (T_mu, T_var), model_hyperparams = exp_dict.values()
+    model = PSI_MODEL(**model_hyperparams)
+    model.load_state_dict(state_dict)
+
+    (train_data, val_data, test_data), (train_data_tensor, val_data_tensor, test_data_tensor) = load_data(args, model_hyperparams['elm_style_choice'])
+
+    # plot_conditional_generte(train_data_tensor)
+    plot_latent_space_nesep(train_data_tensor)
 if __name__ == '__main__':
     file_path = pathlib.Path(__file__).resolve()# .parent.parent
     # Path of experiment
