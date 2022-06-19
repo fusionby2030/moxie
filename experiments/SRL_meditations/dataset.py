@@ -101,12 +101,15 @@ class PROFILE:
     def get_ML_ready_array(self, from_SOL: bool = True) -> np.array:
         if from_SOL: 
             if self.device == 'AUG':
-                beg_idx = -50
+                beg_idx = -60
+                end_idx = -10
             elif self.device == 'JET': 
                 beg_idx = -20
+                end_idx = -1
         else: 
             beg_idx = 0
-        return np.vstack((1e-19*self.ne[beg_idx:], self.te[beg_idx:]))
+            end_idx = -1
+        return np.vstack((1e-19*self.ne[beg_idx:end_idx], self.te[beg_idx:end_idx]))
 
 @dataclass 
 class PULSE: 
@@ -133,6 +136,14 @@ class PULSE:
 class DATASET(Dataset):
     sets: List[List[PROFILE]]
     norms: Tuple = None 
+    def denormalize_profiles(self, profiles): 
+        def de_standardize(x, mu, var): 
+            return x*var + mu
+        N_mean, N_var, T_mean, T_var = self.norms
+        N_mean, N_var, T_mean, T_var = N_mean[-60:-10], N_var[-60:-10], T_mean[-60:-10], T_var[-60:-10]
+        profiles[:, 0, :] = de_standardize(profiles[:, 0, :], N_mean, N_var)
+        profiles[:, 1, :] = de_standardize(profiles[:, 1, :], T_mean, T_var)
+        return profiles
     def normalize_profiles(self, profiles): 
         def standardize(x, mu, var):
             if mu is None and var is None:
@@ -141,7 +152,7 @@ class DATASET(Dataset):
             x_normed = (x - mu ) / var
             return x_normed, mu, var
         N_mean, N_var, T_mean, T_var = self.norms
-        N_mean, N_var, T_mean, T_var = N_mean[-50:], N_var[-50:], T_mean[-50:], T_var[-50:]
+        N_mean, N_var, T_mean, T_var = N_mean[-60:-10], N_var[-60:-10], T_mean[-60:-10], T_var[-60:-10]
         profiles[0, :], _, _ = standardize(profiles[0, :], N_mean, N_var)
         profiles[1, :], _, _ = standardize(profiles[1, :], T_mean, T_var)
         return profiles#,  N_mean, N_var, T_mean, T_var, 
@@ -188,9 +199,10 @@ class ProfileSetModule(pl.LightningDataModule):
         self.val_set = DATASET(val_set, norms=(self.ne_mu, self.ne_var, self.te_mu, self.te_var))
         self.test_set = DATASET(test_set, norms=(self.ne_mu, self.ne_var, self.te_mu, self.te_var))
         
-    
+    def get_normalizers(self): 
+        return self.ne_mu, self.ne_var, self.te_mu, self.te_var 
     def train_dataloader(self): 
-        return DataLoader(self.train_set, batch_size=self.batch_size)
+        return DataLoader(self.train_set, batch_size=self.batch_size, shuffle=True)
     def val_dataloader(self): 
         return DataLoader(self.val_set, batch_size=self.batch_size)
     def test_dataloader(self): 
