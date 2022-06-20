@@ -5,8 +5,9 @@ import torch.nn as nn
 from torch.nn import functional as F 
 
 EPOCHS = 50
-global EPOCH, datacls
+
 def main(): 
+    global EPOCH, datacls, model 
     datacls = ProfileSetModule(batch_size=124)
     datacls.setup()
     model = VAE_LLD(input_dim=2, latent_dim=5, conv_filter_sizes=[4, 8], transfer_hidden_dims=[10, 20, 20, 20, 20])
@@ -17,11 +18,11 @@ def main():
     val_iter = datacls.val_dataloader()
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.003)
+    plotting=False
+    
+    # plot_latent_space(model, datacls, )
     for EPOCH in range(EPOCHS): 
         for n, batch in enumerate(train_iter): 
-            
-            
-            
             inputs = batch[:, 0, :, :], batch[:, 1, :, :]
             # t_0_batch, t_1_batch = batch[:, 0, :, :], batch[:, 1, :, :]
             results = model.forward(inputs[0], inputs[1])
@@ -33,7 +34,7 @@ def main():
             optimizer.zero_grad()
 
             print(f'{EPOCH}: Loss {loss.item()}, Recon t0: {recon_loss.item()}, Unsup: {kld_loss.item()}')
-        if EPOCH%10 == 0: # and EPOCH>0: 
+        if EPOCH%10 == 0 and plotting: # and EPOCH>0: 
             with torch.no_grad(): 
                 for n, batch in enumerate(val_iter): 
                     if n>3: 
@@ -41,9 +42,12 @@ def main():
                     real = batch[:, 0, :, :], batch[:, 1, :, :]
                     t_0_pred, t_1_pred, t_1_pred_from_trans, *_ = model.forward(real[0], real[1])
                     preds = t_0_pred, t_1_pred, t_1_pred_from_trans
-                    # plot_batch_results(real, preds, datacls)
+                    plot_batch_results(real, preds, datacls)
                     
-
+    save_dict = {'state_dict': model.state_dict(), 
+                'datacls': datacls}
+    torch.save(save_dict, '/home/kitadam/ENR_Sven/test_moxie/experiments/SRL_meditations/model_results/INITIAL.pth')
+    plot_latent_space(model, datacls, )
 def loss_function(inputs, results):
     t_0_batch, t_1_batch = inputs 
     t_0_pred, t_1_pred, t_1_pred_from_trans, (mu_t, log_var_t), (mu_t_1, log_var_t_1), (A_t, o_t) = results
@@ -68,7 +72,7 @@ def loss_function(inputs, results):
                 torch.distributions.normal.Normal(mean_1, cov_1),
                 torch.distributions.normal.Normal(mu_t_1, cov_2)
                 ).mean(0).sum()
-    recon_loss = 20*recon_loss_t0 + 20*recon_loss_t1
+    recon_loss = 25*recon_loss_t0 + 25*recon_loss_t1
     kld_loss = 0.0001*kld_loss_t + 0.0001*kld_loss_t_1 + 0.0005*kld_loss_t_t_1
     loss = recon_loss + kld_loss
     return {'loss': loss, 'recon': recon_loss, 'kld': kld_loss, 
@@ -115,23 +119,13 @@ def plot_batch_results_old(real, preds):
     
     plt.show()
 
-def plot_latent_space(): 
+def plot_latent_space(model, datacls): 
     """
     Should plot a whole profile trajectory in latent space, 
 
     REQS:
         A pulse! Which we should have! 
         
-    Then do like below 
-    """
-    pass 
-
-def plot_final_animation(): 
-    """ 
-    This should make a profile from scratch...
-    (maybe also) as well as the latent space movemet 
-    Should look like this: 
-
     prof_t = something 
     while t < 150: 
         z_t = model.x2z(initial_prof)
@@ -141,9 +135,54 @@ def plot_final_animation():
         # cache_z_t, z_t_1
         prof_t = prof_t_1
 
-
-
     """
+
+    t = 0
+    test_dl = iter(datacls.test_dataloader())
+    batch = next(test_dl)
+    results_x, results_y, results_z = [], [], []
+    results_profs = []
+    t_0_batch, t_1_batch = batch[:, 0, :, :], batch[:, 1, :, :]
+    ax = plt.figure().add_subplot(projection='3d')
+    results_profs.append(t_0_batch[0])
+    for t in range(10): 
+        with torch.no_grad(): 
+            z_t, *_ = model.x2z(t_0_batch)
+            
+            z_t_1, *_ = model.zt2zt_1(z_t)
+            if t == 0: 
+                results_x.append(z_t[0, 0])
+                results_x.append(z_t_1[0, 0])
+                
+                results_y.append(z_t[0, 1])
+                results_y.append(z_t_1[0, 1])
+
+                results_z.append(z_t[0, 2])
+                results_z.append(z_t_1[0, 2])
+            else: 
+                results_x.append(z_t_1[0, 0])
+                results_y.append(z_t_1[0, 1])
+                results_z.append(z_t_1[0, 2])
+            prof_t_1 = model.z2x(z_t_1)
+            t_0_batch = prof_t_1
+            results_profs.append(prof_t_1[0])
+        print(z_t[0], z_t_1[0])
+        if t == 0: 
+            ax.scatter(z_t[0, 0], z_t[0, 1], z_t[0, 2], color='red')
+        ax.scatter(z_t[0, 0], z_t[0, 1], z_t[0, 2], color='green')
+        ax.scatter(z_t_1[0, 0], z_t_1[0, 1], z_t_1[0, 2], color='orange')
+        ax.plot([z_t[0, 0], z_t_1[0, 0]], [z_t[0, 1], z_t_1[0, 1]], [z_t[0, 2], z_t_1[0, 2]], color='dodgerblue')
+    ax.plot(results_x, results_y, results_z)
+    plt.show()
+    prof_array = np.array(results_profs)
+    print(prof_array.shape)
+def plot_final_animation(prof_array): 
+    """ 
+    Takes list of profs from previous experiment (latent space)
+    and plots them as an animation
+    """
+
+    t_0_batch, t_1_batch = datacls.test_set.denormalize_profiles(t_0_batch), datacls.test_set.denormalize_profiles(t_1_batch)
     pass 
 
 def plot_batch_results(real, preds, datacls):
