@@ -1,17 +1,19 @@
-from dataset import *
+from torch_dataset import *
 from model import *
 import torch 
 import torch.nn as nn 
 from torch.nn import functional as F 
 from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
+import matplotlib.pyplot as plt 
+
 t = 0
 def main(): 
     global EPOCH, datacls, model, t
     model = VAE_LLD(input_dim=2, latent_dim=10, conv_filter_sizes=[8, 10, 12], transfer_hidden_dims=[10, 20, 30])
     save_dict = torch.load('/home/kitadam/ENR_Sven/test_moxie/experiments/SRL_meditations/model_results/INITIAL_REVISED1.pth')
-    state_dict, datacls = save_dict['state_dict'], save_dict['datacls']
+    state_dict, train_set, val_set = save_dict['state_dict'], save_dict['train_set'], save_dict['val_set']
     model.load_state_dict(state_dict)
-    plot_comparison(model, datacls)
+    plot_comparison(model, val_set)
     # plot_conditionally(model, datacls)
 
 def get_comparisons(model, datacls, real_profs): 
@@ -175,5 +177,8 @@ def plot_final_animation(prof_array, time_tuple):
     # ani.save('/home/kitadam/ENR_Sven/test_moxie/experiments/SRL_meditations/full_pulse_train_vid_fast.mp4', dpi=300, writer=writer_video)
     # Plot everything as an animation! 
     plt.show()
+
 if __name__ == '__main__': 
-    main()
+    pass  
+    # main()
+    

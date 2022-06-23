@@ -38,7 +38,7 @@ class UnFlatten(nn.Module):
         out = input.view(input.size(0), self.size, self.length)
         return out
 class ENCODER(nn.Module): 
-    def __init__(self, filter_sizes: List[int]): 
+    def __init__(self, filter_sizes: List[int], in_length: int = 75): 
         super().__init__()
         in_ch = 2
         hidden_channels = filter_sizes
@@ -51,7 +51,7 @@ class ENCODER(nn.Module):
         self.pool_stride = self.pool_kernel_size
         
         self.block = nn.ModuleList()
-        self.end_conv_size = 50 # [(W - K + 2P) / S] + 1
+        self.end_conv_size = in_length # [(W - K + 2P) / S] + 1
         for dim in hidden_channels: 
             self.block.append(nn.Conv1d(in_ch, dim, kernel_size=self.kernel_size, padding=self.padding))
             self.end_conv_size = ((self.end_conv_size - self.kernel_size + 2*self.padding) / self.stride) + 1
@@ -121,7 +121,7 @@ class VAE_LLD(nn.Module):
     """
     Implementation of E2C linear latent dimensions
     """
-    def __init__(self, input_dim: int, latent_dim: int, transfer_hidden_dims: List[int], conv_filter_sizes: List[int], out_length: int = 50, act_dim: int=None, act_fn=None): 
+    def __init__(self, input_dim: int, latent_dim: int, transfer_hidden_dims: List[int], conv_filter_sizes: List[int], out_length: int = 75, act_dim: int=None, act_fn=None): 
         super(VAE_LLD, self).__init__()
 
         
