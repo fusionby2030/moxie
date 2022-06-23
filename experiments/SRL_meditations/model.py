@@ -170,7 +170,7 @@ class VAE_LLD(nn.Module):
         z_hat_t_1, A_t, o_t = self.zt2zt_1(z_t)
         # z_hat_t_1 -> x_hathat_t_1
         x_hat_hat_t_1 = self.z2x(z_hat_t_1)
-        return x_hat_t, x_hat_t_1,x_hat_hat_t_1,  (mu_t, var_t), (mu_t_1, var_t_1), (A_t, o_t)
+        return x_hat_t, x_hat_t_1, x_hat_hat_t_1,  (mu_t, var_t), (mu_t_1, var_t_1), (A_t, o_t)
 
     def reparameterize(self, mu, var): 
         z = mu*var
