@@ -92,6 +92,7 @@ class PULSE:
     ml_entries: List[ML_ENTRY] = None
     control_param_labels: List[str] = None
     def plot_raw_time_evolution(self, **kwargs): 
+        # TODO: Add able to plot the predicted outputs! 
         import matplotlib.pyplot as plt 
         from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
         profs = np.array([prof.get_density_and_temperature_array() for prof in self.profiles_raw])

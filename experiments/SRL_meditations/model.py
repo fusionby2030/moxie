@@ -209,6 +209,166 @@ class VAE_LLD(nn.Module):
         # z_1 = torch.matmul(A_t, B_t_T) + o_t
         return z_1, A_t, o_t
 
+class AUXREG(nn.Module):
+    """Module block for predicing mps from the latent dimensions"""
+    def __init__(self, in_dim: int,  out_dim: int, hidden_dims: List[int], ): 
+        super().__init__()
+        self.in_dim = in_dim # Latent space size
+        self.out_dim = out_dim # Machine parameter size
+        self.hidden_dims = hidden_dims
+
+        self.block = nn.ModuleList()
+
+        last_dim = in_dim 
+        for dim in self.hidden_dims: 
+            self.block.append(nn.Linear(last_dim, dim))
+            self.block.append(nn.ReLU())
+            last_dim = dim 
+        self.block.append(nn.Linear(last_dim, out_dim))
+    
+    def forward(self, z): 
+        for lay in self.block: 
+            z = lay(z)
+        return z 
+
+class PRIORREG(nn.Module):
+    """Module block for conditional prior via machine paramteers"""
+    def __init__(self, in_dim: int,  out_dim: int, hidden_dims: List[int], ): 
+        super().__init__()
+        self.in_dim = in_dim # Machine parameter size 
+        self.out_dim = out_dim # Latent dimension size 
+        self.hidden_dims = hidden_dims
+
+        
+        self.block = nn.ModuleList()
+
+        last_dim = in_dim 
+        for dim in self.hidden_dims: 
+            self.block.append(nn.Linear(last_dim, dim))
+            self.block.append(nn.ReLU())
+            last_dim = dim 
+        # self.block.append(nn.Linear(last_dim, out_dim))
+        self.fc_mu = nn.Linear(last_dim, self.out_dim)
+        self.fc_var = nn.Linear(last_dim, self.out_dim)
+    def forward(self, z): 
+        for lay in self.block: 
+            z = lay(z)
+        mu, var = self.fc_mu(z), self.fc_var(z)
+        return mu, var 
+
+
+
+class VAE_LLD_MP(nn.Module): 
+    """
+    Implementation of E2C linear latent dimensions, with machine parameters included ;)  
+    """
+    def __init__(self, input_dim: int, latent_dim: int, 
+                transfer_hidden_dims: List[int], conv_filter_sizes: List[int], 
+                out_length: int = 75, act_dim: int=14, act_fn=None, 
+                reg_hidden_dims: List[int] = [20, 30, 30, 30, 30, 20], mp_dim: int = 14): 
+        super(VAE_LLD_MP, self).__init__()
+
+        
+        self.input_dim = input_dim 
+        self.latent_dim = latent_dim 
+        self.transfer_hidden_dims = transfer_hidden_dims
+        self.act_dim = act_dim
+        self.mp_dim = mp_dim
+        self.reg_hidden_dims = reg_hidden_dims
+        self.conv_filter_sizes = conv_filter_sizes
+        self.trans_conv_filter_sizes = conv_filter_sizes[::-1]
+
+        # Building the network 
+        self.encoder = ENCODER(filter_sizes=self.conv_filter_sizes) 
+        self.decoder = DECODER(filter_sizes=self.trans_conv_filter_sizes, end_conv_size=self.encoder.end_conv_size) 
+        self.aux_reg = AUXREG(in_dim = self.latent_dim, out_dim=self.mp_dim, hidden_dims=self.reg_hidden_dims)
+        
+        self.cond_prior_reg = PRIORREG(in_dim=self.mp_dim, out_dim=self.latent_dim, hidden_dims=self.reg_hidden_dims)
+
+        self.z_mu = nn.Linear(self.encoder.end_conv_size*self.conv_filter_sizes[-1], self.latent_dim)
+        self.z_var = nn.Linear(self.encoder.end_conv_size*self.conv_filter_sizes[-1], self.latent_dim)
+
+        self.decoder_input = nn.Linear(self.latent_dim, self.trans_conv_filter_sizes[0]*self.encoder.end_conv_size)
+        final_size = self.decoder.final_size
+        self.output_layer = nn.Linear(final_size, out_length)
+
+        # Linear transformation layers 
+
+        self.tranfer_layer = TRANSFERLAYER(self.latent_dim, hidden_dims=self.transfer_hidden_dims)
+        self.v_t = nn.Linear(self.transfer_hidden_dims[-1], self.latent_dim)
+        self.r_t = nn.Linear(self.transfer_hidden_dims[-1], self.latent_dim)
+        self.o_t = nn.Linear(self.transfer_hidden_dims[-1], self.latent_dim)
+        self.B_t = nn.Linear(self.transfer_hidden_dims[-1], self.latent_dim*self.act_dim)
+        
+
+    def forward(self, x_t, x_t_1, mp_t, mp_t_1, delta_mp): 
+        # x_t -> z_t 
+        z_t, mu_t, var_t = self.x2z(x_t)
+
+        # mp_t -> z_t_cond_prior
+        z_t_cond_prior, mu_t_cond_prior, var_t_cond_prior = self.mp2z(mp_t)
+
+        # x_t_1 -> z_t_1
+        z_t_1, mu_t_1, var_t_1 = self.x2z(x_t_1)        
+        
+        # z_t -> x_hat_t 
+        x_hat_t = self.z2x(z_t)
+
+        # z_t -> mp_hat_t 
+        mp_hat_t = self.z2mp(z_t)
+
+        # z_t_1 -> x_hat_t_1
+        x_hat_t_1 = self.z2x(z_t_1)
+
+        # z_t -> z_hat_t_1 
+        z_hat_t_1, A_t, B_t, o_t = self.zt2zt_1(z_t, mp_diff=delta_mp)
+        # z_hat_t_1 -> x_hathat_t_1
+        x_hat_hat_t_1 = self.z2x(z_hat_t_1)
+
+        # z_t_1 -> mp_hathat_t_1
+        mp_hat_hat_t_1 = self.z2mp(z_hat_t_1) 
+
+        return x_hat_t, x_hat_t_1, x_hat_hat_t_1, mp_hat_t, mp_hat_hat_t_1, (mu_t, var_t), (mu_t_1, var_t_1),  (A_t, B_t, o_t),  (mu_t_cond_prior, var_t_cond_prior)
+
+    def reparameterize(self, mu, var): 
+        z = mu*var
+        return z
+
+    def mp2z(self, mp): 
+        cond_prior_mu, cond_prior_var  = self.cond_prior_reg(mp)
+        cond_prior_z = self.reparameterize(cond_prior_mu, cond_prior_var)
+        return cond_prior_z, cond_prior_mu, cond_prior_var
+    def z2mp(self, z): 
+        out_mp = self.aux_reg(z)
+        return out_mp 
+    def x2z(self, x): 
+        enc = self.encoder(x)
+        mu, var = self.z_mu(enc), self.z_var(enc)
+        z = self.reparameterize(mu, var)
+        return z, mu, var
+
+    def z2x(self, z): 
+        # print('Latent out', z.shape)
+        z = self.decoder_input(z)
+        dec = self.decoder(z)      
+        out_prof = self.output_layer(dec)  
+        return out_prof
+
+    def zt2zt_1(self, z, mp_diff): 
+        trans = self.tranfer_layer(z)
+        v_t = self.v_t(trans)
+        r_t = self.r_t(trans)
+        o_t = self.o_t(trans)
+        B_t = self.B_t(trans)
+
+        v_t, r_t_T = v_t.unsqueeze(-1), r_t.unsqueeze(1),
+        
+        A_t = torch.eye(self.latent_dim) + torch.matmul(v_t, r_t_T)
+        B_t = torch.reshape(B_t, (-1,  self.latent_dim, self.act_dim))
+
+        z_1 = (torch.matmul(A_t, z.unsqueeze(2)) + torch.matmul(B_t, mp_diff.unsqueeze(2))).squeeze(2) + o_t
+
+        return z_1, A_t, B_t, o_t
 
     
         

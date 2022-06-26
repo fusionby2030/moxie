@@ -24,8 +24,10 @@ class PULSE_DATASET(Dataset):
     t1_profs: Union[List[np.array], np.array] = field(default_factory=list)
     t0_mps: Union[List[np.array], np.array] = field(default_factory=list)
     t1_mps: Union[List[np.array], np.array] = field(default_factory=list)
+    mps_delta: Union[List[np.array], np.array] = field(default_factory=list)
     norms: Union[List, Tuple, np.array] = None
     def __post_init__(self): 
+        print('Creating ML Ready array')
         for pulse in self.pulses: 
             profiles, mps = pulse.get_ML_ready_array()
             t0, t1 = profiles[:-1, :, :], profiles[1:, :, :]
@@ -34,10 +36,12 @@ class PULSE_DATASET(Dataset):
             self.t1_profs.append(t1)
             self.t1_mps.append(mps_t1)
             self.t0_mps.append(mps_t0)
+            self.mps_delta.append(mps_t1 - mps_t0)
         self.t0_profs = np.concatenate(self.t0_profs, axis=0, dtype=np.double)
         self.t1_profs = np.concatenate(self.t1_profs, axis=0, dtype=np.double)
         self.t0_mps = np.concatenate(self.t0_mps, axis=0, dtype=np.double)
         self.t1_mps = np.concatenate(self.t1_mps, axis=0, dtype=np.double)
+        self.mps_delta = np.concatenate(self.mps_delta, axis=0, dtype=np.double)
         if self.norms == None: 
             self.get_normalizing()
             self.normalize_all()
@@ -70,8 +74,8 @@ class PULSE_DATASET(Dataset):
             x_normed = (x - mu ) / var
             return x_normed, mu, var
         _, _, _, _, MP_mu, MP_var = self.norms
-        mps = standardize(mps, MP_mu, MP_var)
-        # return mps
+        mps, _, _ = standardize(mps, MP_mu, MP_var)
+        return mps
     def get_normalizing(self):       
         train_set_profs = self.t0_profs
         train_set_densities = train_set_profs[:, 0, :] 
@@ -84,15 +88,16 @@ class PULSE_DATASET(Dataset):
     def normalize_all(self): 
         self.normalize_profiles(self.t0_profs)
         self.normalize_profiles(self.t1_profs)
-        self.normalize_mps(self.t0_mps)
-        self.normalize_mps(self.t1_mps)
+        self.t0_mps = self.normalize_mps(self.t0_mps)
+        self.t1_mps = self.normalize_mps(self.t1_mps)
+        self.mps_delta = self.normalize_mps(self.mps_delta)
 
     def __len__(self): 
         return len(self.t0_profs)
 
     def __getitem__(self, index: Any, normalize=True) -> Tuple[np.array]:
-        profs_t0, profs_t1, mps_t0, mps_t1 = self.t0_profs[index], self.t1_profs[index], self.t0_mps[index], self.t1_mps[index]
-        return profs_t0, profs_t1, mps_t0, mps_t1
+        profs_t0, profs_t1, mps_t0, mps_t1, mps_delta = self.t0_profs[index], self.t1_profs[index], self.t0_mps[index], self.t1_mps[index], self.mps_delta[index]
+        return profs_t0, profs_t1, mps_t0, mps_t1, mps_delta
 
 
 def main(): 

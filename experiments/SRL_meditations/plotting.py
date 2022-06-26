@@ -1,35 +1,256 @@
 from torch_dataset import *
+from python_dataset import PULSE, PROFILE, MACHINEPARAMETER, ML_ENTRY 
 from model import *
 import torch 
 import torch.nn as nn 
 from torch.nn import functional as F 
 from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
 import matplotlib.pyplot as plt 
+from torch.utils.data import Dataset, DataLoader
+from tqdm import tqdm 
 
 t = 0
-def main(): 
-    global EPOCH, datacls, model, t
-    model = VAE_LLD(input_dim=2, latent_dim=10, conv_filter_sizes=[8, 10, 12], transfer_hidden_dims=[10, 20, 30])
-    save_dict = torch.load('/home/kitadam/ENR_Sven/test_moxie/experiments/SRL_meditations/model_results/INITIAL_REVISED1.pth')
-    state_dict, train_set, val_set = save_dict['state_dict'], save_dict['train_set'], save_dict['val_set']
-    model.load_state_dict(state_dict)
-    plot_comparison(model, val_set)
-    # plot_conditionally(model, datacls)
+save_loc = '/home/kitadam/ENR_Sven/test_moxie/experiments/SRL_meditations/model_results/'
 
-def get_comparisons(model, datacls, real_profs): 
-    profs = torch.from_numpy(real_profs)
-    norm_profs = datacls.train_set.normalize_profiles(profs)
-    with torch.no_grad(): 
-        z_t, *_ = model.x2z(norm_profs)
-        z_t_1, *_ = model.zt2zt_1(z_t)
-        prof_t_1 = model.z2x(z_t_1)
-    prof_t_1 = datacls.train_set.denormalize_profiles(profs)
-    pred_profs = torch.cat((profs[0:1, :, :], prof_t_1), 0)
-    return pred_profs
-def plot_comparison(model, datacls):
+def denormalize_profiles(profiles, norms): 
+    def de_standardize(x, mu, var): 
+        if isinstance(x, torch.Tensor): 
+            mu, var = torch.from_numpy(mu), torch.from_numpy(var)
+        return x*var + mu
+    N_mean, N_var, T_mean, T_var, _, _ = norms
+    profiles[:, 0, :] = de_standardize(profiles[:, 0, :], N_mean, N_var)
+    profiles[:, 1, :] = de_standardize(profiles[:, 1, :], T_mean, T_var)
+    return profiles
+
+def normalize_profiles(profiles, norms): 
+    def standardize(x, mu, var):
+        if mu is None and var is None:
+            mu = x.mean(0, keepdim=True)[0]
+            var = x.std(0, keepdim=True)[0]
+        x_normed = (x - mu ) / var
+        return x_normed, mu, var
+    N_mean, N_var, T_mean, T_var, _, _ = norms
+    profiles[:, 0, :], _, _ = standardize(profiles[:, 0, :], N_mean, N_var)
+    profiles[:, 1, :], _, _ = standardize(profiles[:, 1, :], T_mean, T_var)
+    return profiles
+
+def normalize_mps(mps, norms): 
+    def standardize(x, mu, var):
+        if mu is None and var is None:
+            mu = x.mean(0, keepdim=True)[0]
+            var = x.std(0, keepdim=True)[0]
+        x_normed = (x - mu ) / var
+        return x_normed, mu, var
+    _, _, _, _, MP_mu, MP_var = norms
+    mps, _, _ = standardize(mps, MP_mu, MP_var)
+    return mps
+
+def denormalize_mps(mps, norms): 
+    def destandardize(x, mu, var):
+        if mu is None and var is None:
+            mu = x.mean(0, keepdim=True)[0]
+            var = x.std(0, keepdim=True)[0]
+        x_normed = x*var + mu
+        return x_normed, mu, var
+    _, _, _, _, MP_mu, MP_var = norms
+    mps, _, _ = destandardize(mps, MP_mu, MP_var)
+    return mps
+
+
+def main(model_name='STEP2_aux_cond'): 
+    global EPOCH, datacls, model, t
+    # model = VAE_LLD(input_dim=2, latent_dim=10, conv_filter_sizes=[8, 10, 12], transfer_hidden_dims=[10, 20, 30])
+    model = VAE_LLD_MP(input_dim=2, latent_dim=13, out_length=75, 
+                        conv_filter_sizes=[8, 10, 12], transfer_hidden_dims=[20, 20, 30], 
+                        reg_hidden_dims= [40, 40, 40, 40, 40], mp_dim=14)
+    save_dict = torch.load(save_loc + model_name + '.pth')
+    state_dict = save_dict['state_dict']
+    with open(save_loc + model_name + '_data', 'rb') as file: 
+        data_dict = pickle.load(file)
+    train_set, val_set, norms = data_dict['train_pulses'], data_dict['val_pulses'], data_dict['norms']
+    model.load_state_dict(state_dict)
+    model.double()
+
+    plot_condtional(model, train_set, norms)
+    # plot_comparison(model, val_set, norms)
+def plot_condtional(model, pulses: List[PULSE], norms): 
+    """
+    Loop through a pulse
+    1.) Try to check just from machine parameter conditional priors at each time step to get profiles 
+    2.) Go from t_0 and try to get all 
+    """
+
+    for n, pulse in enumerate(pulses):
+        all_profs, all_mps = pulse.get_ML_ready_array()
+        t0_profs, t1_profs = all_profs[:-1, :, :], all_profs[1:, :, :]
+        t0_mps, t1_mps = all_mps[:-1, :], all_mps[1:, :]
+        mp_diff = t1_mps - t0_mps 
+        # Normalize everything! 
+        t0_mps_norm, mp_diff_norm = torch.from_numpy(t0_mps).double(), torch.from_numpy(mp_diff).double()
+        t0_mps_norm, mp_diff_norm = normalize_mps(t0_mps_norm, norms), normalize_mps(mp_diff_norm, norms)
+        with torch.no_grad(): 
+            z_t_cond_prior, mu_t_cond_prior, var_t_cond_prior = model.mp2z(t0_mps_norm)
+            z_hat_t_1, A_t, B_t, o_t = model.zt2zt_1(z_t_cond_prior, mp_diff=mp_diff_norm)
+
+            # Profiles expected
+            x_hat_hat_t_1 = model.z2x(z_hat_t_1)
+            # Machine parameters expected 
+            mp_hat_hat_t_1 = model.z2mp(z_hat_t_1) 
+
+        mp_pred = torch.clone(mp_hat_hat_t_1)
+        mp_pred = denormalize_mps(mp_pred, norms)
+
+        # Now we can try to plot the machine parameters... 
+        fig, axs = plt.subplots(2, 7)
+        for dim, (ax, label) in enumerate(zip(axs.ravel(), pulse.control_param_labels)): 
+            ax.plot(t0_mps[:, dim], color='blue')
+            ax.plot(mp_pred[:, dim], color='red')
+            ax.set_title(label)
+        fig.suptitle(str(pulse.pulse_id))
+        plt.show()
+
+    pass 
+def plot_comparison(model, pulses, norms):    
+    for pulse in pulses: 
+        profs, mps = pulse.get_ML_ready_array()
+        profs = torch.from_numpy(profs).double()
+        mps = torch.from_numpy(mps).double()
+        # print(profs[0])
+        min_n, max_n = profs[:, 0, :].min(), profs[:, 0, :].max()
+        min_t, max_t = profs[:, 1, :].min(), profs[:, 1, :].max()
+        profs = normalize_profiles(profs, norms)
+        mps = normalize_mps(mps, norms)
+        # print(profs[0])
+
+        with torch.no_grad(): 
+            z_t, *_ = model.x2z(profs)
+            z_t_1, *_ = model.zt2zt_1(z_t)
+            prof_t_1 = model.z2x(z_t_1)
+            mp_t_1 = model.z2mp(z_t_1)
+
+        prof_t_1 = denormalize_profiles(prof_t_1, norms)
+        mps_t1 = denormalize_mps(mp_t_1, norms)
+        profs = denormalize_profiles(profs, norms)
+        break 
+    fig, n_ax = plt.subplots()
+    t_ax = n_ax.twinx()
+    xdata, ndata, tdata = [], [], []
+    n_ln, = n_ax.plot([], [], 'ro')
+    t_ln, = t_ax.plot([], [], 'go')
+    n_p_ln,  =  n_ax.plot([], [], 'mo')
+    t_p_ln, = t_ax.plot([], [], 'bo')
+    n_ax.set_ylim(min_n, max_n)
+    t_ax.set_ylim(min_t, max_t)
+    n_ax.set_xlim(0, len(profs[0, 0, :]))
+    t_ax.set_xlim(0, len(profs[0, 0, :]))
+    n_ax.set_title(f'{pulse.device} SHOT {pulse.pulse_id}, #Slices: {len(profs)}')
+    n_ax.set_ylabel('$n_e (10^{19} m^{-3})$', color='red', fontsize='x-large')
+    t_ax.set_ylabel('$T_e$', color='green', fontsize='x-large')
+    # n_ax.set_xlabel(r'$\Psi_N$')
+    # n_ax.axvline(1.0, ls='--', color='grey')
+
+    def animate(i): 
+        ndata = profs[i+1, 0, :]
+        tdata = profs[i+1, 1, :]
+
+        np_data = prof_t_1[i, 0, :]
+        tp_data = prof_t_1[i, 1, :]
+
+        xdata = range(len(profs[i, 0, :])) # radii[i] 
+        n_ln.set_data(xdata, ndata)
+        t_ln.set_data(xdata, tdata)
+
+        n_p_ln.set_data(xdata, np_data)
+        t_p_ln.set_data(xdata, tp_data)
+
+        # for bar, mp_idx in zip(bars, mp_idxs): 
+        #     bar.set_data(t[i], [0, 1e6])
+        # time_text.set_text(time_template % (t[i]))
+        # if not isinstance(lines[0], int): 
+        #     for line, mp_idx in zip(lines, mp_idxs): line.set_data(t[i], self.mapped_mps[i, mp_idx]) 
+        #     return n_ln, t_ln, time_text, *bars, *lines
+        # else: 
+        return n_ln, t_ln,n_p_ln, t_p_ln, # time_text, *bars
+    ani = FuncAnimation(fig, animate, len(profs) - 1, interval=5, repeat_delay=1e3, blit=True)
+    plt.show()
+def plot_condtional_old_2(model, pulses, norms): 
+    dt = 0.001
+    
+    for n, pulse in enumerate(pulses):
+        if n != 0: 
+            continue 
+        results_profs = []
+        profs, mps = pulse.get_ML_ready_array()
+        print(mps.shape)
+        min_n, max_n = profs[:, 0, :].min(), profs[:, 0, :].max()
+        min_t, max_t = profs[:, 1, :].min(), profs[:, 1, :].max()
+        profs = torch.from_numpy(profs).double()
+        results_profs.append(profs[0])
+
+        t_0_profs = torch.clone(profs[0:10, :, :])
+        t_0_profs = normalize_profiles(t_0_profs, norms)
+        
+        # t = np.arange(0, len(profs)*dt, step = dt)
+        t = np.arange(0, 1, step = dt)
+        for time in tqdm(t): 
+            with torch.no_grad(): 
+                z_t, *_ = model.x2z(t_0_profs)
+                z_t_1, *_ = model.zt2zt_1(z_t)
+                t_1_profs = model.z2x(z_t_1)
+            t_0_profs = torch.clone(t_1_profs) 
+            t_1_profs = denormalize_profiles(t_1_profs, norms)
+            results_profs.append(t_1_profs[0])
+        break 
+    fig, n_ax = plt.subplots()
+    t_ax = n_ax.twinx()
+    xdata, ndata, tdata = [], [], []
+    n_ln, = n_ax.plot([], [], 'ro', label='real')
+    t_ln, = t_ax.plot([], [], 'go', label='real')
+    n_p_ln,  =  n_ax.plot([], [], 'mo', label='Cond.')
+    t_p_ln, = t_ax.plot([], [], 'bo', label='Cond.')
+    n_ax.set_ylim(min_n, max_n)
+    t_ax.set_ylim(min_t, max_t)
+    n_ax.set_xlim(0, len(profs[0, 0, :]))
+    t_ax.set_xlim(0, len(profs[0, 0, :]))
+    n_ax.set_title(f'{pulse.device} SHOT {pulse.pulse_id}, #Slices: {len(profs)}')
+    n_ax.set_ylabel('$n_e (10^{19} m^{-3})$', color='red', fontsize='x-large')
+    t_ax.set_ylabel('$T_e$', color='green', fontsize='x-large')
+    time_template = 'time = %.3fs'
+    time_text = n_ax.text(0.05, 0.9, '', transform=n_ax.transAxes)
+    n_ax.legend()
+    # n_ax.set_xlabel(r'$\Psi_N$')
+    # n_ax.axvline(1.0, ls='--', color='grey')
+
+    def animate(i): 
+        ndata = profs[i, 0, :]
+        tdata = profs[i, 1, :]
+
+        np_data = results_profs[i][0, :]
+        tp_data = results_profs[i][1, :]
+
+        xdata = range(len(profs[i, 0, :])) # radii[i] 
+        n_ln.set_data(xdata, ndata)
+        t_ln.set_data(xdata, tdata)
+
+        n_p_ln.set_data(xdata, np_data)
+        t_p_ln.set_data(xdata, tp_data)
+
+        time_text.set_text(time_template % (t[i]))
+
+        # for bar, mp_idx in zip(bars, mp_idxs): 
+        #     bar.set_data(t[i], [0, 1e6])
+        # time_text.set_text(time_template % (t[i]))
+        # if not isinstance(lines[0], int): 
+        #     for line, mp_idx in zip(lines, mp_idxs): line.set_data(t[i], self.mapped_mps[i, mp_idx]) 
+        #     return n_ln, t_ln, time_text, *bars, *lines
+        # else: 
+        return n_ln, t_ln,n_p_ln, t_p_ln, time_text,#  *bars
+    ani = FuncAnimation(fig, animate, len(results_profs) - 1, interval=100, repeat_delay=1e3, blit=True)
+    plt.show()
+    pass 
+def plot_comparison_old(model, datacls):
     print('Comparison Plotting...') 
-    with open(PICKLED_PULSES_FILELOC, 'rb') as file: 
-        all_pulses = pickle.load(file)
+    
     
     rel_pulse = all_pulses[0] 
 
@@ -83,7 +304,8 @@ def plot_comparison(model, datacls):
     plt.show()
 
 
-def plot_conditionally(model, datacls): 
+
+def plot_conditionally_old(model, datacls): 
     """
     Should plot a whole profile trajectory in latent space, 
 
@@ -179,6 +401,5 @@ def plot_final_animation(prof_array, time_tuple):
     plt.show()
 
 if __name__ == '__main__': 
-    pass  
-    # main()
+    main()
     
