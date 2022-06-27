@@ -17,7 +17,7 @@ EPOCHS = 50
 save_loc = '/home/kitadam/ENR_Sven/test_moxie/experiments/SRL_meditations/model_results/'
 
 
-def main(model_name='STEP2_aux_cond'): 
+def main(model_name='STEP2_aux_cond_phys'): 
     global EPOCH, model, train_set, val_set
     print(save_loc)
     model = VAE_LLD_MP(input_dim=2, latent_dim=20, out_length=75, 
@@ -43,11 +43,11 @@ def main(model_name='STEP2_aux_cond'):
             results = model.forward(profs_t0, profs_t1, mps_t0, mps_t1, mps_delta)
             # t_0_pred, t_1_pred, t_1_pred_from_trans, (mu_t, log_var_t), (mu_t_1, log_var_t_1), (A_t, o_t) = model.forward(t_0_batch, t_1_batch)
             losses = loss_function(inputs, results)
-            loss, recon_loss, kld_loss, recon_prof, recon_mp = losses['loss'], losses['recon'], losses['kld'], losses['recon_prof'], losses['recon_mp']
+            loss, recon_loss, kld_loss, recon_prof, recon_mp, physics, physics_sp, physics_beta, physics_bpol = losses['loss'], losses['recon'], losses['kld'], losses['recon_prof'], losses['recon_mp'], losses['physics'], losses['physics/sp'], losses['physics/beta'], losses['physics/bpol']
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
-            iter_epochs.set_postfix_str(f'{n}/{len(train_dl)}: Loss {loss.item():{5}.{5}}, Recon: {recon_loss.item():{5}.{5}}, KLD: {kld_loss.item():{5}.{5}}, PROF_RECON: {recon_prof.item():{5}.{5}}, MPRECON: {recon_mp.item():{5}.{5}}')
+            iter_epochs.set_postfix_str(f'{n}/{len(train_dl)}: Loss {loss.item():{5}.{5}}, Recon: {recon_loss.item():{5}.{5}}, KLD: {kld_loss.item():{5}.{5}}, PROF_RECON: {recon_prof.item():{5}.{5}}, MPRECON: {recon_mp.item():{5}.{5}}, PHYSICS: {physics.item():{5}.{5}}, SP: {physics_sp.item():{5}.{5}}, BETA: {physics_beta.item():{5}.{5}}, BPOL: {physics_bpol.item():{5}.{5}}')
         scheduler.step()
     save_dict = {'state_dict': model.state_dict()} #,  
                 # 'train_set': train_set, 
@@ -64,12 +64,52 @@ PICKLED_AUG_PULSES = PERSONAL_DATA_DIR_PROC + 'AUG_PDB_PYTHON_PULSES.pickle'
 
 
 def loss_function(inputs, results):
-    def static_pressure_stored_energy_approximation(profs_og):
+    def static_pressure_stored_energy_approximation(profs):
         boltzmann_constant = 1.380e-23
-        profs = torch.clone(profs_og)
-        profs = train_set.denormalize_profiles(profs)
         # profs[:, 0, :]*= 1e19
         return boltzmann_constant*torch.prod(profs, 1).sum(1)
+    def torch_shaping_approx(minor_radius, tri_u, tri_l, elongation):
+        triangularity = (tri_u + tri_l) / 2.0
+        b = elongation*minor_radius
+        gamma_top = -(minor_radius + triangularity)
+        gamma_bot = minor_radius - triangularity
+        alpha_top = -gamma_top / (b*b)
+        alpha_bot = -gamma_bot / (b*b)
+        top_int = (torch.arcsinh(2*torch.abs(alpha_top)*b) + 2*torch.abs(alpha_top)*b*torch.sqrt(4*alpha_top*alpha_top*b*b+1)) / (2*torch.abs(alpha_top))
+        bot_int = (torch.arcsinh(2*torch.abs(alpha_bot)*b) + 2*torch.abs(alpha_bot)*b*torch.sqrt(4*alpha_bot*alpha_bot*b*b+1)) / (2*torch.abs(alpha_bot))
+        return bot_int + top_int 
+
+    def bpol_approx(minor_radius, tri_u, tri_l, elongation, current): 
+        mu_0 = 1.256e-6 
+        shaping = torch_shaping_approx(minor_radius, tri_u, tri_l, elongation)
+        return mu_0*current / shaping
+
+    def beta_approximation(profiles_tensors, minor_radius, tri_u, tri_l, elongation, current, bt):
+        mu_0 = 1.256e-6 
+        e_c = 1.602e-19
+        """
+        To approximate beta! 
+        The factor of 2 at the front is to compensate the ions which are nowhere to be found in this analysis. 
+        The additional factor of 100 is to get it in percent form. 
+        """
+        density, temperature = profiles_tensors[:, 0, :], profiles_tensors[:, 1, :]
+        pressure_prof = density*temperature
+        pressure_average = pressure_prof[:, 0]     
+        # TODO: This beta average is not really realistic I find... but am interested to see how it impacts
+        bpol = bpol_approx(minor_radius, tri_u, tri_l, elongation, current)
+        return (100*2)*e_c*2*mu_0 * pressure_average / (bt*bt + bpol*bpol)
+    def calculate_physics_constraints(profiles_og, mps_og):
+        # Denormalize everything! 
+        profiles = torch.clone(profiles_og)
+        profiles = train_set.denormalize_profiles(profiles)
+        mps = torch.clone(mps_og)
+        mps = train_set.denormalize_mps(mps)
+        sp =  static_pressure_stored_energy_approximation(profiles)
+        # ['BTF', 'D_tot', 'N_tot', 'IpiFP', 'PNBI_TOT', 'PICR_TOT', 'PECR_TOT',  'k', 'delRoben', 'delRuntn', 'ahor', 'Rgeo', 'q95', 'Vol']
+        minor_radius, tri_u, tri_l, elongation, current, bt = mps[:, 7], mps[:, 8],mps[:, 9],mps[:, 7], mps[:, 3], mps[:, 0]
+        bpol = bpol_approx(minor_radius, tri_u, tri_l, elongation, current)
+        beta = beta_approximation(profiles, minor_radius, tri_u, tri_l, elongation, current, bt)
+        return sp, beta, bpol
 
     t_0_batch, t_1_batch, mp_t0, mp_t1, mps_delta = inputs 
     t_0_pred, t_1_pred, t_1_pred_from_trans, mp_hat_t_0, mp_hat_hat_t_1, (mu_t, log_var_t), (mu_t_1, log_var_t_1), (A_t, B_t, o_t), (mu_t_cond_prior, var_t_cond_prior) = results
@@ -107,25 +147,36 @@ def loss_function(inputs, results):
     recon_loss = 50*recon_loss_mp + 150*recon_loss_prof
     unsup_loss = kld_loss_t
     sup_loss = kld_loss_mp_cond
+    physics_loss = torch.tensor([0.0])
+    sp_x_t, beta_x_t, bpol_x_t = calculate_physics_constraints(t_0_batch, mp_t0)
+    sp_x_hat_t, beta_x_hat_t, bpol_x_hat_t = calculate_physics_constraints(t_0_pred, mp_hat_t_0)
+    sp_t_loss, beta_t_loss, bpol_t_loss = F.mse_loss(sp_x_t, sp_x_hat_t), F.mse_loss(beta_x_t, beta_x_hat_t), F.mse_loss(bpol_x_t, bpol_x_hat_t)
 
+    sp_x_t_1, beta_x_t_1, bpol_x_t_1 = calculate_physics_constraints(t_1_batch, mp_t1)
+    sp_x_hat_t_1, beta_x_hat_t_1, bpol_x_hat_t_1 = calculate_physics_constraints(t_1_pred_from_trans, mp_hat_hat_t_1)
+    sp_t_1_loss, beta_t_1_loss, bpol_t_1_loss = F.mse_loss(sp_x_t_1, sp_x_hat_t_1), F.mse_loss(beta_x_t_1, beta_x_hat_t_1), F.mse_loss(bpol_x_t_1, bpol_x_hat_t_1)
+
+    sp_loss = sp_t_loss + sp_t_1_loss
+    beta_loss = beta_t_loss +beta_t_1_loss
+    bpol_loss = bpol_t_loss  + bpol_t_1_loss
     kld_loss = kld_loss_t_1 + kld_loss_t_t_1 # + 0.0001*kld_loss_mp_cond
     if EPOCH % 2 == 0: 
         kld_loss += unsup_loss
     else: 
         kld_loss += sup_loss
-    # sp_x_t, sp_x_hat_t = static_pressure_stored_energy_approximation(t_0_batch), static_pressure_stored_energy_approximation(t_0_pred)
-    # sp_t_loss = F.mse_loss(sp_x_t, sp_x_hat_t)
-    # sp_x_t_1, sp_x_hat_t_1 = static_pressure_stored_energy_approximation(t_1_batch), static_pressure_stored_energy_approximation(t_1_pred_from_trans)
-    # sp_t_1_loss = F.mse_loss(sp_x_t_1, sp_x_hat_t_1)
-    # physics_loss = sp_t_loss + sp_t_1_loss 
-    physics_loss = torch.Tensor([0.0])
-    loss = recon_loss +  0.001*kld_loss # + 0.001*physics_loss
+        
+        physics_loss += 2.0*(0.1*sp_loss + 10*beta_loss +  10000*bpol_loss)
+
+
+    
+    # physics_loss = torch.Tensor([0.0])
+    loss = recon_loss +  0.001*kld_loss + physics_loss
     return {'loss': loss, 'recon': recon_loss, 'kld': kld_loss, 
             'recon_prof': recon_loss_prof, 'recon_mp': recon_loss_mp, 
             'recon_prof_0': recon_loss_t0, 'recon_prof_1': recon_loss_t1, 
             'recon_mp_1': recon_loss_mp_t1, 'recon_mp_0': recon_loss_mp_t0, 
             'kld_t': kld_loss_t, 'kld_t1': kld_loss_t_1,'kld_tt1': kld_loss_t_t_1, 'kld_mp_cond': kld_loss_mp_cond,
-            'physics': physics_loss} 
+            'physics': physics_loss, 'physics/beta': beta_loss, 'physics/sp': sp_loss, 'physics/bpol': bpol_loss} 
 
 # TODO: Move to UTISL 
 def load_classes_from_pickle() -> List[PULSE]: 

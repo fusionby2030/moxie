@@ -57,7 +57,7 @@ def denormalize_mps(mps, norms):
     return mps
 
 
-def main(model_name='STEP2_aux_cond'): 
+def main(model_name='STEP2_aux_cond_phys'): # STEP2_aux_cond
     global EPOCH, datacls, model, t
     # model = VAE_LLD(input_dim=2, latent_dim=10, conv_filter_sizes=[8, 10, 12], transfer_hidden_dims=[10, 20, 30])
     model = VAE_LLD_MP(input_dim=2, latent_dim=20, out_length=75, 
@@ -82,7 +82,8 @@ def plot_condtional(model, pulses: List[PULSE], norms):
     """
     
     for n, pulse in enumerate(pulses):
-        
+        if pulse.pulse_id != 32238:
+            continue
         all_profs, all_mps = pulse.get_ML_ready_array()
         t = np.arange(len(all_profs))
         t0_profs, t1_profs = all_profs[:-1, :, :], all_profs[1:, :, :]
@@ -109,11 +110,10 @@ def plot_condtional(model, pulses: List[PULSE], norms):
         # fig, axs = plt.subplots(2, 7)
         bars = []
         for dim, (ax, label) in enumerate(zip(axs.ravel(), pulse.control_param_labels)): 
-            
             ax.plot(t0_mps[:, dim], color='blue', label='real')
             ax.plot(mp_pred[:, dim], color='red', label='pred')
             ax.set_xlabel(label)
-            ax.tick_params(axis='x', which='both', bottom=False, top=False)
+            ax.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
             bars.append(ax.axvline(t[0], color='black'))
             if dim == 0: 
                 ax.legend(frameon=False)
@@ -163,9 +163,9 @@ def plot_condtional(model, pulses: List[PULSE], norms):
             return n_ln, t_ln,n_p_ln, t_p_ln,time_text, *bars, # time_text, *bars
         
         ani = FuncAnimation(fig, animate, len(all_profs) - 1, interval=0.001, repeat_delay=1e3, blit=True)
-        if pulse.pulse_id == 37723: 
+        if pulse.pulse_id == 32238: 
             writer_video = FFMpegWriter(fps=150)
-            ani.save('/home/kitadam/ENR_Sven/test_moxie/experiments/SRL_meditations/conditional_generation_1_37723.mp4', dpi=300, writer=writer_video)
+            ani.save(f'/home/kitadam/ENR_Sven/test_moxie/experiments/SRL_meditations/conditional_generation_1_{pulse.pulse_id}.mp4',  writer=writer_video)
         plt.show()
 
     pass 

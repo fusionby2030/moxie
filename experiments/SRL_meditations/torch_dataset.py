@@ -76,6 +76,15 @@ class PULSE_DATASET(Dataset):
         _, _, _, _, MP_mu, MP_var = self.norms
         mps, _, _ = standardize(mps, MP_mu, MP_var)
         return mps
+    def denormalize_mps(self, mps): 
+        def de_standardize(x, mu, var):
+            if isinstance(x, torch.Tensor): 
+                mu, var = torch.from_numpy(mu), torch.from_numpy(var)
+            x_normed = x*var + mu
+            return x_normed, mu, var
+        _, _, _, _, MP_mu, MP_var = self.norms
+        mps, _, _ = de_standardize(mps, MP_mu, MP_var)
+        return mps
     def get_normalizing(self):       
         train_set_profs = self.t0_profs
         train_set_densities = train_set_profs[:, 0, :] 
