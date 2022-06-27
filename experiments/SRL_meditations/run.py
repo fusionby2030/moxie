@@ -20,13 +20,13 @@ save_loc = '/home/kitadam/ENR_Sven/test_moxie/experiments/SRL_meditations/model_
 def main(model_name='STEP2_aux_cond'): 
     global EPOCH, model, train_set, val_set
     print(save_loc)
-    model = VAE_LLD_MP(input_dim=2, latent_dim=13, out_length=75, 
+    model = VAE_LLD_MP(input_dim=2, latent_dim=20, out_length=75, 
                         conv_filter_sizes=[8, 10, 12], transfer_hidden_dims=[20, 20, 30], 
                         reg_hidden_dims= [40, 40, 40, 40, 40], mp_dim=14, act_dim=14)
     model.double()
     train_dl, val_dl, train_set, val_set = get_train_val_splits(batch_size=256) 
     
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.99)
     plotting=False
     
@@ -104,7 +104,7 @@ def loss_function(inputs, results):
     # Sum all the losses! 
     recon_loss_prof = recon_loss_t0 + recon_loss_t1
     recon_loss_mp = recon_loss_mp_t1 + recon_loss_mp_t0
-    recon_loss = 50*recon_loss_mp + 50*recon_loss_prof
+    recon_loss = 50*recon_loss_mp + 150*recon_loss_prof
     unsup_loss = kld_loss_t
     sup_loss = kld_loss_mp_cond
 
